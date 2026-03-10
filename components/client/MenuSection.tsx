@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import { ChevronRight } from "lucide-react";
 import { useCartStore } from "./cart-store";
-import { ProductModifierDialog } from "./ProductModifierDialog";
+import { ProductDetailModal } from "./ProductDetailModal";
 import type { ModifierGroup } from "./ProductModifierDialog";
 
 type ModifierGroupInput = Omit<ModifierGroup, "type"> & { type: string };
@@ -27,6 +28,109 @@ type Category = {
   products: Product[];
 };
 
+function ProductCard({
+  product,
+  primaryColor,
+  borderRadius,
+  onClick,
+  layout,
+}: {
+  product: Product;
+  primaryColor: string;
+  borderRadius: number;
+  onClick: () => void;
+  layout: "grid" | "list" | "carousel";
+}) {
+  const hasModifiers = product.modifierGroups && product.modifierGroups.length > 0;
+  const priceLabel = hasModifiers ? `от ${product.price} ₽` : `${product.price} ₽`;
+
+  if (layout === "list") {
+    return (
+      <button
+        type="button"
+        onClick={onClick}
+        className="w-full flex gap-3 p-3 rounded-xl border border-white/10 items-center text-left hover:bg-white/5 transition-colors"
+      >
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-20 h-20 rounded-xl object-cover flex-shrink-0"
+            style={{ borderRadius: borderRadius + 4 }}
+          />
+        ) : (
+          <div
+            className="w-20 h-20 rounded-xl bg-white/10 flex-shrink-0"
+            style={{ borderRadius: borderRadius + 4 }}
+          />
+        )}
+        <div className="flex-1 min-w-0">
+          <div className="font-medium">{product.name}</div>
+          {product.weight && (
+            <div className="text-xs text-muted-foreground">{product.weight}</div>
+          )}
+          {product.description && (
+            <p className="text-xs opacity-80 truncate mt-0.5">{product.description}</p>
+          )}
+          <div className="flex items-center justify-between mt-1">
+            <span className="text-sm font-medium">{priceLabel}</span>
+            <ChevronRight size={18} className="opacity-60" />
+          </div>
+        </div>
+      </button>
+    );
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col w-full text-left bg-muted/30 rounded-2xl overflow-hidden hover:bg-muted/50 transition-colors"
+      style={{ borderRadius: borderRadius + 8 }}
+    >
+      <div className="relative w-full aspect-square overflow-hidden">
+        {product.imageUrl ? (
+          <img
+            src={product.imageUrl}
+            alt={product.name}
+            className="w-full h-full object-cover"
+          />
+        ) : (
+          <div className="w-full h-full bg-white/10" />
+        )}
+        {product.badges && product.badges.length > 0 && (
+          <div className="absolute top-2 left-2 flex gap-1 flex-wrap">
+            {product.badges.slice(0, 2).map((b) => (
+              <span
+                key={b}
+                className="text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white"
+              >
+                {b}
+              </span>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="p-3 flex flex-col flex-1">
+        <div className="font-medium text-sm">{product.name}</div>
+        {product.weight && (
+          <div className="text-xs text-muted-foreground mt-0.5">{product.weight}</div>
+        )}
+        {product.description && (
+          <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{product.description}</p>
+        )}
+        <div
+          className="mt-2 flex items-center justify-between gap-2 py-2 px-3 rounded-xl bg-muted/50"
+          style={{ borderRadius }}
+        >
+          <span className="text-sm font-medium">{priceLabel}</span>
+          <ChevronRight size={18} className="opacity-60 shrink-0" />
+        </div>
+      </div>
+    </button>
+  );
+}
+
 export function MenuSection({
   category,
   primaryColor,
@@ -39,27 +143,20 @@ export function MenuSection({
   layout?: "grid" | "list" | "carousel";
 }) {
   const { addItem } = useCartStore();
-  const [modifierProduct, setModifierProduct] = useState<Product | null>(null);
+  const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
-  const isGrid = layout === "grid";
-
-  function handleAddClick(p: Product) {
-    const hasModifiers = p.modifierGroups && p.modifierGroups.length > 0;
-    if (hasModifiers) {
-      setModifierProduct(p);
-    } else {
-      addItem(p.id, p.name, p.price);
-    }
+  function handleCardClick(p: Product) {
+    setDetailProduct(p);
   }
 
-  function handleModifierConfirm(
+  function handleAddToCart(
     finalPrice: number,
     selectedModifiers: { optionId: string; optionName: string; priceDelta: number; quantity?: number }[]
   ) {
-    if (!modifierProduct) return;
+    if (!detailProduct) return;
     addItem(
-      modifierProduct.id,
-      modifierProduct.name,
+      detailProduct.id,
+      detailProduct.name,
       finalPrice,
       1,
       selectedModifiers.map((m) => ({
@@ -69,110 +166,55 @@ export function MenuSection({
         quantity: m.quantity,
       }))
     );
-    setModifierProduct(null);
+    setDetailProduct(null);
   }
+
+  const isGrid = layout === "grid";
+  const isCarousel = layout === "carousel";
 
   return (
     <>
       <section className="py-4">
         <h2 className="text-lg font-semibold mb-3">{category.name}</h2>
-        <div className={isGrid ? "grid grid-cols-2 gap-3" : "space-y-3"}>
+        <div
+          className={
+            isCarousel
+              ? "flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 snap-x snap-mandatory"
+              : isGrid
+                ? "grid grid-cols-2 md:grid-cols-3 gap-3"
+                : "space-y-2"
+          }
+        >
           {category.products.map((p) => (
             <div
               key={p.id}
               className={
-                isGrid
-                  ? "flex flex-col"
-                  : "flex gap-3 p-3 rounded-xl border border-white/10 items-start"
+                isCarousel
+                  ? "shrink-0 w-[280px] snap-center"
+                  : isGrid
+                    ? ""
+                    : ""
               }
             >
-              {p.imageUrl ? (
-                <img
-                  src={p.imageUrl}
-                  alt={p.name}
-                  className={
-                    isGrid
-                      ? "w-full aspect-square rounded-full object-cover"
-                      : "w-20 h-20 rounded-lg object-cover flex-shrink-0"
-                  }
-                />
-              ) : (
-                <div
-                  className={
-                    isGrid
-                      ? "w-full aspect-square rounded-full bg-white/10"
-                      : "w-20 h-20 rounded-lg bg-white/10 flex-shrink-0"
-                  }
-                />
-              )}
-              <div className={isGrid ? "mt-2" : "flex-1 min-w-0"}>
-                <div className="font-medium text-sm">{p.name}</div>
-                {p.badges && p.badges.length > 0 && (
-                  <div className="flex gap-1 mt-0.5 flex-wrap">
-                    {p.badges.slice(0, 3).map((b) => (
-                      <span
-                        key={b}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-white/20"
-                      >
-                        {b}
-                      </span>
-                    ))}
-                  </div>
-                )}
-                {p.description && (
-                  <p
-                    className={`text-xs opacity-80 ${
-                      isGrid ? "line-clamp-2" : "truncate"
-                    }`}
-                  >
-                    {p.description}
-                  </p>
-                )}
-                <div
-                  className={`flex items-center justify-between ${isGrid ? "mt-1" : "mt-1"}`}
-                >
-                  <span className="text-sm">
-                    {p.oldPrice ? (
-                      <>
-                        <span className="line-through opacity-70">
-                          {p.oldPrice} ₽
-                        </span>{" "}
-                        <span>{p.price} ₽</span>
-                      </>
-                    ) : (
-                      `${p.price} ₽`
-                    )}
-                    {p.modifierGroups && p.modifierGroups.length > 0 && (
-                      <span className="text-xs opacity-70 ml-1">+ допы</span>
-                    )}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => handleAddClick(p)}
-                    className="px-3 py-1 rounded-lg text-white text-sm font-medium"
-                    style={{
-                      backgroundColor: primaryColor,
-                      borderRadius,
-                    }}
-                  >
-                    {isGrid ? "+" : "В корзину"}
-                  </button>
-                </div>
-              </div>
+              <ProductCard
+                product={p}
+                primaryColor={primaryColor}
+                borderRadius={borderRadius}
+                onClick={() => handleCardClick(p)}
+                layout={layout}
+              />
             </div>
           ))}
         </div>
       </section>
 
-      {modifierProduct && modifierProduct.modifierGroups && (
-        <ProductModifierDialog
-          productName={modifierProduct.name}
-          basePrice={modifierProduct.price}
-          modifierGroups={modifierProduct.modifierGroups as ModifierGroup[]}
+      {detailProduct && (
+        <ProductDetailModal
+          product={detailProduct}
           primaryColor={primaryColor}
           borderRadius={borderRadius}
-          onConfirm={handleModifierConfirm}
-          onClose={() => setModifierProduct(null)}
+          onAddToCart={handleAddToCart}
+          onClose={() => setDetailProduct(null)}
         />
       )}
     </>
