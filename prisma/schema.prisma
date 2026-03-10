@@ -64,9 +64,24 @@ model TenantSettings {
   rkeeperApiKey   String?
   yandexMetricaId String?
 
-  // Лояльность (геймификация)
+  // Лояльность: points = баллы+кэшбек, stamps = закрашенные кружки
+  loyaltyType        String  @default("points") // "points" | "stamps"
   loyaltyStampGoal   Int     @default(6)
   loyaltyCashbackPct Decimal @default(5) @db.Decimal(5, 2)
+
+  // Вкладка «Общая информация»
+  infoAddress      String?
+  infoHours        String?
+  infoPhone        String?
+  infoTermsUrl     String?
+  infoFaqUrl       String?
+  infoPartnerUrl   String?
+  infoCaloriesUrl  String?
+  infoContactText  String?
+  infoSocialInstagram String?
+  infoSocialTelegram  String?
+  infoSocialVk     String?
+  infoAboutText    String?
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

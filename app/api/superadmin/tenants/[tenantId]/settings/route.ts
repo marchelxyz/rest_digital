@@ -11,7 +11,10 @@ const SETTINGS_KEYS = [
   "primaryColor", "secondaryColor", "theme", "fontFamily",
   "showStories", "showLoyalty", "showPopular", "menuLayout",
   "borderRadius", "iikoApiKey", "rkeeperApiKey", "yandexMetricaId",
-  "loyaltyStampGoal", "loyaltyCashbackPct",
+  "loyaltyType", "loyaltyStampGoal", "loyaltyCashbackPct",
+  "infoAddress", "infoHours", "infoPhone", "infoTermsUrl", "infoFaqUrl",
+  "infoPartnerUrl", "infoCaloriesUrl", "infoContactText",
+  "infoSocialInstagram", "infoSocialTelegram", "infoSocialVk", "infoAboutText",
 ] as const;
 
 type SettingsInput = Partial<{
@@ -31,8 +34,21 @@ type SettingsInput = Partial<{
   iikoApiKey: string;
   rkeeperApiKey: string;
   yandexMetricaId: string;
+  loyaltyType: string;
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
+  infoAddress: string;
+  infoHours: string;
+  infoPhone: string;
+  infoTermsUrl: string;
+  infoFaqUrl: string;
+  infoPartnerUrl: string;
+  infoCaloriesUrl: string;
+  infoContactText: string;
+  infoSocialInstagram: string;
+  infoSocialTelegram: string;
+  infoSocialVk: string;
+  infoAboutText: string;
 }>;
 
 function toPrisma(data: SettingsInput): Record<string, unknown> {
