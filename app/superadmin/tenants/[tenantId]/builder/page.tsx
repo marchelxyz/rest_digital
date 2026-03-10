@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
 
 type Settings = {
   appName?: string;
@@ -141,22 +142,20 @@ export default function BuilderPage() {
                   placeholder="Название заведения"
                 />
               </div>
-              <div>
-                <Label>Логотип (URL)</Label>
-                <Input
-                  value={settings.logoUrl ?? ""}
-                  onChange={(e) => update("logoUrl", e.target.value)}
-                  placeholder="https://..."
-                />
-              </div>
-              <div>
-                <Label>Обложка (URL)</Label>
-                <Input
-                  value={settings.coverUrl ?? ""}
-                  onChange={(e) => update("coverUrl", e.target.value)}
-                  placeholder="https://..."
-                />
-              </div>
+              <ImageUploadField
+                label="Логотип (URL или загрузка PNG/JPEG)"
+                value={settings.logoUrl ?? ""}
+                onChange={(url) => update("logoUrl", url)}
+                field="logo"
+                tenantId={tenantId}
+              />
+              <ImageUploadField
+                label="Обложка (URL или загрузка PNG/JPEG)"
+                value={settings.coverUrl ?? ""}
+                onChange={(url) => update("coverUrl", url)}
+                field="cover"
+                tenantId={tenantId}
+              />
             </TabsContent>
             <TabsContent value="colors" className="space-y-4 pt-4">
               <div>
@@ -409,67 +408,203 @@ export default function BuilderPage() {
   );
 }
 
+type PreviewTab = "home" | "profile" | "info";
+
 function PhonePreview({ settings }: { settings: Settings }) {
+  const [activeTab, setActiveTab] = useState<PreviewTab>("home");
   const isDark = settings.theme === "dark";
   const bg = isDark ? "#1a1a1a" : "#ffffff";
   const fg = isDark ? "#ffffff" : "#171717";
+  const borderStyle = { borderRadius: settings.borderRadius };
 
   return (
     <div
-      className="w-[320px] h-[600px] rounded-3xl border-4 border-gray-800 overflow-hidden shadow-2xl"
+      className="w-[320px] h-[600px] rounded-3xl border-4 border-gray-800 overflow-hidden shadow-2xl flex flex-col"
       style={{ backgroundColor: bg }}
     >
-      <div className="p-4" style={{ color: fg }}>
-        {settings.coverUrl ? (
+      <div className="flex-1 overflow-auto p-3" style={{ color: fg }}>
+        {activeTab === "home" && (
+          <PreviewHomeContent settings={settings} isDark={isDark} borderStyle={borderStyle} />
+        )}
+        {activeTab === "profile" && (
+          <PreviewProfileContent settings={settings} isDark={isDark} borderStyle={borderStyle} />
+        )}
+        {activeTab === "info" && (
+          <PreviewInfoContent settings={settings} isDark={isDark} borderStyle={borderStyle} />
+        )}
+      </div>
+      <nav
+        className="flex border-t shrink-0"
+        style={{ backgroundColor: bg, borderColor: isDark ? "#333" : "#eee" }}
+      >
+        {(["home", "profile", "info"] as const).map((tab) => (
+          <button
+            key={tab}
+            type="button"
+            onClick={() => setActiveTab(tab)}
+            className={`flex-1 py-2 text-xs ${activeTab === tab ? "opacity-100 font-medium" : "opacity-60"}`}
+            style={{ color: fg }}
+          >
+            {tab === "home" ? "Главная" : tab === "profile" ? "Профиль" : "Информация"}
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+function PreviewHomeContent({
+  settings,
+  isDark,
+  borderStyle,
+}: {
+  settings: Settings;
+  isDark: boolean;
+  borderStyle: React.CSSProperties;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between mb-2">
+        <span className="text-lg opacity-60">📍</span>
+        <span className="text-sm opacity-80">Корзина</span>
+      </div>
+      <div
+        className="w-full py-2 px-3 rounded-lg text-sm opacity-70"
+        style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
+      >
+        Поиск товаров
+      </div>
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {["Все", "Популярное", "Напитки"].map((l) => (
+          <span
+            key={l}
+            className="text-xs px-2 py-1 rounded-full shrink-0 opacity-80"
+            style={{ backgroundColor: isDark ? "#333" : "#eee" }}
+          >
+            {l}
+          </span>
+        ))}
+      </div>
+      {settings.showStories && (
+        settings.coverUrl ? (
           <div
-            className="h-24 rounded-lg mb-4 bg-cover bg-center"
-            style={{ backgroundImage: `url(${settings.coverUrl})` }}
+            className="h-20 rounded-lg bg-cover bg-center"
+            style={{ backgroundImage: `url(${settings.coverUrl})`, ...borderStyle }}
           />
         ) : (
           <div
-            className="h-24 rounded-lg mb-4 flex items-center justify-center text-sm opacity-60"
-            style={{ backgroundColor: isDark ? "#333" : "#eee" }}
+            className="h-20 rounded-lg flex items-center justify-center text-xs opacity-60"
+            style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
           >
-            Обложка
+            Баннер
           </div>
-        )}
-        <div className="flex items-center gap-2 mb-4">
-          {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
-          ) : null}
-          <span className="font-semibold">{settings.appName || "Название"}</span>
-        </div>
-        {settings.showLoyalty && (
+        )
+      )}
+      <div className="text-sm font-semibold">Меню</div>
+      <div className="grid grid-cols-2 gap-2">
+        {[1, 2, 3, 4].map((i) => (
           <div
-            className="p-3 rounded-lg mb-4"
-            style={{
-              backgroundColor: settings.primaryColor,
-              color: "#fff",
-              borderRadius: settings.borderRadius,
-            }}
+            key={i}
+            className="rounded-lg p-2 border"
+            style={{ backgroundColor: isDark ? "#222" : "#f5f5f5", borderColor: isDark ? "#444" : "#e5e5e5", ...borderStyle }}
           >
-            <div className="text-sm font-medium">Программа лояльности</div>
-            <div className="text-xs opacity-90">
-              {settings.loyaltyType === "stamps"
-                ? `0 / ${settings.loyaltyStampGoal} штампов`
-                : `${settings.loyaltyCashbackPct}% кэшбек`}
-            </div>
+            <div className="aspect-square rounded-full bg-white/10 mb-1" />
+            <div className="text-xs font-medium truncate">Товар {i}</div>
+            <div className="text-xs opacity-70">Цена ₽</div>
           </div>
-        )}
-        {settings.showPopular && (
-          <div className="text-sm font-medium mb-2">Популярное</div>
-        )}
-        <div
-          className="h-20 rounded-lg flex items-center justify-center text-sm"
-          style={{
-            backgroundColor: settings.primaryColor,
-            color: "#fff",
-            borderRadius: settings.borderRadius,
-          }}
-        >
-          В корзину
-        </div>
+        ))}
       </div>
+      <div
+        className="py-2 rounded-lg flex items-center justify-center text-sm text-white"
+        style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
+      >
+        В корзину
+      </div>
+    </div>
+  );
+}
+
+function PreviewProfileContent({
+  settings,
+  isDark,
+  borderStyle,
+}: {
+  settings: Settings;
+  isDark: boolean;
+  borderStyle: React.CSSProperties;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="flex justify-between items-start">
+        <div>
+          <div className="font-semibold text-sm">Гость</div>
+          <div className="text-xs opacity-70">+7 (___) ___-__-__</div>
+        </div>
+        <span className="text-lg opacity-60">🔔</span>
+      </div>
+      {settings.showLoyalty && (
+        <div
+          className="p-3 rounded-lg text-white"
+          style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
+        >
+          <div className="text-sm font-medium">
+            {settings.loyaltyType === "points" ? "Баллы и кэшбек" : "Штампы"}
+          </div>
+          <div className="text-xs opacity-90">
+            {settings.loyaltyType === "stamps"
+              ? `0 / ${settings.loyaltyStampGoal} штампов`
+              : `${settings.loyaltyCashbackPct}% кэшбек`}
+          </div>
+        </div>
+      )}
+      <div className="space-y-1">
+        {["Мои заказы", "Мои адреса", "Мои данные"].map((l) => (
+          <div
+            key={l}
+            className="flex items-center justify-between py-2 px-3 rounded-lg text-sm"
+            style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
+          >
+            {l}
+            <span className="opacity-50">›</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function PreviewInfoContent({
+  settings,
+  isDark,
+  borderStyle,
+}: {
+  settings: Settings;
+  isDark: boolean;
+  borderStyle: React.CSSProperties;
+}) {
+  return (
+    <div className="space-y-3">
+      <div className="text-base font-bold">Меню</div>
+      <div className="space-y-1 text-sm opacity-80">
+        <div>Условия акций</div>
+        <div>Частые вопросы</div>
+        <div>Стать партнёром</div>
+      </div>
+      {(settings.infoAddress || settings.infoHours) && (
+        <div className="text-sm">
+          {settings.infoAddress && <div className="font-medium">{settings.infoAddress}</div>}
+          {settings.infoHours && <div className="opacity-70 text-xs">{settings.infoHours}</div>}
+        </div>
+      )}
+      <div
+        className="p-3 rounded-lg text-sm"
+        style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
+      >
+        {settings.infoContactText || "Проблемы с заказом? Напишите нам!"}
+      </div>
+      {settings.infoAboutText && (
+        <div className="text-xs opacity-70">{settings.infoAboutText}</div>
+      )}
     </div>
   );
 }
