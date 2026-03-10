@@ -41,6 +41,7 @@ export type Settings = {
 export type Story = {
   id: string;
   title: string;
+  coverUrl?: string | null;
   mediaUrl: string;
   mediaType: string;
 };

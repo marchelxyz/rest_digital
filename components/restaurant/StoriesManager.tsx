@@ -9,6 +9,7 @@ import { Plus, Pencil, Trash2 } from "lucide-react";
 type Story = {
   id: string;
   title: string;
+  coverUrl?: string | null;
   mediaUrl: string;
   mediaType: string;
   sortOrder: number;
@@ -20,7 +21,12 @@ export function StoriesManager() {
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
-  const [form, setForm] = useState({ title: "", mediaUrl: "", mediaType: "image" as "image" | "video" });
+  const [form, setForm] = useState({
+    title: "",
+    coverUrl: "" as string,
+    mediaUrl: "",
+    mediaType: "image" as "image" | "video",
+  });
   const [uploading, setUploading] = useState(false);
 
   function load() {
@@ -34,18 +40,26 @@ export function StoriesManager() {
     load();
   }, []);
 
-  async function handleUpload(e: React.ChangeEvent<HTMLInputElement>, type: "image" | "video") {
+  async function handleUpload(
+    e: React.ChangeEvent<HTMLInputElement>,
+    field: "story" | "story_cover"
+  ) {
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
     try {
       const fd = new FormData();
-      fd.set("field", "story");
+      fd.set("field", field);
       fd.set("file", file);
       const res = await fetch("/api/restaurant/upload", { method: "POST", body: fd });
       const data = await res.json();
       if (res.ok && data.url) {
-        setForm((f) => ({ ...f, mediaUrl: data.url, mediaType: type }));
+        if (field === "story_cover") {
+          setForm((f) => ({ ...f, coverUrl: data.url }));
+        } else {
+          const type = file.type.startsWith("video/") ? "video" : "image";
+          setForm((f) => ({ ...f, mediaUrl: data.url, mediaType: type }));
+        }
       } else {
         alert(data.error ?? "Ошибка загрузки");
       }
@@ -58,32 +72,42 @@ export function StoriesManager() {
 
   async function handleSave() {
     if (!form.title.trim() || !form.mediaUrl.trim()) {
-      alert("Заполните название и загрузите медиа");
+      alert("Заполните название и загрузите контент (фото или видео)");
       return;
     }
+    if (!form.coverUrl.trim() && !editing) {
+      alert("Загрузите обложку 3:4 для карточки");
+      return;
+    }
+    const payload = {
+      title: form.title.trim(),
+      coverUrl: form.coverUrl.trim() || null,
+      mediaUrl: form.mediaUrl.trim(),
+      mediaType: form.mediaType,
+    };
     if (editing) {
       await fetch(`/api/restaurant/stories/${editing}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
     } else {
       await fetch("/api/restaurant/stories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(form),
+        body: JSON.stringify(payload),
       });
     }
     setEditing(null);
     setAdding(false);
-    setForm({ title: "", mediaUrl: "", mediaType: "image" });
+    setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image" });
     load();
   }
 
   function cancelForm() {
     setEditing(null);
     setAdding(false);
-    setForm({ title: "", mediaUrl: "", mediaType: "image" });
+    setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image" });
   }
 
   async function handleDelete(id: string) {
@@ -94,7 +118,12 @@ export function StoriesManager() {
 
   function startEdit(s: Story) {
     setEditing(s.id);
-    setForm({ title: s.title, mediaUrl: s.mediaUrl, mediaType: s.mediaType as "image" | "video" });
+    setForm({
+      title: s.title,
+      coverUrl: s.coverUrl ?? "",
+      mediaUrl: s.mediaUrl,
+      mediaType: s.mediaType as "image" | "video",
+    });
   }
 
   if (loading) return <p className="text-muted-foreground">Загрузка...</p>;
@@ -102,7 +131,7 @@ export function StoriesManager() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Добавьте акции и промо. Фото или видео в формате историй (9:16). При нажатии откроется полноэкранный просмотр.
+        Добавьте акции. Обложка 3:4 показывается на карточке. Контент (фото/видео) — при открытии.
       </p>
       {(editing || adding) && (
         <Card>
@@ -113,19 +142,42 @@ export function StoriesManager() {
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
             />
             <div>
-              <p className="text-sm font-medium mb-2">Медиа (фото или видео)</p>
+              <p className="text-sm font-medium mb-2">Обложка 3:4 (карточка)</p>
+              <input
+                type="file"
+                accept="image/png,image/jpeg,image/jpg"
+                onChange={(e) => handleUpload(e, "story_cover")}
+                disabled={uploading}
+                className="text-sm"
+              />
+              {form.coverUrl && (
+                <div className="mt-2">
+                  <img src={form.coverUrl} alt="" className="h-24 rounded-lg object-cover aspect-[3/4] w-auto" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="mt-1"
+                    onClick={() => setForm((f) => ({ ...f, coverUrl: "" }))}
+                  >
+                    Удалить
+                  </Button>
+                </div>
+              )}
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">Контент (фото или видео)</p>
               <div className="flex gap-2 flex-wrap">
                 <input
                   type="file"
                   accept="image/png,image/jpeg,image/jpg"
-                  onChange={(e) => handleUpload(e, "image")}
+                  onChange={(e) => handleUpload(e, "story")}
                   disabled={uploading}
                   className="text-sm"
                 />
                 <input
                   type="file"
                   accept="video/mp4,video/webm"
-                  onChange={(e) => handleUpload(e, "video")}
+                  onChange={(e) => handleUpload(e, "story")}
                   disabled={uploading}
                   className="text-sm"
                 />
@@ -174,14 +226,24 @@ export function StoriesManager() {
         {stories.map((s) => (
           <Card key={s.id}>
             <CardContent className="py-3 flex items-center gap-3">
-              {s.mediaType === "video" ? (
-                <video src={s.mediaUrl} className="w-16 h-24 rounded object-cover shrink-0" muted />
-              ) : (
-                <img src={s.mediaUrl} alt="" className="w-16 h-24 rounded object-cover shrink-0" />
-              )}
+              <div className="w-16 aspect-[3/4] rounded-lg overflow-hidden shrink-0 bg-muted">
+                {(s.coverUrl || s.mediaUrl) &&
+                  (s.mediaType === "video" && !s.coverUrl ? (
+                    <video src={s.mediaUrl} className="w-full h-full object-cover" muted />
+                  ) : (
+                    <img
+                      src={s.coverUrl || s.mediaUrl}
+                      alt=""
+                      className="w-full h-full object-cover"
+                    />
+                  ))}
+              </div>
               <div className="flex-1 min-w-0">
                 <div className="font-medium">{s.title}</div>
-                <div className="text-sm text-muted-foreground">{s.mediaType === "video" ? "Видео" : "Фото"}</div>
+                <div className="text-sm text-muted-foreground">
+                  {s.mediaType === "video" ? "Видео" : "Фото"}
+                  {s.coverUrl ? " + обложка" : ""}
+                </div>
               </div>
               <div className="flex gap-1">
                 <Button variant="ghost" size="icon-sm" onClick={() => startEdit(s)}>

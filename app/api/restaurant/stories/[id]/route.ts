@@ -16,6 +16,7 @@ export async function PATCH(
   const { id } = await params;
   const body = (await req.json()) as {
     title?: string;
+    coverUrl?: string | null;
     mediaUrl?: string;
     mediaType?: "image" | "video";
     sortOrder?: number;
@@ -23,6 +24,7 @@ export async function PATCH(
   };
   const data: Record<string, unknown> = {};
   if (body.title != null) data.title = body.title.trim();
+  if (body.coverUrl !== undefined) data.coverUrl = body.coverUrl?.trim() || null;
   if (body.mediaUrl != null) data.mediaUrl = body.mediaUrl.trim();
   if (body.mediaType != null) data.mediaType = body.mediaType === "video" ? "video" : "image";
   if (body.sortOrder != null) data.sortOrder = body.sortOrder;

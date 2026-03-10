@@ -24,6 +24,7 @@ export async function POST(req: NextRequest) {
   }
   const body = (await req.json()) as {
     title?: string;
+    coverUrl?: string | null;
     mediaUrl?: string;
     mediaType?: "image" | "video";
     sortOrder?: number;
@@ -39,6 +40,7 @@ export async function POST(req: NextRequest) {
     data: {
       tenantId: emp.tenantId,
       title,
+      coverUrl: body.coverUrl?.trim() || null,
       mediaUrl,
       mediaType,
       sortOrder: body.sortOrder ?? 0,

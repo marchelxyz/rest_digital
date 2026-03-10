@@ -17,6 +17,7 @@ export default async function ClientAppPage({
   const stories = (tenant.stories ?? []).map((s) => ({
     id: s.id,
     title: s.title,
+    coverUrl: s.coverUrl,
     mediaUrl: s.mediaUrl,
     mediaType: s.mediaType,
   }));

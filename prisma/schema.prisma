@@ -94,7 +94,8 @@ model Story {
   tenantId  String
   tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   title     String   @db.VarChar(200)
-  mediaUrl  String   // image or video URL
+  coverUrl  String?  // обложка 3:4 для карточки
+  mediaUrl  String   // контент: фото или видео
   mediaType String   @default("image") // "image" | "video"
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
