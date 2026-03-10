@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { CartStore, useCartStore } from "@/components/client/cart-store";
+import { Home, User, Menu } from "lucide-react";
+import { CartStore } from "@/components/client/cart-store";
 import { ClientHomeTab } from "./ClientHomeTab";
 import { ClientProfileTab } from "./ClientProfileTab";
 import { ClientInfoTab } from "./ClientInfoTab";
@@ -92,20 +93,20 @@ export function ClientApp({
           <div className="flex">
             <TabButton
               active={activeTab === "home"}
-              label="Главная"
-              icon="home"
+              icon={<Home size={24} strokeWidth={activeTab === "home" ? 2.5 : 2} />}
+              ariaLabel="Главная"
               onClick={() => setActiveTab("home")}
             />
             <TabButton
               active={activeTab === "profile"}
-              label="Профиль"
-              icon="user"
+              icon={<User size={24} strokeWidth={activeTab === "profile" ? 2.5 : 2} />}
+              ariaLabel="Профиль"
               onClick={() => setActiveTab("profile")}
             />
             <TabButton
               active={activeTab === "info"}
-              label="Информация"
-              icon="info"
+              icon={<Menu size={24} strokeWidth={activeTab === "info" ? 2.5 : 2} />}
+              ariaLabel="Информация"
               onClick={() => setActiveTab("info")}
             />
           </div>
@@ -117,25 +118,25 @@ export function ClientApp({
 
 function TabButton({
   active,
-  label,
   icon,
+  ariaLabel,
   onClick,
 }: {
   active: boolean;
-  label: string;
-  icon: "home" | "user" | "info";
+  icon: React.ReactNode;
+  ariaLabel: string;
   onClick: () => void;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 py-3 px-2 flex flex-col items-center gap-1 text-sm ${
-        active ? "opacity-100 font-medium" : "opacity-60"
+      className={`flex-1 py-3 px-2 flex items-center justify-center ${
+        active ? "opacity-100" : "opacity-60"
       }`}
+      aria-label={ariaLabel}
     >
-      <span className="text-lg">{icon === "home" ? "🏠" : icon === "user" ? "👤" : "☰"}</span>
-      {label}
+      {icon}
     </button>
   );
 }

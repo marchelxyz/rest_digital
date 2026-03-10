@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
+import { Home, User, Menu } from "lucide-react";
 
 type Settings = {
   appName?: string;
@@ -437,17 +438,30 @@ function PhonePreview({ settings }: { settings: Settings }) {
         className="flex border-t shrink-0"
         style={{ backgroundColor: bg, borderColor: isDark ? "#333" : "#eee" }}
       >
-        {(["home", "profile", "info"] as const).map((tab) => (
-          <button
-            key={tab}
-            type="button"
-            onClick={() => setActiveTab(tab)}
-            className={`flex-1 py-2 text-xs ${activeTab === tab ? "opacity-100 font-medium" : "opacity-60"}`}
-            style={{ color: fg }}
-          >
-            {tab === "home" ? "Главная" : tab === "profile" ? "Профиль" : "Информация"}
-          </button>
-        ))}
+        <button
+          type="button"
+          onClick={() => setActiveTab("home")}
+          className={`flex-1 py-3 flex items-center justify-center ${activeTab === "home" ? "opacity-100" : "opacity-60"}`}
+          style={{ color: fg }}
+        >
+          <Home size={22} strokeWidth={activeTab === "home" ? 2.5 : 2} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("profile")}
+          className={`flex-1 py-3 flex items-center justify-center ${activeTab === "profile" ? "opacity-100" : "opacity-60"}`}
+          style={{ color: fg }}
+        >
+          <User size={22} strokeWidth={activeTab === "profile" ? 2.5 : 2} />
+        </button>
+        <button
+          type="button"
+          onClick={() => setActiveTab("info")}
+          className={`flex-1 py-3 flex items-center justify-center ${activeTab === "info" ? "opacity-100" : "opacity-60"}`}
+          style={{ color: fg }}
+        >
+          <Menu size={22} strokeWidth={activeTab === "info" ? 2.5 : 2} />
+        </button>
       </nav>
     </div>
   );
@@ -465,7 +479,12 @@ function PreviewHomeContent({
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-2">
-        <span className="text-lg opacity-60">📍</span>
+        <div className="flex items-center gap-2">
+          {settings.logoUrl ? (
+            <img src={settings.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
+          ) : null}
+          <span className="text-lg opacity-60">📍</span>
+        </div>
         <span className="text-sm opacity-80">Корзина</span>
       </div>
       <div
@@ -473,17 +492,6 @@ function PreviewHomeContent({
         style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
       >
         Поиск товаров
-      </div>
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {["Все", "Популярное", "Напитки"].map((l) => (
-          <span
-            key={l}
-            className="text-xs px-2 py-1 rounded-full shrink-0 opacity-80"
-            style={{ backgroundColor: isDark ? "#333" : "#eee" }}
-          >
-            {l}
-          </span>
-        ))}
       </div>
       {settings.showStories && (
         settings.coverUrl ? (
@@ -500,6 +508,17 @@ function PreviewHomeContent({
           </div>
         )
       )}
+      <div className="flex gap-1 overflow-x-auto pb-1">
+        {["Все", "Популярное", "Напитки"].map((l) => (
+          <span
+            key={l}
+            className="text-xs px-2 py-1 rounded-full shrink-0 opacity-80"
+            style={{ backgroundColor: isDark ? "#333" : "#eee" }}
+          >
+            {l}
+          </span>
+        ))}
+      </div>
       <div className="text-sm font-semibold">Меню</div>
       <div className="grid grid-cols-2 gap-2">
         {[1, 2, 3, 4].map((i) => (
