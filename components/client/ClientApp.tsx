@@ -38,6 +38,13 @@ export type Settings = {
   infoAboutText?: string | null;
 };
 
+export type Story = {
+  id: string;
+  title: string;
+  mediaUrl: string;
+  mediaType: string;
+};
+
 export type Category = {
   id: string;
   name: string;
@@ -68,9 +75,11 @@ type TabId = "home" | "profile" | "info";
 
 export function ClientApp({
   settings,
+  stories,
   categories,
 }: {
   settings: Settings;
+  stories: Story[];
   categories: Category[];
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
@@ -88,6 +97,7 @@ export function ClientApp({
         {activeTab === "home" && (
           <ClientHomeTab
             settings={settings}
+            stories={stories}
             categories={categories}
             onCartClick={() => setCartOpen(true)}
           />

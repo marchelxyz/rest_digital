@@ -4,15 +4,18 @@ import { useState } from "react";
 import { MapPin, ShoppingCart } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { MenuSection } from "./MenuSection";
-import type { Settings, Category } from "./ClientApp";
+import { StoriesStrip } from "./StoriesStrip";
+import type { Settings, Category, Story } from "./ClientApp";
 
 export function ClientHomeTab({
   settings,
   categories,
+  stories,
   onCartClick,
 }: {
   settings: Settings;
   categories: Category[];
+  stories: Story[];
   onCartClick: () => void;
 }) {
   const [search, setSearch] = useState("");
@@ -64,13 +67,12 @@ export function ClientHomeTab({
         </div>
       </header>
 
-      {settings.showStories && settings.coverUrl && (
-        <div className="px-4 py-3">
-          <div
-            className="h-32 rounded-xl bg-cover bg-center"
-            style={{ backgroundImage: `url(${settings.coverUrl})` }}
-          />
-        </div>
+      {settings.showStories && stories.length > 0 && (
+        <StoriesStrip
+          stories={stories}
+          primaryColor={settings.primaryColor}
+          borderRadius={settings.borderRadius}
+        />
       )}
 
       <div className="flex gap-2 px-4 pb-3 overflow-x-auto border-b">

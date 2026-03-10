@@ -29,6 +29,7 @@ model Tenant {
   customers  Customer[]
   orders     Order[]
   reviews    Review[]
+  stories    Story[]
 }
 
 model TenantSettings {
@@ -83,6 +84,20 @@ model TenantSettings {
   infoSocialVk     String?
   infoAboutText    String?
 
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Истории/акции на главном экране клиента
+model Story {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title     String   @db.VarChar(200)
+  mediaUrl  String   // image or video URL
+  mediaType String   @default("image") // "image" | "video"
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

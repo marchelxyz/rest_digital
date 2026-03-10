@@ -23,6 +23,9 @@ export default async function RestaurantLayout({
             <Link href="/restaurant/menu" className="text-sm text-muted-foreground hover:text-foreground">
               Меню
             </Link>
+            <Link href="/restaurant/stories" className="text-sm text-muted-foreground hover:text-foreground">
+              Истории
+            </Link>
             <Link href="/restaurant/ai" className="text-sm text-muted-foreground hover:text-foreground">
               AI-маркетинг
             </Link>

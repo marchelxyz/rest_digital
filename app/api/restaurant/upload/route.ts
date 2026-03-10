@@ -9,8 +9,10 @@ import { convertToAvif, isAllowedImageType } from "@/lib/image-avif";
 import { uploadToS3 } from "@/lib/s3";
 import { randomUUID } from "crypto";
 
-const ALLOWED_FIELDS = ["product", "category"] as const;
+const ALLOWED_FIELDS = ["product", "category", "story"] as const;
 const MAX_SIZE = 10 * 1024 * 1024; // 10 MB
+const MAX_VIDEO_SIZE = 50 * 1024 * 1024; // 50 MB for stories
+const ALLOWED_VIDEO_TYPES = ["video/mp4", "video/webm"];
 
 export async function POST(req: NextRequest) {
   const emp = await getEmployee();
@@ -31,25 +33,35 @@ export async function POST(req: NextRequest) {
   if (!file || !(file instanceof File)) {
     return NextResponse.json({ error: "file is required" }, { status: 400 });
   }
-  if (!isAllowedImageType(file.type)) {
+  const isVideo = field === "story" && ALLOWED_VIDEO_TYPES.includes(file.type);
+  const isImage = isAllowedImageType(file.type);
+  if (!isImage && !isVideo) {
     return NextResponse.json(
-      { error: "Only PNG and JPEG images are allowed" },
+      { error: "Разрешены PNG, JPEG или MP4/WebM для историй" },
       { status: 400 }
     );
   }
-  if (file.size > MAX_SIZE) {
+  const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_SIZE;
+  if (file.size > maxSize) {
     return NextResponse.json(
-      { error: `File too large. Max ${MAX_SIZE / 1024 / 1024} MB` },
+      { error: `Файл слишком большой. Макс ${maxSize / 1024 / 1024} MB` },
       { status: 400 }
     );
   }
 
   try {
     const buffer = Buffer.from(await file.arrayBuffer());
-    const avifBuffer = await convertToAvif(buffer);
-    const ext = "avif";
-    const key = `tenants/${emp.tenantId}/${field}s/${randomUUID()}.${ext}`;
-    const url = await uploadToS3(key, avifBuffer, "image/avif");
+    let url: string;
+    if (isVideo) {
+      const ext = file.type.includes("webm") ? "webm" : "mp4";
+      const key = `tenants/${emp.tenantId}/stories/${randomUUID()}.${ext}`;
+      url = await uploadToS3(key, buffer, file.type);
+    } else {
+      const avifBuffer = await convertToAvif(buffer);
+      const folder = field === "story" ? "stories" : `${field}s`;
+      const key = `tenants/${emp.tenantId}/${folder}/${randomUUID()}.avif`;
+      url = await uploadToS3(key, avifBuffer, "image/avif");
+    }
     return NextResponse.json({ url });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Upload failed";

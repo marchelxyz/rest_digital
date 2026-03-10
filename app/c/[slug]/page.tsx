@@ -10,9 +10,16 @@ export default async function ClientAppPage({
   const { slug } = await params;
   const tenant = await prisma.tenant.findUnique({
     where: { slug, isActive: true },
-    include: { settings: true },
+    include: { settings: true, stories: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
   });
   if (!tenant || !tenant.settings) notFound();
+
+  const stories = (tenant.stories ?? []).map((s) => ({
+    id: s.id,
+    title: s.title,
+    mediaUrl: s.mediaUrl,
+    mediaType: s.mediaType,
+  }));
 
   const categories = await prisma.category.findMany({
     where: { tenantId: tenant.id, isActive: true, isPublished: true },
@@ -74,6 +81,7 @@ export default async function ClientAppPage({
   return (
     <ClientApp
       settings={settings}
+      stories={stories}
       categories={categories.map((c) => ({
         id: c.id,
         name: c.name,
