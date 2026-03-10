@@ -23,14 +23,23 @@ export async function POST(req: NextRequest) {
   if (!emp || emp.type !== "employee") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const body = (await req.json()) as { name?: string; sortOrder?: number };
+  const body = (await req.json()) as {
+    name?: string;
+    description?: string;
+    sortOrder?: number;
+    imageUrl?: string;
+    isActive?: boolean;
+  };
   const name = body.name?.trim();
   if (!name) return NextResponse.json({ error: "name обязателен" }, { status: 400 });
   const cat = await prisma.category.create({
     data: {
       tenantId: emp.tenantId,
       name,
+      description: body.description?.trim() ?? null,
       sortOrder: body.sortOrder ?? 0,
+      imageUrl: body.imageUrl ?? null,
+      isActive: body.isActive ?? true,
     },
   });
   return NextResponse.json(cat);
