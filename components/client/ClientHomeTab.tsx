@@ -91,7 +91,11 @@ export function ClientHomeTab({
             category={cat}
             primaryColor={settings.primaryColor}
             borderRadius={settings.borderRadius}
-            layout={settings.menuLayout}
+            layout={
+              settings.menuLayout === "list" || settings.menuLayout === "carousel"
+                ? settings.menuLayout
+                : "grid"
+            }
           />
         ))}
       </main>
