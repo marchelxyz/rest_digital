@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { MapPin, ShoppingCart } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { MenuSection } from "./MenuSection";
 import type { Settings, Category } from "./ClientApp";
@@ -39,7 +40,7 @@ export function ClientHomeTab({
               />
             ) : null}
             <button type="button" className="p-2 -ml-1" aria-label="Меню/локация">
-              📍
+              <MapPin size={22} strokeWidth={2} />
             </button>
           </div>
           <button
@@ -48,7 +49,8 @@ export function ClientHomeTab({
             className="flex items-center gap-1 px-3 py-2 rounded-lg"
             style={{ backgroundColor: settings.primaryColor + "20", borderRadius: settings.borderRadius }}
           >
-            🛒 {cartTotal > 0 ? `${cartTotal} ₽` : "Корзина"}
+            <ShoppingCart size={20} strokeWidth={2} className="shrink-0" />
+            {cartTotal > 0 ? `${cartTotal} ₽` : "Корзина"}
           </button>
         </div>
         <div className="px-4 pb-3">

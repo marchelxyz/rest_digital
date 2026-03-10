@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { Minus, Plus, X } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -115,17 +116,17 @@ export function CartDrawer({
                           <button
                             type="button"
                             onClick={() => updateQty(i.productId, i.quantity - 1)}
-                            className="w-6 h-6 rounded border"
+                            className="w-6 h-6 rounded border flex items-center justify-center"
                           >
-                            −
+                            <Minus size={14} strokeWidth={2} />
                           </button>
                           <span>{i.quantity}</span>
                           <button
                             type="button"
                             onClick={() => updateQty(i.productId, i.quantity + 1)}
-                            className="w-6 h-6 rounded border"
+                            className="w-6 h-6 rounded border flex items-center justify-center"
                           >
-                            +
+                            <Plus size={14} strokeWidth={2} />
                           </button>
                         </div>
                       </div>
@@ -135,8 +136,9 @@ export function CartDrawer({
                           variant="ghost"
                           size="sm"
                           onClick={() => removeItem(i.productId)}
+                          className="p-1"
                         >
-                          ×
+                          <X size={16} strokeWidth={2} />
                         </Button>
                       </div>
                     </div>

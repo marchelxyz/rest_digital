@@ -1,5 +1,6 @@
 "use client";
 
+import { ExternalLink } from "lucide-react";
 import type { Settings } from "./ClientApp";
 
 export function ClientInfoTab({ settings }: { settings: Settings }) {
@@ -22,9 +23,10 @@ export function ClientInfoTab({ settings }: { settings: Settings }) {
               href={l.url!}
               target="_blank"
               rel="noopener noreferrer"
-              className="block py-3 border-b"
+              className="flex items-center gap-2 py-3 border-b"
             >
-              {l.label} ↗
+              {l.label}
+              <ExternalLink size={14} className="opacity-60 shrink-0" />
             </a>
           ))}
         </div>

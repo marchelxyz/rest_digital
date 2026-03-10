@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
-import { Home, User, Menu } from "lucide-react";
+import { Home, User, Menu, MapPin, Bell, ChevronRight } from "lucide-react";
 
 type Settings = {
   appName?: string;
@@ -483,7 +483,7 @@ function PreviewHomeContent({
           {settings.logoUrl ? (
             <img src={settings.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
           ) : null}
-          <span className="text-lg opacity-60">📍</span>
+          <MapPin size={18} strokeWidth={2} className="opacity-60" />
         </div>
         <span className="text-sm opacity-80">Корзина</span>
       </div>
@@ -559,7 +559,7 @@ function PreviewProfileContent({
           <div className="font-semibold text-sm">Гость</div>
           <div className="text-xs opacity-70">+7 (___) ___-__-__</div>
         </div>
-        <span className="text-lg opacity-60">🔔</span>
+        <Bell size={18} strokeWidth={2} className="opacity-60" />
       </div>
       {settings.showLoyalty && (
         <div
@@ -584,7 +584,7 @@ function PreviewProfileContent({
             style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
           >
             {l}
-            <span className="opacity-50">›</span>
+            <ChevronRight size={16} className="opacity-50 shrink-0" />
           </div>
         ))}
       </div>
