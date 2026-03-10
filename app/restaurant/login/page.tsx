@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -18,8 +18,10 @@ type Tenant = { id: string; name: string; slug: string };
 
 export default function RestaurantLoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const tenantIdFromUrl = searchParams.get("tenantId") ?? "";
   const [tenants, setTenants] = useState<Tenant[]>([]);
-  const [tenantId, setTenantId] = useState("");
+  const [tenantId, setTenantId] = useState(tenantIdFromUrl);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");

@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { CreateLoginDialog } from "@/components/superadmin/CreateLoginDialog";
 
 export default async function SuperadminPage() {
   const admin = await getSuperadmin();
@@ -43,7 +44,11 @@ export default async function SuperadminPage() {
                 {t.isActive ? "Активен" : "Неактивен"}
               </Badge>
             </CardHeader>
-            <CardContent className="flex gap-2">
+            <CardContent className="flex flex-wrap gap-2">
+              <Link href={`/restaurant/login?tenantId=${t.id}`}>
+                <Button size="sm">В кабинет</Button>
+              </Link>
+              <CreateLoginDialog tenantId={t.id} tenantName={t.name} />
               <Link href={`/superadmin/tenants/${t.id}/builder`}>
                 <Button variant="outline" size="sm">Конструктор</Button>
               </Link>
