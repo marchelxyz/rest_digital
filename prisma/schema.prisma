@@ -1,0 +1,237 @@
+// Rest Digital - SaaS для заведений общепита
+// Multi-tenant архитектура: каждая бизнес-сущность содержит tenantId
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  // URL задаётся в prisma.config.ts (process.env.DATABASE_URL)
+}
+
+// ==========================================
+// LEVEL 3: SUPERADMIN & MULTI-TENANCY CORE
+// ==========================================
+
+model Tenant {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique // URL-friendly идентификатор (например, "coffee-shop")
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  settings   TenantSettings?
+  employees  Employee[]
+  categories Category[]
+  products   Product[]
+  customers  Customer[]
+  orders     Order[]
+  reviews    Review[]
+}
+
+model TenantSettings {
+  id     String @id @default(uuid())
+  tenant Tenant @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  tenantId String @unique
+
+  // Брендинг (конструктор)
+  logoUrl        String?
+  coverUrl       String?  // Баннер на главном экране
+  faviconUrl     String?
+  appName        String?  // Fallback, если нет логотипа
+
+  // Цветовая схема
+  primaryColor   String   @default("#000000")
+  secondaryColor String   @default("#FFFFFF")
+  theme          String   @default("light") // "light" | "dark"
+
+  // Типографика (Inter, Roboto, Montserrat, Playfair)
+  fontFamily String @default("Inter")
+
+  // Главный экран: какие блоки показывать
+  showStories   Boolean @default(true)
+  showLoyalty   Boolean @default(true)
+  showPopular   Boolean @default(true)
+  menuLayout    String  @default("grid") // "grid" | "list" | "carousel"
+
+  // Формы элементов (px)
+  borderRadius  Int     @default(8) // 0 = острые, 8 = скругленные, 9999 = круглые
+
+  // Интеграции
+  iikoApiKey      String?
+  rkeeperApiKey   String?
+  yandexMetricaId String?
+
+  // Лояльность (геймификация)
+  loyaltyStampGoal   Int     @default(6)
+  loyaltyCashbackPct Decimal @default(5) @db.Decimal(5, 2)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Суперадмин (глобальный, не привязан к tenant)
+model Superadmin {
+  id           String   @id @default(uuid())
+  email        String   @unique
+  passwordHash String
+  name         String
+  createdAt    DateTime @default(now())
+}
+
+// ==========================================
+// LEVEL 2: RESTAURANT ADMIN (Управление)
+// ==========================================
+
+model Employee {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  email        String
+  passwordHash String
+  name         String
+  role         Role     @default(MANAGER)
+  createdAt    DateTime @default(now())
+
+  @@unique([tenantId, email])
+}
+
+enum Role {
+  OWNER
+  MANAGER
+  CHEF
+  COURIER
+}
+
+// ==========================================
+// LEVEL 1 & 2: MENU & CATALOG
+// ==========================================
+
+model Category {
+  id        String    @id @default(uuid())
+  tenantId  String
+  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name      String
+  sortOrder Int       @default(0)
+  imageUrl  String?
+  products  Product[]
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  categoryId  String
+  category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+
+  name        String
+  description String?
+  price       Decimal  @db.Decimal(10, 2)
+  imageUrl    String?
+  isAvailable Boolean  @default(true)
+  sortOrder   Int      @default(0)
+
+  orderItems      OrderItem[]
+  productModifiers ProductModifier[]
+}
+
+// Модификаторы (размер, добавки) — для будущего расширения
+model ProductModifier {
+  id        String  @id @default(uuid())
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  name      String
+  price     Decimal @db.Decimal(10, 2)
+  sortOrder Int     @default(0)
+}
+
+// ==========================================
+// LEVEL 1: CLIENT APP (Клиенты и Заказы)
+// ==========================================
+
+model Customer {
+  id       String   @id @default(uuid())
+  tenantId String
+  tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  phone   String
+  name    String?
+
+  stamps Int     @default(0)
+  points Decimal @default(0) @db.Decimal(10, 2)
+
+  orders Order[]
+  reviews Review[]
+
+  createdAt DateTime @default(now())
+
+  @@unique([tenantId, phone])
+}
+
+model Order {
+  id          String      @id @default(uuid())
+  tenantId    String
+  tenant      Tenant      @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId  String
+  customer    Customer    @relation(fields: [customerId], references: [id], onDelete: Restrict)
+
+  status      OrderStatus @default(NEW)
+  type        OrderType   @default(DELIVERY)
+  totalAmount Decimal     @db.Decimal(10, 2)
+  address     String?
+  comment     String?
+  deliveryFee Decimal?    @db.Decimal(10, 2)
+
+  assignedCourierId String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  items OrderItem[]
+}
+
+enum OrderStatus {
+  NEW
+  PREPARING
+  IN_DELIVERY
+  COMPLETED
+  CANCELLED
+}
+
+enum OrderType {
+  DELIVERY
+  PICKUP
+  DINE_IN
+}
+
+model OrderItem {
+  id        String  @id @default(uuid())
+  orderId   String
+  order     Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Restrict)
+
+  quantity Int
+  price    Decimal @db.Decimal(10, 2) // Фиксация цены на момент заказа
+  modifiers String? // JSON: выбранные модификаторы
+}
+
+// ==========================================
+// AI MODULE: REVIEWS & FEEDBACK
+// ==========================================
+
+model Review {
+  id           String   @id @default(uuid())
+  tenantId     String
+  tenant       Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId   String
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  rating       Int
+  text         String?
+
+  aiTags       String?
+  aiDraftReply String?
+
+  createdAt DateTime @default(now())
+}
