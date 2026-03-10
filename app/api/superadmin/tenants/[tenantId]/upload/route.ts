@@ -5,7 +5,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
-import { convertToAvif, isAllowedImageType, isAllowedImageSize } from "@/lib/image-avif";
+import { convertToAvif, isAllowedImageType } from "@/lib/image-avif";
 import { uploadToS3 } from "@/lib/s3";
 import { randomUUID } from "crypto";
 
