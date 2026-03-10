@@ -47,20 +47,7 @@ export type Category = {
     name: string;
     description?: string | null;
     price: number;
-    oldPrice?: number;
     imageUrl?: string | null;
-    weight?: string | null;
-    volume?: string | null;
-    badges?: string[];
-    modifierGroups?: {
-      id: string;
-      name: string;
-      type: string;
-      isRequired: boolean;
-      minSelect: number;
-      maxSelect: number;
-      options: { id: string; name: string; priceDelta: number }[];
-    }[];
   }[];
 };
 

@@ -14,22 +14,13 @@ export async function PATCH(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const body = (await req.json()) as {
-    name?: string;
-    description?: string;
-    sortOrder?: number;
-    imageUrl?: string;
-    isActive?: boolean;
-  };
-  const data: Record<string, unknown> = {};
-  if (body.name != null) data.name = body.name.trim();
-  if (body.description != null) data.description = body.description.trim();
-  if (body.sortOrder != null) data.sortOrder = body.sortOrder;
-  if (body.imageUrl != null) data.imageUrl = body.imageUrl;
-  if (body.isActive != null) data.isActive = body.isActive;
+  const body = (await req.json()) as { name?: string; sortOrder?: number };
   const cat = await prisma.category.updateMany({
     where: { id, tenantId: emp.tenantId },
-    data: data as never,
+    data: {
+      ...(body.name != null && { name: body.name.trim() }),
+      ...(body.sortOrder != null && { sortOrder: body.sortOrder }),
+    },
   });
   if (cat.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const updated = await prisma.category.findUnique({ where: { id } });
@@ -45,13 +36,6 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const count = await prisma.product.count({ where: { categoryId: id } });
-  if (count > 0) {
-    return NextResponse.json(
-      { error: "Нельзя удалить категорию с блюдами. Сначала переместите или удалите блюда." },
-      { status: 400 }
-    );
-  }
   await prisma.category.deleteMany({ where: { id, tenantId: emp.tenantId } });
   return NextResponse.json({ ok: true });
 }

@@ -14,25 +14,12 @@ export async function GET(
   });
   if (!tenant) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const categories = await prisma.category.findMany({
-    where: { tenantId: tenant.id, isActive: true },
+    where: { tenantId: tenant.id },
     orderBy: { sortOrder: "asc" },
     include: {
       products: {
-        where: { isActive: true, isAvailable: true },
+        where: { isAvailable: true },
         orderBy: { sortOrder: "asc" },
-        include: {
-          modifierGroups: {
-            where: { isActive: true },
-            orderBy: { sortOrder: "asc" },
-            include: {
-              options: {
-                where: { isActive: true },
-                orderBy: { sortOrder: "asc" },
-              },
-            },
-          },
-          productBadges: { orderBy: { sortOrder: "asc" } },
-        },
       },
     },
   });
