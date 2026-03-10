@@ -3,22 +3,11 @@
 import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
-import { Switch } from "@/components/ui/switch";
-import {
-  Plus,
-  Pencil,
-  Trash2,
-  Eye,
-  EyeOff,
-  X,
-  ChevronDown,
-  ChevronUp,
-} from "lucide-react";
+import { Plus } from "lucide-react";
 import { ProductForm } from "./ProductForm";
+import { SortableCategories } from "./SortableCategories";
+import { SortableProducts } from "./SortableProducts";
 
 type Category = {
   id: string;
@@ -26,6 +15,7 @@ type Category = {
   description?: string | null;
   sortOrder: number;
   isActive: boolean;
+  isPublished?: boolean;
   _count?: { products: number };
 };
 
@@ -68,6 +58,7 @@ type Product = {
   cookingTime?: number | null;
   isActive: boolean;
   isAvailable: boolean;
+  isPublished?: boolean;
   isSpicy: boolean;
   isNew: boolean;
   isPopular: boolean;
@@ -83,12 +74,6 @@ type Product = {
   productBadges: ProductBadge[];
 };
 
-function num(v: unknown): number {
-  if (typeof v === "number") return v;
-  if (v && typeof v === "object" && "toString" in v) return Number((v as { toString: () => string }).toString());
-  return Number(v) || 0;
-}
-
 export function MenuManager() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
@@ -100,6 +85,7 @@ export function MenuManager() {
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
   const load = useCallback(() => {
@@ -132,7 +118,12 @@ export function MenuManager() {
     load();
   }
 
-  async function updateCategory(id: string) {
+  function startEditCategory(id: string, name: string) {
+    setEditingCat(id);
+    setEditCatName(name);
+  }
+
+  async function saveEditCategory(id: string) {
     if (!editCatName.trim()) return;
     await fetch(`/api/restaurant/categories/${id}`, {
       method: "PATCH",
@@ -163,6 +154,29 @@ export function MenuManager() {
     load();
   }
 
+  async function toggleCategoryPublish(id: string, isPublished: boolean) {
+    await fetch(`/api/restaurant/categories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPublished: !isPublished }),
+    });
+    load();
+  }
+
+  async function reorderCategories(order: { id: string; sortOrder: number }[]) {
+    const res = await fetch("/api/restaurant/categories/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+    if (res.ok) {
+      setCategories((prev) => {
+        const m = new Map(prev.map((c) => [c.id, c]));
+        return order.map(({ id }) => m.get(id)).filter(Boolean) as Category[];
+      });
+    }
+  }
+
   function openProductForm(product?: Product) {
     setEditingProduct(product ?? null);
     setProductFormOpen(true);
@@ -174,7 +188,53 @@ export function MenuManager() {
     load();
   }
 
-  const productsToShow = products;
+  function toggleProductSelect(id: string) {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllProducts() {
+    setSelectedProductIds(new Set(products.map((p) => p.id)));
+  }
+
+  function deselectAllProducts() {
+    setSelectedProductIds(new Set());
+  }
+
+  async function bulkProductAction(action: string, categoryId?: string) {
+    const ids = Array.from(selectedProductIds);
+    if (ids.length === 0) return;
+    const res = await fetch("/api/restaurant/products/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, action, categoryId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error ?? "Ошибка");
+      return;
+    }
+    setSelectedProductIds(new Set());
+    load();
+  }
+
+  async function reorderProducts(order: { id: string; sortOrder: number }[]) {
+    const res = await fetch("/api/restaurant/products/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+    if (res.ok) {
+      setProducts((prev) => {
+        const m = new Map(prev.map((p) => [p.id, p]));
+        return order.map(({ id }) => m.get(id)).filter(Boolean) as Product[];
+      });
+    }
+  }
 
   if (loading) return <p className="text-muted-foreground">Загрузка...</p>;
 
@@ -195,71 +255,22 @@ export function MenuManager() {
             />
             <Button onClick={addCategory}>Добавить</Button>
           </div>
-          <div className="grid gap-2">
-            {categories.map((c) => (
-              <Card key={c.id} className={!c.isActive ? "opacity-60" : ""}>
-                <CardContent className="py-3 flex items-center justify-between gap-2">
-                  {editingCat === c.id ? (
-                    <div className="flex gap-2 flex-1">
-                      <Input
-                        value={editCatName}
-                        onChange={(e) => setEditCatName(e.target.value)}
-                        placeholder="Название"
-                        autoFocus
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter") updateCategory(c.id);
-                          if (e.key === "Escape") setEditingCat(null);
-                        }}
-                      />
-                      <Button size="sm" onClick={() => updateCategory(c.id)}>
-                        Сохранить
-                      </Button>
-                      <Button size="sm" variant="ghost" onClick={() => setEditingCat(null)}>
-                        Отмена
-                      </Button>
-                    </div>
-                  ) : (
-                    <>
-                      <div>
-                        <span className="font-medium">{c.name}</span>
-                        <span className="text-muted-foreground text-sm ml-2">
-                          {(c as Category & { _count?: { products: number } })._count?.products ?? 0} блюд
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => toggleCategoryActive(c.id, c.isActive)}
-                          title={c.isActive ? "Скрыть" : "Показать"}
-                        >
-                          {c.isActive ? <Eye size={16} /> : <EyeOff size={16} />}
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => {
-                            setEditingCat(c.id);
-                            setEditCatName(c.name);
-                          }}
-                        >
-                          <Pencil size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon-sm"
-                          onClick={() => deleteCategory(c.id)}
-                          className="text-destructive"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </div>
-                    </>
-                  )}
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Перетащите за ручку для изменения порядка
+          </p>
+          <SortableCategories
+            categories={categories}
+            editingId={editingCat}
+            editName={editCatName}
+            onEditName={setEditCatName}
+            onStartEdit={startEditCategory}
+            onCancelEdit={() => setEditingCat(null)}
+            onSaveEdit={saveEditCategory}
+            onToggleActive={toggleCategoryActive}
+            onTogglePublish={toggleCategoryPublish}
+            onDelete={deleteCategory}
+            onReorder={reorderCategories}
+          />
         </TabsContent>
         <TabsContent value="products" className="space-y-4 pt-4">
           <div className="flex flex-wrap gap-2 items-center">
@@ -278,6 +289,7 @@ export function MenuManager() {
               <option value="active">Активные</option>
               <option value="hidden">Скрытые</option>
               <option value="unavailable">Временно недоступные</option>
+              <option value="draft">Черновики</option>
             </select>
             <select
               value={categoryFilter}
@@ -296,55 +308,20 @@ export function MenuManager() {
               Добавить блюдо
             </Button>
           </div>
-          <div className="space-y-2">
-            {productsToShow.map((p) => (
-              <Card key={p.id} className={!p.isActive ? "opacity-60" : ""}>
-                <CardContent className="py-3 flex items-center justify-between gap-2">
-                  <div className="flex items-center gap-3 min-w-0">
-                    {p.imageUrl ? (
-                      <img
-                        src={p.imageUrl}
-                        alt=""
-                        className="w-12 h-12 rounded-lg object-cover shrink-0"
-                      />
-                    ) : (
-                      <div className="w-12 h-12 rounded-lg bg-muted shrink-0" />
-                    )}
-                    <div className="min-w-0">
-                      <span
-                        className={
-                          !p.isAvailable ? "line-through text-muted-foreground" : "font-medium"
-                        }
-                      >
-                        {p.name}
-                      </span>
-                      <span className="text-muted-foreground text-sm ml-2">
-                        {p.category.name} · {num(p.price)} ₽
-                        {p.modifierGroups?.length
-                          ? ` · ${p.modifierGroups.length} групп допов`
-                          : ""}
-                      </span>
-                      <div className="flex gap-1 mt-0.5 flex-wrap">
-                        {p.isNew && <BadgeTag>Новинка</BadgeTag>}
-                        {p.isHit && <BadgeTag>Хит</BadgeTag>}
-                        {p.isPopular && <BadgeTag>Популярное</BadgeTag>}
-                        {p.isSpicy && <BadgeTag>Острое</BadgeTag>}
-                        {p.isVegan && <BadgeTag>Веган</BadgeTag>}
-                        {p.isDiscounted && <BadgeTag>Акция</BadgeTag>}
-                      </div>
-                    </div>
-                  </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => openProductForm(p)}
-                  >
-                    Редактировать
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Перетащите за ручку для изменения порядка · Выберите блюда для массовых действий
+          </p>
+          <SortableProducts
+            products={products}
+            categories={categories}
+            selectedIds={selectedProductIds}
+            onToggleSelect={toggleProductSelect}
+            onSelectAll={selectAllProducts}
+            onDeselectAll={deselectAllProducts}
+            onEdit={(p) => openProductForm(p)}
+            onReorder={reorderProducts}
+            onBulkAction={bulkProductAction}
+          />
         </TabsContent>
       </Tabs>
 
@@ -357,13 +334,5 @@ export function MenuManager() {
         />
       )}
     </>
-  );
-}
-
-function BadgeTag({ children }: { children: React.ReactNode }) {
-  return (
-    <span className="text-[10px] px-1.5 py-0.5 rounded bg-primary/20 text-primary">
-      {children}
-    </span>
   );
 }

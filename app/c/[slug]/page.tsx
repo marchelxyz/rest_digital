@@ -15,11 +15,11 @@ export default async function ClientAppPage({
   if (!tenant || !tenant.settings) notFound();
 
   const categories = await prisma.category.findMany({
-    where: { tenantId: tenant.id, isActive: true },
+    where: { tenantId: tenant.id, isActive: true, isPublished: true },
     orderBy: { sortOrder: "asc" },
     include: {
       products: {
-        where: { isActive: true, isAvailable: true },
+        where: { isActive: true, isAvailable: true, isPublished: true },
         orderBy: { sortOrder: "asc" },
         include: {
           modifierGroups: {

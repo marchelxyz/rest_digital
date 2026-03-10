@@ -53,6 +53,7 @@ type Product = {
   cookingTime?: number | null;
   isActive: boolean;
   isAvailable: boolean;
+  isPublished?: boolean;
   isSpicy: boolean;
   isNew: boolean;
   isPopular: boolean;
@@ -117,6 +118,7 @@ export function ProductForm({
     cookingTime: "",
     isActive: true,
     isAvailable: true,
+    isPublished: true,
     isSpicy: false,
     isNew: false,
     isPopular: false,
@@ -151,6 +153,7 @@ export function ProductForm({
         cookingTime: product.cookingTime != null ? String(product.cookingTime) : "",
         isActive: product.isActive,
         isAvailable: product.isAvailable,
+        isPublished: product.isPublished ?? true,
         isSpicy: product.isSpicy,
         isNew: product.isNew,
         isPopular: product.isPopular,
@@ -202,6 +205,7 @@ export function ProductForm({
         cookingTime: form.cookingTime ? Number(form.cookingTime) : undefined,
         isActive: form.isActive,
         isAvailable: form.isAvailable,
+        isPublished: form.isPublished,
         isSpicy: form.isSpicy,
         isNew: form.isNew,
         isPopular: form.isPopular,
@@ -604,6 +608,13 @@ export function ProductForm({
                 <Switch
                   checked={form.isAvailable}
                   onCheckedChange={(v) => setForm((f) => ({ ...f, isAvailable: v }))}
+                />
+              </div>
+              <div className="flex items-center justify-between">
+                <Label>Опубликовано (видно в меню клиентам)</Label>
+                <Switch
+                  checked={form.isPublished}
+                  onCheckedChange={(v) => setForm((f) => ({ ...f, isPublished: v }))}
                 />
               </div>
             </CardContent>

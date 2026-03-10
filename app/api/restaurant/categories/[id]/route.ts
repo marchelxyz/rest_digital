@@ -20,6 +20,7 @@ export async function PATCH(
     sortOrder?: number;
     imageUrl?: string;
     isActive?: boolean;
+    isPublished?: boolean;
   };
   const data: Record<string, unknown> = {};
   if (body.name != null) data.name = body.name.trim();
@@ -27,6 +28,7 @@ export async function PATCH(
   if (body.sortOrder != null) data.sortOrder = body.sortOrder;
   if (body.imageUrl != null) data.imageUrl = body.imageUrl;
   if (body.isActive != null) data.isActive = body.isActive;
+  if (body.isPublished != null) data.isPublished = body.isPublished;
   const cat = await prisma.category.updateMany({
     where: { id, tenantId: emp.tenantId },
     data: data as never,

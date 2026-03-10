@@ -39,8 +39,10 @@ export function CartDrawer({
   const allProducts = categories.flatMap((c) =>
     c.products.map((p) => ({ ...p, categoryName: c.name }))
   );
-  const inCartIds = new Set(items.map((i) => i.productId));
-  const crossSell = allProducts.filter((p) => !inCartIds.has(p.id)).slice(0, 3);
+  const inCartProductIds = new Set(items.map((i) => i.productId));
+  const crossSell = allProducts
+    .filter((p) => !inCartProductIds.has(p.id))
+    .slice(0, 3);
   const { addItem } = useCartStore();
 
   async function handleSubmit(e: React.FormEvent) {
@@ -60,6 +62,7 @@ export function CartDrawer({
             productId: i.productId,
             quantity: i.quantity,
             price: i.price,
+            modifiers: i.modifiers?.length ? JSON.stringify(i.modifiers) : undefined,
           })),
         }),
       });
@@ -87,9 +90,7 @@ export function CartDrawer({
         onClick={onClose}
         aria-hidden
       />
-      <div
-        className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-background text-foreground shadow-xl overflow-auto"
-      >
+      <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-background text-foreground shadow-xl overflow-auto">
         <div className="p-4 flex justify-between items-center border-b">
           <h2 className="text-lg font-semibold">Корзина</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
@@ -107,15 +108,28 @@ export function CartDrawer({
                 <>
                   {items.map((i) => (
                     <div
-                      key={i.productId}
+                      key={i.lineId}
                       className="flex items-center justify-between gap-2"
                     >
                       <div>
                         <div className="font-medium">{i.name}</div>
-                        <div className="flex gap-2 items-center">
+                        {i.modifiers && i.modifiers.length > 0 && (
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {i.modifiers
+                              .map((m) =>
+                                m.quantity
+                                  ? `${m.optionName} x${m.quantity}`
+                                  : m.optionName
+                              )
+                              .join(", ")}
+                          </div>
+                        )}
+                        <div className="flex gap-2 items-center mt-1">
                           <button
                             type="button"
-                            onClick={() => updateQty(i.productId, i.quantity - 1)}
+                            onClick={() =>
+                              updateQty(i.lineId, i.quantity - 1)
+                            }
                             className="w-6 h-6 rounded border flex items-center justify-center"
                           >
                             <Minus size={14} strokeWidth={2} />
@@ -123,7 +137,9 @@ export function CartDrawer({
                           <span>{i.quantity}</span>
                           <button
                             type="button"
-                            onClick={() => updateQty(i.productId, i.quantity + 1)}
+                            onClick={() =>
+                              updateQty(i.lineId, i.quantity + 1)
+                            }
                             className="w-6 h-6 rounded border flex items-center justify-center"
                           >
                             <Plus size={14} strokeWidth={2} />
@@ -135,7 +151,7 @@ export function CartDrawer({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() => removeItem(i.productId)}
+                          onClick={() => removeItem(i.lineId)}
                           className="p-1"
                         >
                           <X size={16} strokeWidth={2} />
@@ -160,7 +176,10 @@ export function CartDrawer({
                       </div>
                     </div>
                   )}
-                  <form onSubmit={handleSubmit} className="space-y-3 pt-4 border-t">
+                  <form
+                    onSubmit={handleSubmit}
+                    className="space-y-3 pt-4 border-t"
+                  >
                     <div>
                       <Label htmlFor="phone">Телефон *</Label>
                       <Input

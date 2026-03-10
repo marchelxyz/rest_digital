@@ -133,6 +133,7 @@ model Category {
   sortOrder   Int      @default(0)
   imageUrl    String?
   isActive    Boolean  @default(true)
+  isPublished Boolean @default(true)  // draft: false, published: true
   products    Product[]
 }
 
@@ -158,6 +159,7 @@ model Product {
 
   isActive     Boolean  @default(true)   // в меню
   isAvailable  Boolean  @default(true)   // можно заказать
+  isPublished  Boolean  @default(true)   // draft: false, published: true
   sortOrder    Int      @default(0)
 
   // Ярлыки

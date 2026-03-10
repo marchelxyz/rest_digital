@@ -30,6 +30,7 @@ type ProductUpdateBody = {
   isGlutenFree?: boolean;
   isHit?: boolean;
   isDiscounted?: boolean;
+  isPublished?: boolean;
   customBadges?: { label: string; sortOrder?: number }[];
 };
 
@@ -99,6 +100,7 @@ export async function PATCH(
   if (body.isGlutenFree != null) data.isGlutenFree = body.isGlutenFree;
   if (body.isHit != null) data.isHit = body.isHit;
   if (body.isDiscounted != null) data.isDiscounted = body.isDiscounted;
+  if (body.isPublished != null) data.isPublished = body.isPublished;
 
   const updated = await prisma.product.updateMany({
     where: { id, tenantId: emp.tenantId },

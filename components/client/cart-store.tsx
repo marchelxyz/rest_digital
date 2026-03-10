@@ -2,18 +2,42 @@
 
 import { createContext, useContext, useCallback, useState, ReactNode } from "react";
 
+export type CartItemModifier = {
+  optionId: string;
+  optionName: string;
+  priceDelta: number;
+  quantity?: number;
+};
+
 export type CartItem = {
+  lineId: string;
   productId: string;
   name: string;
   price: number;
   quantity: number;
+  modifiers?: CartItemModifier[];
 };
+
+function makeLineId(productId: string, modifiers?: CartItemModifier[]): string {
+  if (!modifiers || modifiers.length === 0) return productId;
+  const key = modifiers
+    .map((m) => `${m.optionId}:${m.quantity ?? 1}`)
+    .sort()
+    .join(",");
+  return `${productId}::${key}`;
+}
 
 type CartState = {
   items: CartItem[];
-  addItem: (productId: string, name: string, price: number) => void;
-  removeItem: (productId: string) => void;
-  updateQty: (productId: string, qty: number) => void;
+  addItem: (
+    productId: string,
+    name: string,
+    price: number,
+    quantity?: number,
+    modifiers?: CartItemModifier[]
+  ) => void;
+  removeItem: (lineId: string) => void;
+  updateQty: (lineId: string, qty: number) => void;
   clear: () => void;
   total: number;
 };
@@ -29,29 +53,49 @@ export function CartStore({
 }) {
   const [items, setItems] = useState<CartItem[]>([]);
 
-  const addItem = useCallback((productId: string, name: string, price: number) => {
-    setItems((prev) => {
-      const i = prev.findIndex((x) => x.productId === productId);
-      if (i >= 0) {
-        const next = [...prev];
-        next[i].quantity += 1;
-        return next;
-      }
-      return [...prev, { productId, name, price, quantity: 1 }];
-    });
+  const addItem = useCallback(
+    (
+      productId: string,
+      name: string,
+      price: number,
+      quantity = 1,
+      modifiers?: CartItemModifier[]
+    ) => {
+      const lineId = makeLineId(productId, modifiers);
+      setItems((prev) => {
+        const i = prev.findIndex((x) => x.lineId === lineId);
+        if (i >= 0) {
+          const next = [...prev];
+          next[i].quantity += quantity;
+          return next;
+        }
+        return [
+          ...prev,
+          {
+            lineId,
+            productId,
+            name,
+            price,
+            quantity,
+            modifiers: modifiers?.length ? modifiers : undefined,
+          },
+        ];
+      });
+    },
+    []
+  );
+
+  const removeItem = useCallback((lineId: string) => {
+    setItems((prev) => prev.filter((x) => x.lineId !== lineId));
   }, []);
 
-  const removeItem = useCallback((productId: string) => {
-    setItems((prev) => prev.filter((x) => x.productId !== productId));
-  }, []);
-
-  const updateQty = useCallback((productId: string, qty: number) => {
+  const updateQty = useCallback((lineId: string, qty: number) => {
     if (qty <= 0) {
-      setItems((prev) => prev.filter((x) => x.productId !== productId));
+      setItems((prev) => prev.filter((x) => x.lineId !== lineId));
       return;
     }
     setItems((prev) => {
-      const i = prev.findIndex((x) => x.productId === productId);
+      const i = prev.findIndex((x) => x.lineId === lineId);
       if (i < 0) return prev;
       const next = [...prev];
       next[i].quantity = qty;

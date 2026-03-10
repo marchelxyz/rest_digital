@@ -32,6 +32,7 @@ type ProductCreateBody = {
   isGlutenFree?: boolean;
   isHit?: boolean;
   isDiscounted?: boolean;
+  isPublished?: boolean;
   customBadges?: { label: string; sortOrder?: number }[];
 };
 
@@ -53,6 +54,7 @@ export async function GET(req: NextRequest) {
       ...(status === "hidden" && { isActive: false }),
       ...(status === "unavailable" && { isActive: true, isAvailable: false }),
       ...(status === "active" && { isActive: true, isAvailable: true }),
+      ...(status === "draft" && { isPublished: false }),
     },
     orderBy: [{ categoryId: "asc" }, { sortOrder: "asc" }],
     include: {
@@ -111,6 +113,7 @@ export async function POST(req: NextRequest) {
       sortOrder: body.sortOrder ?? 0,
       isActive: body.isActive ?? true,
       isAvailable: body.isAvailable ?? true,
+      isPublished: body.isPublished ?? true,
       isSpicy: body.isSpicy ?? false,
       isNew: body.isNew ?? false,
       isPopular: body.isPopular ?? false,
