@@ -1,19 +1,25 @@
 /**
  * Seed: Superadmin + тестовый Tenant + Employee
  * npm run db:seed
+ *
+ * Superadmin берётся из env: SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD
+ * По умолчанию: admin@rest.digital / admin123
  */
 import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
+const SUPERADMIN_EMAIL = process.env.SUPERADMIN_EMAIL ?? "admin@rest.digital";
+const SUPERADMIN_PASSWORD = process.env.SUPERADMIN_PASSWORD ?? "admin123";
+
 async function main() {
-  const hash = await bcrypt.hash("admin123", 10);
+  const hash = await bcrypt.hash(SUPERADMIN_PASSWORD, 10);
   const admin = await prisma.superadmin.upsert({
-    where: { email: "admin@rest.digital" },
-    update: {},
+    where: { email: SUPERADMIN_EMAIL },
+    update: { passwordHash: hash },
     create: {
-      email: "admin@rest.digital",
+      email: SUPERADMIN_EMAIL,
       passwordHash: hash,
       name: "Superadmin",
     },

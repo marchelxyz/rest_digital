@@ -2,8 +2,20 @@
 
 ## 1. Подготовка
 
-- `DATABASE_URL` — Railway добавляет автоматически при подключении PostgreSQL.
-- `OPENAI_API_KEY` — опционально, для AI-модуля (генерация текстов, анализ отзывов).
+| Переменная | Обязательно | Описание |
+|------------|-------------|----------|
+| `DATABASE_URL` | Да | Railway добавляет автоматически при подключении PostgreSQL |
+| `SUPERADMIN_EMAIL` | Нет | Email суперадмина (по умолчанию: admin@rest.digital) |
+| `SUPERADMIN_PASSWORD` | Нет | Пароль суперадмина (по умолчанию: admin123) |
+| `OPENAI_API_KEY` | Нет | Для AI-модуля (генерация текстов, анализ отзывов) |
+| `YANDEX_S3_BUCKET` | Нет | Бакет Yandex Object Storage для логотипов, обложек, картинок |
+| `YANDEX_S3_ACCESS_KEY_ID` | Нет | Access Key ID (Сервисный аккаунт) |
+| `YANDEX_S3_SECRET_ACCESS_KEY` | Нет | Secret Access Key |
+| `YANDEX_S3_REGION` | Нет | Регион (по умолчанию ru-central1) |
+| `YANDEX_S3_ENDPOINT` | Нет | Endpoint (по умолчанию https://storage.yandexcloud.net) |
+| `YANDEX_S3_PUBLIC_URL` | Нет | Публичный URL бакета для готовых ссылок на файлы |
+
+Логин и пароль Superadmin задаются в переменных Railway и применяются при `db:seed` (выполняется перед каждым деплоем).
 - Все скрипты готовы к автодеплою.
 
 ## 2. Развёртывание на Railway
@@ -54,6 +66,7 @@ npm run db:migrate:dev -- --name add_feature_xyz
 | `npm run db:migrate:dev` | Создание и применение миграции (dev) |
 | `npm run db:push` | Синхронизация схемы без миграций (prototyping) |
 | `npm run db:studio` | Открыть Prisma Studio |
+| `npm run db:seed` | Создать Superadmin + demo tenant (читает SUPERADMIN_EMAIL, SUPERADMIN_PASSWORD) |
 
 ## 5. Health Check
 

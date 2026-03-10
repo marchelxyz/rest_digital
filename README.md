@@ -22,9 +22,9 @@ npm run db:seed        # создать admin + demo tenant
 npm run dev
 ```
 
-**Тестовые аккаунты (после db:seed):**
-- Superadmin: `admin@rest.digital` / `admin123`
-- Ресторан: заведение «Демо-кафе», `manager@demo.local` / `manager123`
+**Аккаунты (после db:seed):**
+- Superadmin: из `SUPERADMIN_EMAIL` / `SUPERADMIN_PASSWORD` (по умолчанию admin@rest.digital / admin123)
+- Ресторан: заведение «Демо-кафе», manager@demo.local / manager123
 
 ## Документация
 
