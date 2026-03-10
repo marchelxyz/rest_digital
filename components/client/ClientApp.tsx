@@ -2,11 +2,12 @@
 
 import { useState } from "react";
 import { CartStore, useCartStore } from "@/components/client/cart-store";
-import { ClientHeader } from "./ClientHeader";
-import { MenuSection } from "./MenuSection";
+import { ClientHomeTab } from "./ClientHomeTab";
+import { ClientProfileTab } from "./ClientProfileTab";
+import { ClientInfoTab } from "./ClientInfoTab";
 import { CartDrawer } from "./CartDrawer";
 
-type Settings = {
+export type Settings = {
   tenantId: string;
   name: string;
   appName: string;
@@ -14,20 +15,42 @@ type Settings = {
   coverUrl?: string | null;
   primaryColor: string;
   theme: string;
+  showStories: boolean;
   showLoyalty: boolean;
   showPopular: boolean;
   menuLayout: string;
   borderRadius: number;
+  loyaltyType: string;
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
+  infoAddress?: string | null;
+  infoHours?: string | null;
+  infoPhone?: string | null;
+  infoTermsUrl?: string | null;
+  infoFaqUrl?: string | null;
+  infoPartnerUrl?: string | null;
+  infoCaloriesUrl?: string | null;
+  infoContactText?: string | null;
+  infoSocialInstagram?: string | null;
+  infoSocialTelegram?: string | null;
+  infoSocialVk?: string | null;
+  infoAboutText?: string | null;
 };
 
-type Category = {
+export type Category = {
   id: string;
   name: string;
   imageUrl?: string | null;
-  products: { id: string; name: string; description?: string | null; price: number; imageUrl?: string | null }[];
+  products: {
+    id: string;
+    name: string;
+    description?: string | null;
+    price: number;
+    imageUrl?: string | null;
+  }[];
 };
+
+type TabId = "home" | "profile" | "info";
 
 export function ClientApp({
   settings,
@@ -36,79 +59,83 @@ export function ClientApp({
   settings: Settings;
   categories: Category[];
 }) {
+  const [activeTab, setActiveTab] = useState<TabId>("home");
   const [cartOpen, setCartOpen] = useState(false);
 
   return (
     <CartStore tenantId={settings.tenantId}>
       <div
-        className="min-h-screen pb-24"
+        className="min-h-screen pb-20"
         style={{
           background: settings.theme === "dark" ? "#1a1a1a" : "#fff",
           color: settings.theme === "dark" ? "#fff" : "#171717",
         }}
       >
-        <ClientHeader
-          settings={settings}
-          onCartClick={() => setCartOpen(true)}
-        />
-        <main className="max-w-lg mx-auto px-4">
-          {settings.showLoyalty && (
-            <LoyaltyCard
-              stamps={0}
-              goal={settings.loyaltyStampGoal}
-              points={0}
-              cashbackPct={settings.loyaltyCashbackPct}
-              primaryColor={settings.primaryColor}
-              borderRadius={settings.borderRadius}
-            />
-          )}
-          {categories.map((cat) => (
-            <MenuSection
-              key={cat.id}
-              category={cat}
-              primaryColor={settings.primaryColor}
-              borderRadius={settings.borderRadius}
-            />
-          ))}
-        </main>
+        {activeTab === "home" && (
+          <ClientHomeTab
+            settings={settings}
+            categories={categories}
+            onCartClick={() => setCartOpen(true)}
+          />
+        )}
+        {activeTab === "profile" && <ClientProfileTab settings={settings} />}
+        {activeTab === "info" && <ClientInfoTab settings={settings} />}
+
         <CartDrawer
           open={cartOpen}
           onClose={() => setCartOpen(false)}
           settings={settings}
           categories={categories}
         />
+
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-inherit">
+          <div className="flex">
+            <TabButton
+              active={activeTab === "home"}
+              label="Главная"
+              icon="home"
+              onClick={() => setActiveTab("home")}
+            />
+            <TabButton
+              active={activeTab === "profile"}
+              label="Профиль"
+              icon="user"
+              onClick={() => setActiveTab("profile")}
+            />
+            <TabButton
+              active={activeTab === "info"}
+              label="Информация"
+              icon="info"
+              onClick={() => setActiveTab("info")}
+            />
+          </div>
+        </nav>
       </div>
     </CartStore>
   );
 }
 
-function LoyaltyCard({
-  stamps,
-  goal,
-  points,
-  cashbackPct,
-  primaryColor,
-  borderRadius,
+function TabButton({
+  active,
+  label,
+  icon,
+  onClick,
 }: {
-  stamps: number;
-  goal: number;
-  points: number;
-  cashbackPct: number;
-  primaryColor: string;
-  borderRadius: number;
+  active: boolean;
+  label: string;
+  icon: "home" | "user" | "info";
+  onClick: () => void;
 }) {
   return (
-    <div
-      className="p-4 rounded-xl my-4 text-white"
-      style={{ backgroundColor: primaryColor, borderRadius }}
+    <button
+      type="button"
+      onClick={onClick}
+      className={`flex-1 py-3 px-2 flex flex-col items-center gap-1 text-sm ${
+        active ? "opacity-100 font-medium" : "opacity-60"
+      }`}
     >
-      <div className="font-medium mb-1">Программа лояльности</div>
-      <div className="text-sm opacity-90">
-        {stamps} / {goal} штампов до подарка
-      </div>
-      <div className="text-sm opacity-90 mt-1">
-        Бонусы: {points} баллов · кэшбек {cashbackPct}%
-      </div>
-    </div>
+      <span className="text-lg">{icon === "home" ? "🏠" : icon === "user" ? "👤" : "☰"}</span>
+      {label}
+    </button>
   );
 }

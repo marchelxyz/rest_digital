@@ -31,8 +31,21 @@ type Settings = {
   showPopular: boolean;
   menuLayout: string;
   borderRadius: number;
+  loyaltyType: string;
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
+  infoAddress?: string;
+  infoHours?: string;
+  infoPhone?: string;
+  infoTermsUrl?: string;
+  infoFaqUrl?: string;
+  infoPartnerUrl?: string;
+  infoCaloriesUrl?: string;
+  infoContactText?: string;
+  infoSocialInstagram?: string;
+  infoSocialTelegram?: string;
+  infoSocialVk?: string;
+  infoAboutText?: string;
 };
 
 const FONTS = [
@@ -64,6 +77,7 @@ const DEFAULT: Settings = {
   showPopular: true,
   menuLayout: "grid",
   borderRadius: 8,
+  loyaltyType: "points",
   loyaltyStampGoal: 6,
   loyaltyCashbackPct: 5,
 };
@@ -116,6 +130,7 @@ export default function BuilderPage() {
               <TabsTrigger value="branding">Брендинг</TabsTrigger>
               <TabsTrigger value="colors">Цвета</TabsTrigger>
               <TabsTrigger value="layout">Экран</TabsTrigger>
+              <TabsTrigger value="info">Информация</TabsTrigger>
             </TabsList>
             <TabsContent value="branding" className="space-y-4 pt-4">
               <div>
@@ -220,6 +235,23 @@ export default function BuilderPage() {
                   onCheckedChange={(v) => update("showLoyalty", v)}
                 />
               </div>
+              {settings.showLoyalty && (
+                <div>
+                  <Label>Тип программы лояльности</Label>
+                  <Select
+                    value={settings.loyaltyType}
+                    onValueChange={(v) => update("loyaltyType", v ?? "points")}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="points">Баллы и кэшбек</SelectItem>
+                      <SelectItem value="stamps">Штампы (кружки)</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
               <div className="flex items-center justify-between">
                 <Label>Популярные блюда</Label>
                 <Switch
@@ -259,6 +291,108 @@ export default function BuilderPage() {
                   step={0.5}
                   value={settings.loyaltyCashbackPct}
                   onChange={(e) => update("loyaltyCashbackPct", Number(e.target.value) || 0)}
+                />
+              </div>
+            </TabsContent>
+            <TabsContent value="info" className="space-y-4 pt-4">
+              <div>
+                <Label>Адрес</Label>
+                <Input
+                  value={settings.infoAddress ?? ""}
+                  onChange={(e) => update("infoAddress", e.target.value)}
+                  placeholder="Большая Покровская 82"
+                />
+              </div>
+              <div>
+                <Label>Часы работы</Label>
+                <Input
+                  value={settings.infoHours ?? ""}
+                  onChange={(e) => update("infoHours", e.target.value)}
+                  placeholder="Ежедневно: с 10:00 до 21:30"
+                />
+              </div>
+              <div>
+                <Label>Телефон</Label>
+                <Input
+                  value={settings.infoPhone ?? ""}
+                  onChange={(e) => update("infoPhone", e.target.value)}
+                  placeholder="+7 (831) 217-55-15"
+                />
+              </div>
+              <div>
+                <Label>Текст блока контактов</Label>
+                <Input
+                  value={settings.infoContactText ?? ""}
+                  onChange={(e) => update("infoContactText", e.target.value)}
+                  placeholder="Проблемы с заказом? Напишите нам!"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <Label>Условия акций (URL)</Label>
+                  <Input
+                    value={settings.infoTermsUrl ?? ""}
+                    onChange={(e) => update("infoTermsUrl", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label>FAQ (URL)</Label>
+                  <Input
+                    value={settings.infoFaqUrl ?? ""}
+                    onChange={(e) => update("infoFaqUrl", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label>Стать партнёром (URL)</Label>
+                  <Input
+                    value={settings.infoPartnerUrl ?? ""}
+                    onChange={(e) => update("infoPartnerUrl", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label>Калорийность (URL)</Label>
+                  <Input
+                    value={settings.infoCaloriesUrl ?? ""}
+                    onChange={(e) => update("infoCaloriesUrl", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label>Instagram</Label>
+                  <Input
+                    value={settings.infoSocialInstagram ?? ""}
+                    onChange={(e) => update("infoSocialInstagram", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label>Telegram</Label>
+                  <Input
+                    value={settings.infoSocialTelegram ?? ""}
+                    onChange={(e) => update("infoSocialTelegram", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <Label>VK</Label>
+                  <Input
+                    value={settings.infoSocialVk ?? ""}
+                    onChange={(e) => update("infoSocialVk", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
+              </div>
+              <div>
+                <Label>О приложении</Label>
+                <Input
+                  value={settings.infoAboutText ?? ""}
+                  onChange={(e) => update("infoAboutText", e.target.value)}
+                  placeholder="Работает на Rest Digital"
                 />
               </div>
             </TabsContent>
@@ -315,7 +449,11 @@ function PhonePreview({ settings }: { settings: Settings }) {
             }}
           >
             <div className="text-sm font-medium">Программа лояльности</div>
-            <div className="text-xs opacity-90">0 / {settings.loyaltyStampGoal} штампов</div>
+            <div className="text-xs opacity-90">
+              {settings.loyaltyType === "stamps"
+                ? `0 / ${settings.loyaltyStampGoal} штампов`
+                : `${settings.loyaltyCashbackPct}% кэшбек`}
+            </div>
           </div>
         )}
         {settings.showPopular && (

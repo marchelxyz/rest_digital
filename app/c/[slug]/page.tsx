@@ -41,8 +41,21 @@ export default async function ClientAppPage({
     showPopular: s.showPopular,
     menuLayout: s.menuLayout,
     borderRadius: s.borderRadius,
+    loyaltyType: s.loyaltyType ?? "points",
     loyaltyStampGoal: s.loyaltyStampGoal,
     loyaltyCashbackPct: Number(s.loyaltyCashbackPct),
+    infoAddress: s.infoAddress,
+    infoHours: s.infoHours,
+    infoPhone: s.infoPhone,
+    infoTermsUrl: s.infoTermsUrl,
+    infoFaqUrl: s.infoFaqUrl,
+    infoPartnerUrl: s.infoPartnerUrl,
+    infoCaloriesUrl: s.infoCaloriesUrl,
+    infoContactText: s.infoContactText,
+    infoSocialInstagram: s.infoSocialInstagram,
+    infoSocialTelegram: s.infoSocialTelegram,
+    infoSocialVk: s.infoSocialVk,
+    infoAboutText: s.infoAboutText,
   };
 
   return (
