@@ -1,41 +1,111 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Plus } from "lucide-react";
+import { ProductForm } from "./ProductForm";
+import { SortableCategories } from "./SortableCategories";
+import { SortableProducts } from "./SortableProducts";
 
-type Category = { id: string; name: string; sortOrder: number };
-type Product = {
+type Category = {
   id: string;
   name: string;
-  price: string;
   description?: string | null;
+  sortOrder: number;
+  isActive: boolean;
+  isPublished?: boolean;
+  _count?: { products: number };
+};
+
+type ModifierOption = {
+  id: string;
+  name: string;
+  priceDelta: string | { toString: () => string };
+  isDefault: boolean;
+  isActive: boolean;
+  sortOrder: number;
+};
+
+type ModifierGroup = {
+  id: string;
+  name: string;
+  type: string;
+  isRequired: boolean;
+  minSelect: number;
+  maxSelect: number;
+  sortOrder: number;
+  isActive: boolean;
+  options: ModifierOption[];
+};
+
+type ProductBadge = { id: string; label: string; sortOrder: number };
+
+type Product = {
+  id: string;
+  categoryId: string;
+  name: string;
+  description?: string | null;
+  price: string | { toString: () => string };
+  oldPrice?: string | { toString: () => string } | null;
+  imageUrl?: string | null;
+  weight?: string | null;
+  volume?: string | null;
+  composition?: string | null;
+  allergens?: string | null;
+  calories?: number | null;
+  cookingTime?: number | null;
+  isActive: boolean;
   isAvailable: boolean;
+  isPublished?: boolean;
+  isSpicy: boolean;
+  isNew: boolean;
+  isPopular: boolean;
+  isRecommended: boolean;
+  isVegan: boolean;
+  isVegetarian: boolean;
+  isGlutenFree: boolean;
+  isHit: boolean;
+  isDiscounted: boolean;
+  sortOrder: number;
   category: Category;
+  modifierGroups: ModifierGroup[];
+  productBadges: ProductBadge[];
 };
 
 export function MenuManager() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [products, setProducts] = useState<Product[]>([]);
   const [newCat, setNewCat] = useState("");
-  const [newProd, setNewProd] = useState({ name: "", price: "", categoryId: "" });
+  const [editingCat, setEditingCat] = useState<string | null>(null);
+  const [editCatName, setEditCatName] = useState("");
+  const [productFormOpen, setProductFormOpen] = useState(false);
+  const [editingProduct, setEditingProduct] = useState<Product | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
 
-  function load() {
+  const load = useCallback(() => {
+    setLoading(true);
+    const params = new URLSearchParams();
+    if (search) params.set("search", search);
+    if (statusFilter && statusFilter !== "all") params.set("status", statusFilter);
+    if (categoryFilter) params.set("categoryId", categoryFilter);
     Promise.all([
       fetch("/api/restaurant/categories").then((r) => r.json()),
-      fetch("/api/restaurant/products").then((r) => r.json()),
+      fetch(`/api/restaurant/products${params.toString() ? `?${params}` : ""}`).then((r) => r.json()),
     ]).then(([cats, prods]) => {
       setCategories(cats);
       setProducts(prods);
     }).finally(() => setLoading(false));
-  }
+  }, [search, statusFilter, categoryFilter]);
 
   useEffect(() => {
     load();
-  }, []);
+  }, [load]);
 
   async function addCategory() {
     if (!newCat.trim()) return;
@@ -48,108 +118,221 @@ export function MenuManager() {
     load();
   }
 
-  async function addProduct() {
-    if (!newProd.name.trim() || !newProd.categoryId || !newProd.price) return;
-    await fetch("/api/restaurant/products", {
-      method: "POST",
+  function startEditCategory(id: string, name: string) {
+    setEditingCat(id);
+    setEditCatName(name);
+  }
+
+  async function saveEditCategory(id: string) {
+    if (!editCatName.trim()) return;
+    await fetch(`/api/restaurant/categories/${id}`, {
+      method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        name: newProd.name.trim(),
-        categoryId: newProd.categoryId,
-        price: Number(newProd.price),
-      }),
+      body: JSON.stringify({ name: editCatName.trim() }),
     });
-    setNewProd({ name: "", price: "", categoryId: newProd.categoryId });
+    setEditingCat(null);
     load();
   }
 
-  async function toggleProduct(id: string, isAvailable: boolean) {
-    await fetch(`/api/restaurant/products/${id}`, {
+  async function deleteCategory(id: string) {
+    if (!confirm("Удалить категорию? Блюда должны быть пустыми.")) return;
+    const res = await fetch(`/api/restaurant/categories/${id}`, { method: "DELETE" });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error ?? "Ошибка");
+      return;
+    }
+    load();
+  }
+
+  async function toggleCategoryActive(id: string, isActive: boolean) {
+    await fetch(`/api/restaurant/categories/${id}`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ isAvailable: !isAvailable }),
+      body: JSON.stringify({ isActive: !isActive }),
     });
     load();
+  }
+
+  async function toggleCategoryPublish(id: string, isPublished: boolean) {
+    await fetch(`/api/restaurant/categories/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ isPublished: !isPublished }),
+    });
+    load();
+  }
+
+  async function reorderCategories(order: { id: string; sortOrder: number }[]) {
+    const res = await fetch("/api/restaurant/categories/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+    if (res.ok) {
+      setCategories((prev) => {
+        const m = new Map(prev.map((c) => [c.id, c]));
+        return order.map(({ id }) => m.get(id)).filter(Boolean) as Category[];
+      });
+    }
+  }
+
+  function openProductForm(product?: Product) {
+    setEditingProduct(product ?? null);
+    setProductFormOpen(true);
+  }
+
+  function closeProductForm() {
+    setProductFormOpen(false);
+    setEditingProduct(null);
+    load();
+  }
+
+  function toggleProductSelect(id: string) {
+    setSelectedProductIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function selectAllProducts() {
+    setSelectedProductIds(new Set(products.map((p) => p.id)));
+  }
+
+  function deselectAllProducts() {
+    setSelectedProductIds(new Set());
+  }
+
+  async function bulkProductAction(action: string, categoryId?: string) {
+    const ids = Array.from(selectedProductIds);
+    if (ids.length === 0) return;
+    const res = await fetch("/api/restaurant/products/bulk", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ids, action, categoryId }),
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      alert(data.error ?? "Ошибка");
+      return;
+    }
+    setSelectedProductIds(new Set());
+    load();
+  }
+
+  async function reorderProducts(order: { id: string; sortOrder: number }[]) {
+    const res = await fetch("/api/restaurant/products/reorder", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ order }),
+    });
+    if (res.ok) {
+      setProducts((prev) => {
+        const m = new Map(prev.map((p) => [p.id, p]));
+        return order.map(({ id }) => m.get(id)).filter(Boolean) as Product[];
+      });
+    }
   }
 
   if (loading) return <p className="text-muted-foreground">Загрузка...</p>;
 
   return (
-    <Tabs defaultValue="categories">
-      <TabsList>
-        <TabsTrigger value="categories">Категории</TabsTrigger>
-        <TabsTrigger value="products">Товары</TabsTrigger>
-      </TabsList>
-      <TabsContent value="categories" className="space-y-4 pt-4">
-        <div className="flex gap-2">
-          <Input
-            value={newCat}
-            onChange={(e) => setNewCat(e.target.value)}
-            placeholder="Название категории"
+    <>
+      <Tabs defaultValue="categories">
+        <TabsList>
+          <TabsTrigger value="categories">Категории</TabsTrigger>
+          <TabsTrigger value="products">Блюда</TabsTrigger>
+        </TabsList>
+        <TabsContent value="categories" className="space-y-4 pt-4">
+          <div className="flex gap-2">
+            <Input
+              value={newCat}
+              onChange={(e) => setNewCat(e.target.value)}
+              placeholder="Название категории"
+              onKeyDown={(e) => e.key === "Enter" && addCategory()}
+            />
+            <Button onClick={addCategory}>Добавить</Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Перетащите за ручку для изменения порядка
+          </p>
+          <SortableCategories
+            categories={categories}
+            editingId={editingCat}
+            editName={editCatName}
+            onEditName={setEditCatName}
+            onStartEdit={startEditCategory}
+            onCancelEdit={() => setEditingCat(null)}
+            onSaveEdit={saveEditCategory}
+            onToggleActive={toggleCategoryActive}
+            onTogglePublish={toggleCategoryPublish}
+            onDelete={deleteCategory}
+            onReorder={reorderCategories}
           />
-          <Button onClick={addCategory}>Добавить</Button>
-        </div>
-        <div className="grid gap-2">
-          {categories.map((c) => (
-            <Card key={c.id}>
-              <CardContent className="py-3 flex items-center justify-between">
-                {c.name}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </TabsContent>
-      <TabsContent value="products" className="space-y-4 pt-4">
-        <div className="flex flex-wrap gap-2">
-          <Input
-            value={newProd.name}
-            onChange={(e) => setNewProd((p) => ({ ...p, name: e.target.value }))}
-            placeholder="Название"
+        </TabsContent>
+        <TabsContent value="products" className="space-y-4 pt-4">
+          <div className="flex flex-wrap gap-2 items-center">
+            <Input
+              placeholder="Поиск по названию"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="max-w-xs"
+            />
+            <select
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+              className="border rounded px-3 py-2 text-sm"
+            >
+              <option value="all">Все</option>
+              <option value="active">Активные</option>
+              <option value="hidden">Скрытые</option>
+              <option value="unavailable">Временно недоступные</option>
+              <option value="draft">Черновики</option>
+            </select>
+            <select
+              value={categoryFilter}
+              onChange={(e) => setCategoryFilter(e.target.value)}
+              className="border rounded px-3 py-2 text-sm"
+            >
+              <option value="">Все категории</option>
+              {categories.map((c) => (
+                <option key={c.id} value={c.id}>
+                  {c.name}
+                </option>
+              ))}
+            </select>
+            <Button onClick={() => openProductForm()}>
+              <Plus size={16} className="mr-1" />
+              Добавить блюдо
+            </Button>
+          </div>
+          <p className="text-xs text-muted-foreground">
+            Перетащите за ручку для изменения порядка · Выберите блюда для массовых действий
+          </p>
+          <SortableProducts
+            products={products}
+            categories={categories}
+            selectedIds={selectedProductIds}
+            onToggleSelect={toggleProductSelect}
+            onSelectAll={selectAllProducts}
+            onDeselectAll={deselectAllProducts}
+            onEdit={(p) => openProductForm(p)}
+            onReorder={reorderProducts}
+            onBulkAction={bulkProductAction}
           />
-          <Input
-            type="number"
-            value={newProd.price}
-            onChange={(e) => setNewProd((p) => ({ ...p, price: e.target.value }))}
-            placeholder="Цена"
-          />
-          <select
-            value={newProd.categoryId}
-            onChange={(e) => setNewProd((p) => ({ ...p, categoryId: e.target.value }))}
-            className="border rounded px-3 py-2"
-          >
-            <option value="">Категория</option>
-            {categories.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.name}
-              </option>
-            ))}
-          </select>
-          <Button onClick={addProduct}>Добавить</Button>
-        </div>
-        <div className="space-y-2">
-          {products.map((p) => (
-            <Card key={p.id}>
-              <CardContent className="py-3 flex items-center justify-between">
-                <div>
-                  <span className={!p.isAvailable ? "line-through text-muted-foreground" : ""}>
-                    {p.name}
-                  </span>
-                  <span className="text-muted-foreground ml-2">
-                    {p.category.name} · {Number(p.price).toFixed(0)} ₽
-                  </span>
-                </div>
-                <Button
-                  variant={p.isAvailable ? "outline" : "default"}
-                  size="sm"
-                  onClick={() => toggleProduct(p.id, p.isAvailable)}
-                >
-                  {p.isAvailable ? "Стоп" : "В меню"}
-                </Button>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      </TabsContent>
-    </Tabs>
+        </TabsContent>
+      </Tabs>
+
+      {productFormOpen && (
+        <ProductForm
+          product={editingProduct}
+          categories={categories}
+          onClose={closeProductForm}
+          onSaved={closeProductForm}
+        />
+      )}
+    </>
   );
 }

@@ -1,5 +1,5 @@
 /**
- * GET/POST /api/restaurant/categories (tenant-scoped)
+ * GET/POST /api/restaurant/stories (tenant-scoped)
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
@@ -10,10 +10,9 @@ export async function GET() {
   if (!emp || emp.type !== "employee") {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const list = await prisma.category.findMany({
+  const list = await prisma.story.findMany({
     where: { tenantId: emp.tenantId },
     orderBy: { sortOrder: "asc" },
-    include: { _count: { select: { products: true } } },
   });
   return NextResponse.json(list);
 }
@@ -24,23 +23,27 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await req.json()) as {
-    name?: string;
-    description?: string;
+    title?: string;
+    mediaUrl?: string;
+    mediaType?: "image" | "video";
     sortOrder?: number;
-    imageUrl?: string;
     isActive?: boolean;
   };
-  const name = body.name?.trim();
-  if (!name) return NextResponse.json({ error: "name обязателен" }, { status: 400 });
-  const cat = await prisma.category.create({
+  const title = body.title?.trim();
+  const mediaUrl = body.mediaUrl?.trim();
+  if (!title || !mediaUrl) {
+    return NextResponse.json({ error: "title и mediaUrl обязательны" }, { status: 400 });
+  }
+  const mediaType = body.mediaType === "video" ? "video" : "image";
+  const story = await prisma.story.create({
     data: {
       tenantId: emp.tenantId,
-      name,
-      description: body.description?.trim() ?? null,
+      title,
+      mediaUrl,
+      mediaType,
       sortOrder: body.sortOrder ?? 0,
-      imageUrl: body.imageUrl ?? null,
       isActive: body.isActive ?? true,
     },
   });
-  return NextResponse.json(cat);
+  return NextResponse.json(story);
 }

@@ -1,9 +1,10 @@
 /**
- * PATCH/DELETE /api/restaurant/categories/[id]
+ * PATCH/DELETE /api/restaurant/modifier-options/[id]
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getEmployee } from "@/lib/auth";
+import { Decimal } from "@prisma/client/runtime/library";
 
 export async function PATCH(
   req: NextRequest,
@@ -16,25 +17,28 @@ export async function PATCH(
   const { id } = await params;
   const body = (await req.json()) as {
     name?: string;
-    description?: string;
-    sortOrder?: number;
-    imageUrl?: string;
+    priceDelta?: number;
+    isDefault?: boolean;
     isActive?: boolean;
-    isPublished?: boolean;
+    sortOrder?: number;
   };
+
+  const opt = await prisma.modifierOption.findFirst({
+    where: { id, tenantId: emp.tenantId },
+  });
+  if (!opt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+
   const data: Record<string, unknown> = {};
   if (body.name != null) data.name = body.name.trim();
-  if (body.description != null) data.description = body.description.trim();
-  if (body.sortOrder != null) data.sortOrder = body.sortOrder;
-  if (body.imageUrl != null) data.imageUrl = body.imageUrl;
+  if (body.priceDelta != null) data.priceDelta = new Decimal(body.priceDelta);
+  if (body.isDefault != null) data.isDefault = body.isDefault;
   if (body.isActive != null) data.isActive = body.isActive;
-  if (body.isPublished != null) data.isPublished = body.isPublished;
-  const cat = await prisma.category.updateMany({
-    where: { id, tenantId: emp.tenantId },
+  if (body.sortOrder != null) data.sortOrder = body.sortOrder;
+
+  const updated = await prisma.modifierOption.update({
+    where: { id },
     data: data as never,
   });
-  if (cat.count === 0) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  const updated = await prisma.category.findUnique({ where: { id } });
   return NextResponse.json(updated);
 }
 
@@ -47,13 +51,10 @@ export async function DELETE(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const { id } = await params;
-  const count = await prisma.product.count({ where: { categoryId: id } });
-  if (count > 0) {
-    return NextResponse.json(
-      { error: "Нельзя удалить категорию с блюдами. Сначала переместите или удалите блюда." },
-      { status: 400 }
-    );
-  }
-  await prisma.category.deleteMany({ where: { id, tenantId: emp.tenantId } });
+  const opt = await prisma.modifierOption.findFirst({
+    where: { id, tenantId: emp.tenantId },
+  });
+  if (!opt) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  await prisma.modifierOption.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

@@ -11,7 +11,12 @@ export async function POST(req: NextRequest) {
     phone?: string;
     name?: string;
     type?: string;
-    items?: { productId: string; quantity: number; price: number }[];
+    items?: {
+      productId: string;
+      quantity: number;
+      price: number;
+      modifiers?: string;
+    }[];
     address?: string;
     comment?: string;
   };
@@ -52,14 +57,14 @@ export async function POST(req: NextRequest) {
 
   let totalAmount = 0;
   const orderItems = items.map((item) => {
-    const p = products.find((pr) => pr.id === item.productId);
-    const price = p ? Number(p.price) : item.price;
+    const price = item.price;
     const lineTotal = price * item.quantity;
     totalAmount += lineTotal;
     return {
       productId: item.productId,
       quantity: item.quantity,
       price,
+      modifiers: item.modifiers ?? null,
     };
   });
 

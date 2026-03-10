@@ -29,6 +29,7 @@ model Tenant {
   customers  Customer[]
   orders     Order[]
   reviews    Review[]
+  stories    Story[]
 }
 
 model TenantSettings {
@@ -87,6 +88,20 @@ model TenantSettings {
   updatedAt DateTime @updatedAt
 }
 
+// Истории/акции на главном экране клиента
+model Story {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  title     String   @db.VarChar(200)
+  mediaUrl  String   // image or video URL
+  mediaType String   @default("image") // "image" | "video"
+  sortOrder Int      @default(0)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 // Суперадмин (глобальный, не привязан к tenant)
 model Superadmin {
   id           String   @id @default(uuid())
@@ -125,13 +140,16 @@ enum Role {
 // ==========================================
 
 model Category {
-  id        String    @id @default(uuid())
-  tenantId  String
-  tenant    Tenant    @relation(fields: [tenantId], references: [id], onDelete: Cascade)
-  name      String
-  sortOrder Int       @default(0)
-  imageUrl  String?
-  products  Product[]
+  id          String   @id @default(uuid())
+  tenantId    String
+  tenant      Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  name        String
+  description String?
+  sortOrder   Int      @default(0)
+  imageUrl    String?
+  isActive    Boolean  @default(true)
+  isPublished Boolean @default(true)  // draft: false, published: true
+  products    Product[]
 }
 
 model Product {
@@ -141,25 +159,76 @@ model Product {
   categoryId  String
   category    Category @relation(fields: [categoryId], references: [id], onDelete: Cascade)
 
-  name        String
-  description String?
-  price       Decimal  @db.Decimal(10, 2)
-  imageUrl    String?
-  isAvailable Boolean  @default(true)
-  sortOrder   Int      @default(0)
+  name         String   @db.VarChar(255)
+  description  String?
+  price        Decimal  @db.Decimal(10, 2)
+  oldPrice     Decimal? @db.Decimal(10, 2)
+  imageUrl     String?
+  weight       String?  // "300 г"
+  volume       String?  // "0.5 л"
+  composition  String?
+  allergens    String?
+  calories     Int?
+  cookingTime  Int?     // минуты
+  sku          String?
 
-  orderItems      OrderItem[]
-  productModifiers ProductModifier[]
+  isActive     Boolean  @default(true)   // в меню
+  isAvailable  Boolean  @default(true)   // можно заказать
+  isPublished  Boolean  @default(true)   // draft: false, published: true
+  sortOrder    Int      @default(0)
+
+  // Ярлыки
+  isSpicy      Boolean  @default(false)
+  isNew        Boolean  @default(false)
+  isPopular    Boolean  @default(false)
+  isRecommended Boolean @default(false)
+  isVegan      Boolean  @default(false)
+  isVegetarian Boolean  @default(false)
+  isGlutenFree Boolean  @default(false)
+  isHit        Boolean  @default(false)
+  isDiscounted Boolean  @default(false)
+
+  orderItems     OrderItem[]
+  modifierGroups ModifierGroup[]
+  productBadges  ProductBadgeItem[]
 }
 
-// Модификаторы (размер, добавки) — для будущего расширения
-model ProductModifier {
+model ProductBadgeItem {
   id        String  @id @default(uuid())
   productId String
   product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
-  name      String
-  price     Decimal @db.Decimal(10, 2)
+  label     String  @db.VarChar(100)
   sortOrder Int     @default(0)
+}
+
+model ModifierGroup {
+  id          String   @id @default(uuid())
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tenantId    String
+
+  name        String   @db.VarChar(100)
+  type        String   @default("single") // "single" | "multiple" | "quantity"
+  isRequired  Boolean  @default(false)
+  minSelect   Int      @default(0)
+  maxSelect   Int      @default(1)
+  sortOrder   Int      @default(0)
+  isActive    Boolean  @default(true)
+
+  options     ModifierOption[]
+}
+
+model ModifierOption {
+  id              String        @id @default(uuid())
+  modifierGroupId String
+  modifierGroup   ModifierGroup @relation(fields: [modifierGroupId], references: [id], onDelete: Cascade)
+  tenantId        String
+
+  name        String   @db.VarChar(100)
+  priceDelta  Decimal  @default(0) @db.Decimal(10, 2)
+  isDefault   Boolean  @default(false)
+  isActive    Boolean  @default(true)
+  sortOrder   Int      @default(0)
 }
 
 // ==========================================

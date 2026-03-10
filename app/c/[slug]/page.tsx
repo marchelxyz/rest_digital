@@ -10,17 +10,37 @@ export default async function ClientAppPage({
   const { slug } = await params;
   const tenant = await prisma.tenant.findUnique({
     where: { slug, isActive: true },
-    include: { settings: true },
+    include: { settings: true, stories: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
   });
   if (!tenant || !tenant.settings) notFound();
 
+  const stories = (tenant.stories ?? []).map((s) => ({
+    id: s.id,
+    title: s.title,
+    mediaUrl: s.mediaUrl,
+    mediaType: s.mediaType,
+  }));
+
   const categories = await prisma.category.findMany({
-    where: { tenantId: tenant.id },
+    where: { tenantId: tenant.id, isActive: true, isPublished: true },
     orderBy: { sortOrder: "asc" },
     include: {
       products: {
-        where: { isAvailable: true },
+        where: { isActive: true, isAvailable: true, isPublished: true },
         orderBy: { sortOrder: "asc" },
+        include: {
+          modifierGroups: {
+            where: { isActive: true },
+            orderBy: { sortOrder: "asc" },
+            include: {
+              options: {
+                where: { isActive: true },
+                orderBy: { sortOrder: "asc" },
+              },
+            },
+          },
+          productBadges: { orderBy: { sortOrder: "asc" } },
+        },
       },
     },
   });
@@ -61,6 +81,7 @@ export default async function ClientAppPage({
   return (
     <ClientApp
       settings={settings}
+      stories={stories}
       categories={categories.map((c) => ({
         id: c.id,
         name: c.name,
@@ -70,7 +91,34 @@ export default async function ClientAppPage({
           name: p.name,
           description: p.description,
           price: Number(p.price),
+          oldPrice: p.oldPrice ? Number(p.oldPrice) : undefined,
           imageUrl: p.imageUrl,
+          weight: p.weight,
+          volume: p.volume,
+          badges: [
+            ...(p.productBadges?.map((b) => b.label) ?? []),
+            ...(p.isNew ? ["Новинка"] : []),
+            ...(p.isHit ? ["Хит"] : []),
+            ...(p.isPopular ? ["Популярное"] : []),
+            ...(p.isSpicy ? ["Острое"] : []),
+            ...(p.isVegan ? ["Веган"] : []),
+            ...(p.isVegetarian ? ["Вегетарианское"] : []),
+            ...(p.isGlutenFree ? ["Без глютена"] : []),
+            ...(p.isDiscounted ? ["Акция"] : []),
+          ],
+          modifierGroups: p.modifierGroups?.map((g) => ({
+            id: g.id,
+            name: g.name,
+            type: g.type,
+            isRequired: g.isRequired,
+            minSelect: g.minSelect,
+            maxSelect: g.maxSelect,
+            options: g.options.map((o) => ({
+              id: o.id,
+              name: o.name,
+              priceDelta: Number(o.priceDelta),
+            })),
+          })),
         })),
       }))}
     />
