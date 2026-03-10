@@ -6,5 +6,5 @@ export default function RestaurantLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return <>{children}</>; 
 }
