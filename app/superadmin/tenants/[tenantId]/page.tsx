@@ -30,6 +30,12 @@ export default async function TenantSettingsPage({
           {tenant.isActive ? "Активен" : "Неактивен"}
         </Badge>
       </div>
+      <div className="rounded-lg border p-4 mb-6 bg-muted/30">
+        <h3 className="font-medium mb-2">Ссылка на мини-приложение</h3>
+        <p className="text-sm text-muted-foreground mb-2">
+          Приложение привязано к этому кабинету партнёра через slug. URL: <code className="px-1 py-0.5 bg-background rounded">/c/{tenant.slug}</code> — откройте или встройте в виджет.
+        </p>
+      </div>
       <div className="flex gap-2">
         <Link href={`/superadmin/tenants/${tenantId}/builder`}>
           <Button>Конструктор приложения</Button>
