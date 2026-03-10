@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { ChevronRight } from "lucide-react";
+import { getBadgeStyle } from "./badge-colors";
 import { useCartStore } from "./cart-store";
 import { ProductDetailModal } from "./ProductDetailModal";
 import type { ModifierGroup } from "./ProductModifierDialog";
@@ -103,7 +104,8 @@ function ProductCard({
             {product.badges.slice(0, 2).map((b) => (
               <span
                 key={b}
-                className="text-[10px] px-1.5 py-0.5 rounded bg-black/50 text-white"
+                className="text-[10px] px-1.5 py-0.5 rounded font-medium backdrop-blur-sm"
+                style={getBadgeStyle(b)}
               >
                 {b}
               </span>

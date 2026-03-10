@@ -14,7 +14,8 @@ function useEscape(handler: () => void) {
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { X } from "lucide-react";
-import type { ModifierGroup, ModifierOption } from "./ProductModifierDialog";
+import { getBadgeStyle } from "./badge-colors";
+import type { ModifierGroup } from "./ProductModifierDialog";
 
 export type ProductDetailModalProduct = {
   id: string;
@@ -234,7 +235,8 @@ export function ProductDetailModal({
               {product.badges.slice(0, 4).map((b) => (
                 <span
                   key={b}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-muted"
+                  className="text-[10px] px-2 py-0.5 rounded-full font-medium"
+                  style={getBadgeStyle(b)}
                 >
                   {b}
                 </span>
