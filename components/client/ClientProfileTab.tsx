@@ -1,5 +1,16 @@
 "use client";
 
+import {
+  Bell,
+  ChevronRight,
+  Users,
+  ShoppingBag,
+  MapPin,
+  User,
+  CreditCard,
+  Globe,
+  LogOut,
+} from "lucide-react";
 import type { Settings } from "./ClientApp";
 
 export function ClientProfileTab({ settings }: { settings: Settings }) {
@@ -11,7 +22,7 @@ export function ClientProfileTab({ settings }: { settings: Settings }) {
           <div className="text-sm opacity-70">+7 (___) ___-__-__</div>
         </div>
         <button type="button" className="p-2 relative" aria-label="Уведомления">
-          🔔
+          <Bell size={22} strokeWidth={2} />
         </button>
       </header>
 
@@ -96,33 +107,38 @@ function LoyaltyStampsCard({
   );
 }
 
+const ICON_SIZE = 20;
+
 function ProfileMenuList() {
   const items = [
-    { icon: "👥", label: "Приглашайте друзей", sub: "Дарим 300 баллов за каждого" },
-    { icon: "🛍️", label: "Мои заказы" },
-    { icon: "📍", label: "Мои адреса" },
-    { icon: "👤", label: "Мои данные" },
-    { icon: "💳", label: "Банковские карты" },
-    { icon: "🌐", label: "Город" },
-    { icon: "🚪", label: "Выйти" },
+    { icon: Users, label: "Приглашайте друзей", sub: "Дарим 300 баллов за каждого" },
+    { icon: ShoppingBag, label: "Мои заказы" },
+    { icon: MapPin, label: "Мои адреса" },
+    { icon: User, label: "Мои данные" },
+    { icon: CreditCard, label: "Банковские карты" },
+    { icon: Globe, label: "Город" },
+    { icon: LogOut, label: "Выйти" },
   ];
 
   return (
     <div className="space-y-1">
-      {items.map((item) => (
-        <button
-          key={item.label}
-          type="button"
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left"
-        >
-          <span>{item.icon}</span>
-          <div className="flex-1">
-            <div className="font-medium">{item.label}</div>
-            {item.sub && <div className="text-sm opacity-70">{item.sub}</div>}
-          </div>
-          <span className="opacity-50">›</span>
-        </button>
-      ))}
+      {items.map((item) => {
+        const Icon = item.icon;
+        return (
+          <button
+            key={item.label}
+            type="button"
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-lg border text-left"
+          >
+            <Icon size={ICON_SIZE} strokeWidth={2} className="shrink-0 opacity-70" />
+            <div className="flex-1">
+              <div className="font-medium">{item.label}</div>
+              {item.sub && <div className="text-sm opacity-70">{item.sub}</div>}
+            </div>
+            <ChevronRight size={18} className="opacity-50 shrink-0" />
+          </button>
+        );
+      })}
     </div>
   );
 }
