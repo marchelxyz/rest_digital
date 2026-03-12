@@ -70,6 +70,13 @@ model TenantSettings {
   loyaltyStampGoal   Int     @default(6)
   loyaltyCashbackPct Decimal @default(5) @db.Decimal(5, 2)
 
+  // Подписка и модули лояльности (модель SaaS)
+  // subscriptionPlan: app_only = базовая, iiko/rkeeper = тариф с интеграцией кассы
+  subscriptionPlan    String  @default("app_only") // "app_only" | "iiko" | "rkeeper"
+  addonPkpass         Boolean @default(false)      // доп. модуль: карта в Apple/Google Wallet
+  loyaltyPosIntegration String @default("app_only") // "app_only" | "iiko" | "rkeeper" — что включено
+  loyaltyPkpassEnabled Boolean @default(false)     // включена карта в кошелёк (pkpass)
+
   // Вкладка «Общая информация»
   infoAddress      String?
   infoHours        String?

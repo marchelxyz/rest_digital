@@ -65,6 +65,8 @@ export default async function ClientAppPage({
     loyaltyType: s.loyaltyType ?? "points",
     loyaltyStampGoal: s.loyaltyStampGoal,
     loyaltyCashbackPct: Number(s.loyaltyCashbackPct),
+    loyaltyPosIntegration: s.loyaltyPosIntegration ?? "app_only",
+    loyaltyPkpassEnabled: s.loyaltyPkpassEnabled ?? false,
     infoAddress: s.infoAddress,
     infoHours: s.infoHours,
     infoPhone: s.infoPhone,
