@@ -31,7 +31,7 @@ export function ClientHeader({
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2">
           {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+            <img src={settings.logoUrl} alt="" className="w-10 h-10 object-cover" />
           ) : null}
           <span className="font-semibold">{settings.appName}</span>
         </div>
