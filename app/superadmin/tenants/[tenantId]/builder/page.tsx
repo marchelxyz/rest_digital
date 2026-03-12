@@ -548,8 +548,8 @@ function PcPreview({ settings }: { settings: Settings }) {
         )}
         {settings.showLoyalty && (
           <div
-            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-400/90 text-black"
-            style={borderStyle}
+            className="flex items-center gap-3 px-4 py-3 rounded-xl text-white"
+            style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
           >
             {settings.loyaltyType === "stamps" ? (
               <Gift size={22} />
@@ -649,8 +649,8 @@ function PreviewHomeContent({
       </div>
       {settings.showLoyalty && (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-400/90 text-black text-sm"
-          style={borderStyle}
+          className="flex items-center gap-2 px-3 py-2 rounded-lg text-white text-sm"
+          style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
         >
           {settings.loyaltyType === "stamps" ? (
             <Gift size={18} />
