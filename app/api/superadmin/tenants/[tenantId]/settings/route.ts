@@ -12,7 +12,7 @@ const SETTINGS_KEYS = [
   "showStories", "showLoyalty", "showPopular", "menuLayout",
   "borderRadius", "iikoApiKey", "rkeeperApiKey", "yandexMetricaId",
   "loyaltyType", "loyaltyStampGoal", "loyaltyCashbackPct",
-  "subscriptionPlan", "addonPkpass", "loyaltyPosIntegration", "loyaltyPkpassEnabled",
+  "loyaltyInteraction",
   "infoAddress", "infoHours", "infoPhone", "infoTermsUrl", "infoFaqUrl",
   "infoPartnerUrl", "infoCaloriesUrl", "infoContactText",
   "infoSocialInstagram", "infoSocialTelegram", "infoSocialVk", "infoAboutText",
@@ -38,10 +38,7 @@ type SettingsInput = Partial<{
   loyaltyType: string;
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
-  subscriptionPlan: string;
-  addonPkpass: boolean;
-  loyaltyPosIntegration: string;
-  loyaltyPkpassEnabled: boolean;
+  loyaltyInteraction: string;
   infoAddress: string;
   infoHours: string;
   infoPhone: string;
