@@ -92,7 +92,7 @@ export function ClientApp({
   return (
     <CartStore tenantId={settings.tenantId}>
       <div
-        className="min-h-screen pb-20 md:pb-24"
+        className="min-h-screen pt-[env(safe-area-inset-top,44px)] pb-[calc(5rem+env(safe-area-inset-bottom,20px))] md:pt-0 md:pb-24"
         style={{
           background: settings.theme === "dark" ? "#1a1a1a" : "#f8fafc",
           color: settings.theme === "dark" ? "#fff" : "#171717",
@@ -120,7 +120,7 @@ export function ClientApp({
           orderType={orderType}
         />
 
-        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-inherit md:max-w-2xl md:left-1/2 md:-translate-x-1/2 md:rounded-t-xl md:shadow-lg">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-inherit pb-[env(safe-area-inset-bottom,20px)] md:max-w-2xl md:left-1/2 md:-translate-x-1/2 md:rounded-t-xl md:shadow-lg md:pb-4">
           <div className="flex">
             <TabButton
               active={activeTab === "home"}
