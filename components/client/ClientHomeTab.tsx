@@ -125,21 +125,26 @@ export function ClientHomeTab({
         </div>
       )}
 
-      {/* Loyalty teaser: жёлтая полоса (дублирует карту в профиле, призывает авторизоваться) */}
+      {/* Loyalty teaser: основной цвет приложения (дублирует карту в профиле) */}
       {settings.showLoyalty && (
-        <button
-          type="button"
-          onClick={onProfileClick}
-          className="w-full mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-400/90 hover:bg-amber-400 text-black transition-colors text-left"
-          style={{ borderRadius: settings.borderRadius + 4 }}
-        >
+        <div className="px-4 mb-3 overflow-hidden">
+          <button
+            type="button"
+            onClick={onProfileClick}
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white transition-opacity hover:opacity-90 text-left"
+            style={{
+              backgroundColor: settings.primaryColor,
+              borderRadius: settings.borderRadius + 4,
+            }}
+          >
           <Coins size={24} className="shrink-0 opacity-90" />
           <div className="flex-1 min-w-0">
             <div className="font-semibold">Получать бонусы и скидки</div>
             <div className="text-sm opacity-80">Авторизуйтесь, чтобы копить и использовать баллы</div>
           </div>
           <ChevronRight size={20} className="shrink-0 opacity-70" />
-        </button>
+          </button>
+        </div>
       )}
 
       {settings.showStories && stories.length > 0 && (
