@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
-import { Home, User, Menu, MapPin, Bell, ChevronRight, Smartphone, Monitor, Coins } from "lucide-react";
+import { Home, User, Menu, MapPin, Bell, ChevronRight, Smartphone, Monitor, Coins, Gift } from "lucide-react";
 
 type Settings = {
   appName?: string;
@@ -551,10 +551,22 @@ function PcPreview({ settings }: { settings: Settings }) {
             className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-400/90 text-black"
             style={borderStyle}
           >
-            <Coins size={22} />
+            {settings.loyaltyType === "stamps" ? (
+              <Gift size={22} />
+            ) : (
+              <Coins size={22} />
+            )}
             <div>
-              <div className="font-semibold">Получать бонусы и скидки</div>
-              <div className="text-sm opacity-80">Авторизуйтесь, чтобы копить баллы</div>
+              <div className="font-semibold">
+                {settings.loyaltyType === "stamps"
+                  ? "Собирайте штампы"
+                  : "Получать бонусы и скидки"}
+              </div>
+              <div className="text-sm opacity-80">
+                {settings.loyaltyType === "stamps"
+                  ? `Авторизуйтесь, копите штампы — подарок за ${settings.loyaltyStampGoal} шт`
+                  : "Авторизуйтесь, чтобы копить баллы"}
+              </div>
             </div>
             <ChevronRight size={20} className="ml-auto opacity-70" />
           </div>
@@ -640,8 +652,16 @@ function PreviewHomeContent({
           className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-400/90 text-black text-sm"
           style={borderStyle}
         >
-          <Coins size={18} />
-          <span className="font-medium">Получать бонусы и скидки</span>
+          {settings.loyaltyType === "stamps" ? (
+            <Gift size={18} />
+          ) : (
+            <Coins size={18} />
+          )}
+          <span className="font-medium">
+            {settings.loyaltyType === "stamps"
+              ? "Собирайте штампы"
+              : "Получать бонусы и скидки"}
+          </span>
           <ChevronRight size={16} className="ml-auto opacity-70" />
         </div>
       )}
