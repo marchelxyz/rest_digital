@@ -13,6 +13,8 @@ type Settings = {
   borderRadius: number;
 };
 
+type OrderType = "PICKUP" | "DINE_IN";
+
 type Category = {
   id: string;
   name: string;
@@ -24,11 +26,13 @@ export function CartDrawer({
   onClose,
   settings,
   categories,
+  orderType = "PICKUP",
 }: {
   open: boolean;
   onClose: () => void;
   settings: Settings;
   categories: Category[];
+  orderType?: OrderType;
 }) {
   const { items, removeItem, updateQty, total, clear } = useCartStore();
   const [phone, setPhone] = useState("");
@@ -57,7 +61,7 @@ export function CartDrawer({
           tenantId: settings.tenantId,
           phone: phone.trim(),
           name: name.trim() || undefined,
-          type: "PICKUP",
+          type: orderType,
           items: items.map((i) => ({
             productId: i.productId,
             quantity: i.quantity,
