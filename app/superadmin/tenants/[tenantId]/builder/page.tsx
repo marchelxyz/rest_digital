@@ -17,7 +17,19 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
-import { Home, User, Menu, MapPin, Bell, ChevronRight, Smartphone, Monitor, Coins, Gift } from "lucide-react";
+import {
+  Home,
+  User,
+  Menu,
+  MapPin,
+  Bell,
+  ChevronRight,
+  Smartphone,
+  Monitor,
+  Coins,
+  Gift,
+  ShoppingCart,
+} from "lucide-react";
 
 type Settings = {
   appName?: string;
@@ -587,7 +599,7 @@ function PcPreview({ settings }: { settings: Settings }) {
         {settings.showLoyalty && (
           <div
             className="flex items-center gap-3 px-4 py-3 rounded-xl text-white"
-            style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
+            style={{ backgroundColor: settings.primaryColor, borderRadius: settings.borderRadius + 4 }}
           >
             {settings.loyaltyType === "stamps" ? (
               <Gift size={22} />
@@ -618,7 +630,7 @@ function PcPreview({ settings }: { settings: Settings }) {
           </div>
         )}
         <div className="flex gap-2 overflow-x-auto pb-1">
-          {["Все", "Популярное", "Напитки", "Закуски"].map((l) => (
+          {["Все", ...(settings.showPopular ? ["Популярное"] : []), "Напитки", "Закуски"].map((l) => (
             <span
               key={l}
               className="text-xs px-3 py-1.5 rounded-full shrink-0"
@@ -668,16 +680,37 @@ function PreviewHomeContent({
   isDark: boolean;
   borderStyle: React.CSSProperties;
 }) {
+  const chipStyle = { borderRadius: settings.borderRadius };
   return (
     <div className="space-y-3">
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover" />
+            <img src={settings.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
           ) : null}
           <MapPin size={18} strokeWidth={2} className="opacity-60" />
         </div>
-        <span className="text-sm opacity-80">Корзина</span>
+        <div
+          className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm"
+          style={{ backgroundColor: settings.primaryColor + "20", ...chipStyle }}
+        >
+          <ShoppingCart size={18} strokeWidth={2} className="shrink-0" />
+          Корзина
+        </div>
+      </div>
+      <div className="flex gap-2">
+        <div
+          className="px-3 py-2 rounded-lg text-sm font-medium text-white"
+          style={{ backgroundColor: settings.primaryColor, ...chipStyle }}
+        >
+          Самовывоз
+        </div>
+        <div
+          className="px-3 py-2 rounded-lg text-sm opacity-70"
+          style={{ backgroundColor: isDark ? "#333" : "#eee", ...chipStyle }}
+        >
+          В зале
+        </div>
       </div>
       <div
         className="w-full py-2 px-3 rounded-lg text-sm opacity-70"
@@ -687,20 +720,27 @@ function PreviewHomeContent({
       </div>
       {settings.showLoyalty && (
         <div
-          className="flex items-center gap-2 px-3 py-2 rounded-lg text-white text-sm"
-          style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
+          className="flex items-center gap-2 px-3 py-2 rounded-xl text-white text-sm"
+          style={{ backgroundColor: settings.primaryColor, borderRadius: settings.borderRadius + 4 }}
         >
           {settings.loyaltyType === "stamps" ? (
-            <Gift size={18} />
+            <Gift size={18} className="shrink-0" />
           ) : (
-            <Coins size={18} />
+            <Coins size={18} className="shrink-0 opacity-90" />
           )}
-          <span className="font-medium">
-            {settings.loyaltyType === "stamps"
-              ? "Собирайте штампы"
-              : "Получать бонусы и скидки"}
-          </span>
-          <ChevronRight size={16} className="ml-auto opacity-70" />
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold">
+              {settings.loyaltyType === "stamps"
+                ? "Собирайте штампы"
+                : "Получать бонусы и скидки"}
+            </div>
+            <div className="text-xs opacity-80">
+              {settings.loyaltyType === "stamps"
+                ? `Авторизуйтесь, копите штампы — подарок за ${settings.loyaltyStampGoal} шт`
+                : "Авторизуйтесь, чтобы копить и использовать баллы"}
+            </div>
+          </div>
+          <ChevronRight size={16} className="shrink-0 opacity-70" />
         </div>
       )}
       {settings.showStories && (
@@ -711,12 +751,12 @@ function PreviewHomeContent({
           Истории
         </div>
       )}
-      <div className="flex gap-1 overflow-x-auto pb-1">
-        {["Все", "Популярное", "Напитки"].map((l) => (
+      <div className="flex gap-2 overflow-x-auto pb-1">
+        {["Все", ...(settings.showPopular ? ["Популярное"] : []), "Напитки"].map((l) => (
           <span
             key={l}
-            className="text-xs px-2 py-1 rounded-full shrink-0 opacity-80"
-            style={{ backgroundColor: isDark ? "#333" : "#eee" }}
+            className="text-sm px-4 py-2 rounded-full shrink-0"
+            style={{ backgroundColor: isDark ? "#333" : "#eee", opacity: 0.9 }}
           >
             {l}
           </span>
@@ -730,17 +770,11 @@ function PreviewHomeContent({
             className="rounded-lg p-2 border"
             style={{ backgroundColor: isDark ? "#222" : "#f5f5f5", borderColor: isDark ? "#444" : "#e5e5e5", ...borderStyle }}
           >
-            <div className="aspect-square rounded-full bg-white/10 mb-1" />
+            <div className="aspect-square rounded-lg bg-white/10 mb-2" style={chipStyle} />
             <div className="text-xs font-medium truncate">Товар {i}</div>
-            <div className="text-xs opacity-70">Цена ₽</div>
+            <div className="text-xs opacity-70">от 300 ₽</div>
           </div>
         ))}
-      </div>
-      <div
-        className="py-2 rounded-lg flex items-center justify-center text-sm text-white"
-        style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
-      >
-        В корзину
       </div>
     </div>
   );
@@ -755,39 +789,70 @@ function PreviewProfileContent({
   isDark: boolean;
   borderStyle: React.CSSProperties;
 }) {
+  const profileItems = [
+    { label: "Приглашайте друзей", sub: "Дарим 300 баллов за каждого" },
+    { label: "Мои заказы" },
+    { label: "Мои адреса" },
+    { label: "Мои данные" },
+    { label: "Банковские карты" },
+    { label: "Город" },
+    { label: "Выйти" },
+  ];
   return (
     <div className="space-y-3">
       <div className="flex justify-between items-start">
         <div>
-          <div className="font-semibold text-sm">Гость</div>
-          <div className="text-xs opacity-70">+7 (___) ___-__-__</div>
+          <div className="font-semibold">Гость</div>
+          <div className="text-sm opacity-70">+7 (___) ___-__-__</div>
         </div>
-        <Bell size={18} strokeWidth={2} className="opacity-60" />
+        <Bell size={22} strokeWidth={2} className="opacity-60" />
       </div>
-      {settings.showLoyalty && (
+      {settings.showLoyalty && settings.loyaltyType === "points" && (
         <div
-          className="p-3 rounded-lg text-white"
-          style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
+          className="p-4 rounded-xl border text-left"
+          style={{ borderColor: isDark ? "#444" : "#e5e5e5", ...borderStyle }}
         >
-          <div className="text-sm font-medium">
-            {settings.loyaltyType === "points" ? "Баллы и кэшбек" : "Штампы"}
+          <div className="flex justify-between mb-2">
+            <span className="font-medium">Начинающий</span>
+            <span className="text-sm opacity-70">i</span>
           </div>
-          <div className="text-xs opacity-90">
-            {settings.loyaltyType === "stamps"
-              ? `0 / ${settings.loyaltyStampGoal} штампов`
-              : `${settings.loyaltyCashbackPct}% кэшбек`}
+          <div className="flex justify-between items-center text-sm">
+            <span><span className="font-semibold">0</span> баллов</span>
+            <span>{settings.loyaltyCashbackPct}% Кэшбэк</span>
+            <span className="text-sm">QR-код</span>
           </div>
         </div>
       )}
+      {settings.showLoyalty && settings.loyaltyType === "stamps" && (
+        <div
+          className="p-4 rounded-xl border"
+          style={{ borderColor: isDark ? "#444" : "#e5e5e5", ...borderStyle }}
+        >
+          <div className="font-medium mb-2">Штампы</div>
+          <div className="flex gap-2">
+            {Array.from({ length: settings.loyaltyStampGoal }).map((_, i) => (
+              <div
+                key={i}
+                className="w-8 h-8 rounded-full border-2 flex items-center justify-center text-sm"
+                style={{ borderColor: isDark ? "#555" : "#ccc" }}
+              />
+            ))}
+          </div>
+          <div className="text-sm mt-2 opacity-70">0 / {settings.loyaltyStampGoal} — следующий в подарок</div>
+        </div>
+      )}
       <div className="space-y-1">
-        {["Мои заказы", "Мои адреса", "Мои данные"].map((l) => (
+        {profileItems.map((item) => (
           <div
-            key={l}
-            className="flex items-center justify-between py-2 px-3 rounded-lg text-sm"
-            style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
+            key={item.label}
+            className="flex items-center gap-3 px-4 py-3 rounded-lg border text-left"
+            style={{ borderColor: isDark ? "#444" : "#e5e5e5", ...borderStyle }}
           >
-            {l}
-            <ChevronRight size={16} className="opacity-50 shrink-0" />
+            <div className="flex-1">
+              <div className="font-medium text-sm">{item.label}</div>
+              {item.sub && <div className="text-xs opacity-70">{item.sub}</div>}
+            </div>
+            <ChevronRight size={18} className="opacity-50 shrink-0" />
           </div>
         ))}
       </div>
@@ -804,29 +869,57 @@ function PreviewInfoContent({
   isDark: boolean;
   borderStyle: React.CSSProperties;
 }) {
+  const links = [
+    { label: "Условия проведения акций", url: settings.infoTermsUrl },
+    { label: "Частые вопросы", url: settings.infoFaqUrl },
+    { label: "Стать партнером", url: settings.infoPartnerUrl },
+    { label: "Таблица калорийности", url: settings.infoCaloriesUrl },
+  ].filter((l) => l.url);
   return (
-    <div className="space-y-3">
-      <div className="text-base font-bold">Меню</div>
-      <div className="space-y-1 text-sm opacity-80">
-        <div>Условия акций</div>
-        <div>Частые вопросы</div>
-        <div>Стать партнёром</div>
-      </div>
+    <div className="space-y-4">
+      <h1 className="text-xl font-bold">Меню</h1>
+      {links.length > 0 && (
+        <div className="space-y-2">
+          {links.map((l) => (
+            <div key={l.label} className="py-3 border-b text-sm">
+              {l.label}
+            </div>
+          ))}
+        </div>
+      )}
       {(settings.infoAddress || settings.infoHours) && (
-        <div className="text-sm">
-          {settings.infoAddress && <div className="font-medium">{settings.infoAddress}</div>}
-          {settings.infoHours && <div className="opacity-70 text-xs">{settings.infoHours}</div>}
+        <div>
+          {settings.infoAddress && <div className="font-medium text-sm">{settings.infoAddress}</div>}
+          {settings.infoHours && (
+            <div className="text-sm opacity-70 mt-1">{settings.infoHours}</div>
+          )}
         </div>
       )}
       <div
-        className="p-3 rounded-lg text-sm"
-        style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
+        className="p-4 rounded-xl border text-sm"
+        style={{ borderColor: isDark ? "#444" : "#e5e5e5", ...borderStyle }}
       >
-        {settings.infoContactText || "Проблемы с заказом? Напишите нам!"}
+        <div className="font-medium mb-2">
+          {settings.infoContactText ?? "Проблемы с заказом или появился вопрос? Напишите нам!"}
+        </div>
+        {settings.infoPhone && (
+          <div className="text-base">{settings.infoPhone}</div>
+        )}
+        {(settings.infoSocialInstagram || settings.infoSocialTelegram || settings.infoSocialVk) && (
+          <div className="flex gap-4 mt-3 text-sm">
+            {settings.infoSocialInstagram && <span>Instagram</span>}
+            {settings.infoSocialTelegram && <span>Telegram</span>}
+            {settings.infoSocialVk && <span>VK</span>}
+          </div>
+        )}
       </div>
       {settings.infoAboutText && (
-        <div className="text-xs opacity-70">{settings.infoAboutText}</div>
+        <div>
+          <h2 className="font-medium mb-2 text-sm">О приложении</h2>
+          <div className="text-sm opacity-80">{settings.infoAboutText}</div>
+        </div>
       )}
+      <div className="text-sm opacity-60">Работает на Rest Digital</div>
     </div>
   );
 }
