@@ -557,9 +557,9 @@ function PcPreview({ settings }: { settings: Settings }) {
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             {settings.logoUrl ? (
-              <img src={settings.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+              <img src={settings.logoUrl} alt="" className="w-10 h-10 object-cover" />
             ) : (
-              <div className="w-10 h-10 rounded-lg bg-white/20" />
+              <div className="w-10 h-10 bg-white/20" />
             )}
             <MapPin size={20} className="opacity-60" />
           </div>
@@ -686,7 +686,7 @@ function PreviewHomeContent({
       <div className="flex items-center justify-between mb-2">
         <div className="flex items-center gap-2">
           {settings.logoUrl ? (
-            <img src={settings.logoUrl} alt="" className="w-8 h-8 rounded-lg object-cover shrink-0" />
+            <img src={settings.logoUrl} alt="" className="w-8 h-8 object-cover shrink-0" />
           ) : null}
           <MapPin size={18} strokeWidth={2} className="opacity-60" />
         </div>

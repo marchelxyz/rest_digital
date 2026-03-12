@@ -47,7 +47,7 @@ export function ClientHomeTab({
               <img
                 src={settings.logoUrl}
                 alt=""
-                className="w-10 h-10 rounded-lg object-cover shrink-0"
+                className="w-10 h-10 object-cover shrink-0"
               />
             ) : null}
             <button type="button" className="p-2 -ml-1" aria-label="Меню/локация">
