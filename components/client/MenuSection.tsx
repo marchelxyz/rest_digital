@@ -176,7 +176,7 @@ export function MenuSection({
 
   return (
     <>
-      <section className="py-4">
+      <section className="py-4 px-4 md:px-6">
         <h2 className="text-lg font-semibold mb-3">{category.name}</h2>
         <div
           className={
