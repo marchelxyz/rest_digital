@@ -17,20 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
-import {
-  Home,
-  User,
-  Menu,
-  MapPin,
-  Bell,
-  ChevronRight,
-  Smartphone,
-  Monitor,
-  Coins,
-  Gift,
-  Wallet,
-  CreditCard,
-} from "lucide-react";
+import { Home, User, Menu, MapPin, Bell, ChevronRight, Smartphone, Monitor, Coins, Gift } from "lucide-react";
 
 type Settings = {
   appName?: string;
@@ -49,10 +36,7 @@ type Settings = {
   loyaltyType: string;
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
-  subscriptionPlan: string;
-  addonPkpass: boolean;
-  loyaltyPosIntegration: string;
-  loyaltyPkpassEnabled: boolean;
+  loyaltyInteraction: string;
   infoAddress?: string;
   infoHours?: string;
   infoPhone?: string;
@@ -99,20 +83,11 @@ const DEFAULT: Settings = {
   loyaltyType: "points",
   loyaltyStampGoal: 6,
   loyaltyCashbackPct: 5,
-  subscriptionPlan: "app_only",
-  addonPkpass: false,
-  loyaltyPosIntegration: "app_only",
-  loyaltyPkpassEnabled: false,
+  loyaltyInteraction: "app_only",
 };
 
-const SUBSCRIPTION_PLANS = [
-  { value: "app_only", label: "Только приложение" },
-  { value: "iiko", label: "iiko" },
-  { value: "rkeeper", label: "rkeeper" },
-] as const;
-
-const POS_INTEGRATIONS = [
-  { value: "app_only", label: "Только приложение" },
+const LOYALTY_INTERACTIONS = [
+  { value: "app_only", label: "Только в приложении" },
   { value: "iiko", label: "iiko" },
   { value: "rkeeper", label: "rkeeper" },
 ] as const;
@@ -132,23 +107,20 @@ export default function BuilderPage() {
     fetch(`/api/superadmin/tenants/${tenantId}/settings`)
       .then((r) => r.json())
       .then((d) => {
-        if (d.primaryColor) setSettings((s) => ({ ...s, ...d }));
+        if (d.primaryColor) {
+          const normalized = { ...d };
+          if (normalized.loyaltyInteraction === undefined && d.loyaltyPosIntegration !== undefined) {
+            normalized.loyaltyInteraction = d.loyaltyPosIntegration;
+          }
+          setSettings((s) => ({ ...s, ...normalized }));
+        }
       })
       .catch(() => {})
       .finally(() => setLoading(false));
   }, [tenantId]);
 
   function update<K extends keyof Settings>(key: K, value: Settings[K]) {
-    setSettings((s) => {
-      const next = { ...s, [key]: value };
-      if (key === "subscriptionPlan" && value === "app_only" && s.loyaltyPosIntegration !== "app_only") {
-        next.loyaltyPosIntegration = "app_only";
-      }
-      if (key === "addonPkpass" && !value) {
-        next.loyaltyPkpassEnabled = false;
-      }
-      return next;
-    });
+    setSettings((s) => ({ ...s, [key]: value }));
   }
 
   async function handleSave() {
@@ -339,22 +311,18 @@ export default function BuilderPage() {
                 />
               </div>
 
-              <div className="border-t pt-4 mt-4 space-y-4">
-                <h3 className="font-medium flex items-center gap-2">
-                  <CreditCard size={18} />
-                  Подписка и интеграции
-                </h3>
+              <div className="border-t pt-4 mt-4">
                 <div>
-                  <Label>План подписки</Label>
+                  <Label>Взаимодействие с бонусной картой</Label>
                   <Select
-                    value={settings.subscriptionPlan}
-                    onValueChange={(v) => update("subscriptionPlan", v ?? "app_only")}
+                    value={settings.loyaltyInteraction}
+                    onValueChange={(v) => update("loyaltyInteraction", v ?? "app_only")}
                   >
                     <SelectTrigger>
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      {SUBSCRIPTION_PLANS.map((p) => (
+                      {LOYALTY_INTERACTIONS.map((p) => (
                         <SelectItem key={p.value} value={p.value}>
                           {p.label}
                         </SelectItem>
@@ -362,55 +330,8 @@ export default function BuilderPage() {
                     </SelectContent>
                   </Select>
                   <p className="text-xs text-muted-foreground mt-1">
-                    app_only — базовая; iiko/rkeeper — интеграция с кассой
+                    Как заведение будет начислять и списывать бонусы: в приложении, через iiko или rkeeper
                   </p>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label>Доп. модуль pkpass</Label>
-                    <p className="text-xs text-muted-foreground">Карта в Apple/Google Wallet</p>
-                  </div>
-                  <Switch
-                    checked={settings.addonPkpass}
-                    onCheckedChange={(v) => update("addonPkpass", v)}
-                  />
-                </div>
-                <div>
-                  <Label>Интеграция с кассой</Label>
-                  <Select
-                    value={settings.loyaltyPosIntegration}
-                    onValueChange={(v) => update("loyaltyPosIntegration", v ?? "app_only")}
-                  >
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {POS_INTEGRATIONS.filter(
-                        (p) =>
-                          p.value === "app_only" ||
-                          (p.value === "iiko" && settings.subscriptionPlan === "iiko") ||
-                          (p.value === "rkeeper" && settings.subscriptionPlan === "rkeeper")
-                      ).map((p) => (
-                        <SelectItem key={p.value} value={p.value}>
-                          {p.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <Label className="flex items-center gap-1.5">
-                      <Wallet size={16} />
-                      Карта в кошелёк (pkpass)
-                    </Label>
-                    <p className="text-xs text-muted-foreground">Добавить в Apple/Google Wallet</p>
-                  </div>
-                  <Switch
-                    checked={settings.loyaltyPkpassEnabled}
-                    onCheckedChange={(v) => update("loyaltyPkpassEnabled", v)}
-                    disabled={!settings.addonPkpass}
-                  />
                 </div>
               </div>
             </TabsContent>
