@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, ShoppingCart, ChevronRight, Coins } from "lucide-react";
+import { MapPin, ShoppingCart, ChevronRight, Coins, Gift } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { MenuSection } from "./MenuSection";
 import { StoriesStrip } from "./StoriesStrip";
@@ -137,10 +137,22 @@ export function ClientHomeTab({
               borderRadius: settings.borderRadius + 4,
             }}
           >
-          <Coins size={24} className="shrink-0 opacity-90" />
+          {settings.loyaltyType === "stamps" ? (
+            <Gift size={24} className="shrink-0 opacity-90" />
+          ) : (
+            <Coins size={24} className="shrink-0 opacity-90" />
+          )}
           <div className="flex-1 min-w-0">
-            <div className="font-semibold">Получать бонусы и скидки</div>
-            <div className="text-sm opacity-80">Авторизуйтесь, чтобы копить и использовать баллы</div>
+            <div className="font-semibold">
+              {settings.loyaltyType === "stamps"
+                ? "Собирайте штампы"
+                : "Получать бонусы и скидки"}
+            </div>
+            <div className="text-sm opacity-80">
+              {settings.loyaltyType === "stamps"
+                ? `Авторизуйтесь, копите штампы — подарок за ${settings.loyaltyStampGoal} шт`
+                : "Авторизуйтесь, чтобы копить и использовать баллы"}
+            </div>
           </div>
           <ChevronRight size={20} className="shrink-0 opacity-70" />
           </button>
