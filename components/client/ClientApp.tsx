@@ -25,6 +25,8 @@ export type Settings = {
   loyaltyType: string;
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
+  loyaltyPosIntegration?: string;
+  loyaltyPkpassEnabled?: boolean;
   infoAddress?: string | null;
   infoHours?: string | null;
   infoPhone?: string | null;
