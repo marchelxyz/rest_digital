@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Home, User, Menu } from "lucide-react";
 import { CartStore } from "@/components/client/cart-store";
 import { ClientHomeTab } from "./ClientHomeTab";
@@ -88,14 +88,31 @@ export function ClientApp({
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [cartOpen, setCartOpen] = useState(false);
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
+  const [isMobile, setIsMobile] = useState(true);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1279px)");
+    setIsMobile(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  }, []);
+
+  const safeAreaStyles = isMobile
+    ? {
+        root: { paddingTop: 44, paddingBottom: "calc(5rem + 20px)" } as const,
+        nav: { paddingBottom: 20 } as const,
+      }
+    : { root: { paddingTop: 0, paddingBottom: "6rem" } as const, nav: { paddingBottom: 0 } as const };
 
   return (
     <CartStore tenantId={settings.tenantId}>
       <div
-        className="client-app-root min-h-screen"
+        className="min-h-screen"
         style={{
           background: settings.theme === "dark" ? "#1a1a1a" : "#f8fafc",
           color: settings.theme === "dark" ? "#fff" : "#171717",
+          ...safeAreaStyles.root,
         }}
       >
         {activeTab === "home" && (
@@ -120,7 +137,10 @@ export function ClientApp({
           orderType={orderType}
         />
 
-        <nav className="client-nav fixed bottom-0 left-0 right-0 z-40 border-t bg-inherit md:max-w-2xl md:left-1/2 md:-translate-x-1/2 md:rounded-t-xl md:shadow-lg">
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-40 border-t bg-inherit md:max-w-2xl md:left-1/2 md:-translate-x-1/2 md:rounded-t-xl md:shadow-lg"
+          style={safeAreaStyles.nav}
+        >
           <div className="flex">
             <TabButton
               active={activeTab === "home"}
