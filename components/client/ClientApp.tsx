@@ -7,6 +7,7 @@ import { ClientHomeTab } from "./ClientHomeTab";
 import { ClientProfileTab } from "./ClientProfileTab";
 import { ClientInfoTab } from "./ClientInfoTab";
 import { CartDrawer } from "./CartDrawer";
+import type { OrderType } from "./ClientHomeTab";
 
 export type Settings = {
   tenantId: string;
@@ -85,13 +86,14 @@ export function ClientApp({
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [cartOpen, setCartOpen] = useState(false);
+  const [orderType, setOrderType] = useState<OrderType>("PICKUP");
 
   return (
     <CartStore tenantId={settings.tenantId}>
       <div
-        className="min-h-screen pb-20"
+        className="min-h-screen pb-20 md:pb-24"
         style={{
-          background: settings.theme === "dark" ? "#1a1a1a" : "#fff",
+          background: settings.theme === "dark" ? "#1a1a1a" : "#f8fafc",
           color: settings.theme === "dark" ? "#fff" : "#171717",
         }}
       >
@@ -100,7 +102,10 @@ export function ClientApp({
             settings={settings}
             stories={stories}
             categories={categories}
+            orderType={orderType}
+            onOrderTypeChange={setOrderType}
             onCartClick={() => setCartOpen(true)}
+            onProfileClick={() => setActiveTab("profile")}
           />
         )}
         {activeTab === "profile" && <ClientProfileTab settings={settings} />}
@@ -111,9 +116,10 @@ export function ClientApp({
           onClose={() => setCartOpen(false)}
           settings={settings}
           categories={categories}
+          orderType={orderType}
         />
 
-        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-inherit">
+        <nav className="fixed bottom-0 left-0 right-0 z-40 border-t bg-inherit md:max-w-2xl md:left-1/2 md:-translate-x-1/2 md:rounded-t-xl md:shadow-lg">
           <div className="flex">
             <TabButton
               active={activeTab === "home"}

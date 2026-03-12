@@ -17,7 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
-import { Home, User, Menu, MapPin, Bell, ChevronRight } from "lucide-react";
+import { Home, User, Menu, MapPin, Bell, ChevronRight, Smartphone, Monitor, Coins } from "lucide-react";
 
 type Settings = {
   appName?: string;
@@ -84,6 +84,8 @@ const DEFAULT: Settings = {
   loyaltyCashbackPct: 5,
 };
 
+type PreviewDevice = "phone" | "pc";
+
 export default function BuilderPage() {
   const params = useParams();
   const router = useRouter();
@@ -91,6 +93,7 @@ export default function BuilderPage() {
   const [settings, setSettings] = useState<Settings>(DEFAULT);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [previewDevice, setPreviewDevice] = useState<PreviewDevice>("phone");
 
   useEffect(() => {
     fetch(`/api/superadmin/tenants/${tenantId}/settings`)
@@ -151,7 +154,7 @@ export default function BuilderPage() {
                 tenantId={tenantId}
               />
               <ImageUploadField
-                label="Обложка (URL или загрузка PNG/JPEG)"
+                label="Баннер (только на ПК)"
                 value={settings.coverUrl ?? ""}
                 onChange={(url) => update("coverUrl", url)}
                 field="cover"
@@ -402,8 +405,30 @@ export default function BuilderPage() {
           </Button>
         </div>
       </div>
-      <div className="flex-1 p-6 flex items-center justify-center bg-muted/20">
-        <PhonePreview settings={settings} />
+      <div className="flex-1 p-6 flex flex-col items-center justify-center bg-muted/20 gap-4">
+        <div className="flex gap-2">
+          <Button
+            variant={previewDevice === "phone" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setPreviewDevice("phone")}
+          >
+            <Smartphone size={18} className="mr-1" />
+            Телефон
+          </Button>
+          <Button
+            variant={previewDevice === "pc" ? "default" : "outline"}
+            size="sm"
+            onClick={() => setPreviewDevice("pc")}
+          >
+            <Monitor size={18} className="mr-1" />
+            ПК
+          </Button>
+        </div>
+        {previewDevice === "phone" ? (
+          <PhonePreview settings={settings} />
+        ) : (
+          <PcPreview settings={settings} />
+        )}
       </div>
     </div>
   );
@@ -467,6 +492,123 @@ function PhonePreview({ settings }: { settings: Settings }) {
   );
 }
 
+function PcPreview({ settings }: { settings: Settings }) {
+  const isDark = settings.theme === "dark";
+  const bg = isDark ? "#1a1a1a" : "#f8fafc";
+  const fg = isDark ? "#ffffff" : "#171717";
+  const borderStyle = { borderRadius: settings.borderRadius };
+
+  return (
+    <div
+      className="w-[800px] max-w-full h-[560px] rounded-xl border-2 border-gray-300 overflow-hidden shadow-xl flex flex-col"
+      style={{ backgroundColor: bg, color: fg }}
+    >
+      <div className="flex-1 overflow-auto p-4 space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            {settings.logoUrl ? (
+              <img src={settings.logoUrl} alt="" className="w-10 h-10 rounded-lg object-cover" />
+            ) : (
+              <div className="w-10 h-10 rounded-lg bg-white/20" />
+            )}
+            <MapPin size={20} className="opacity-60" />
+          </div>
+          <div
+            className="px-3 py-2 rounded-lg text-sm font-medium"
+            style={{ backgroundColor: settings.primaryColor + "30", ...borderStyle }}
+          >
+            Корзина
+          </div>
+        </div>
+        <div className="flex gap-2">
+          <div
+            className="px-4 py-2 rounded-lg text-sm font-medium text-white"
+            style={{ backgroundColor: settings.primaryColor, ...borderStyle }}
+          >
+            Самовывоз
+          </div>
+          <div
+            className="px-4 py-2 rounded-lg text-sm opacity-70"
+            style={{ backgroundColor: isDark ? "#333" : "#e5e7eb", ...borderStyle }}
+          >
+            В зале
+          </div>
+        </div>
+        <div
+          className="w-full py-2 px-3 rounded-lg text-sm opacity-70"
+          style={{ backgroundColor: isDark ? "#333" : "#e5e7eb", ...borderStyle }}
+        >
+          Поиск товаров
+        </div>
+        {settings.coverUrl && (
+          <div
+            className="w-full h-32 rounded-xl bg-cover bg-center"
+            style={{ backgroundImage: `url(${settings.coverUrl})`, ...borderStyle }}
+          />
+        )}
+        {settings.showLoyalty && (
+          <div
+            className="flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-400/90 text-black"
+            style={borderStyle}
+          >
+            <Coins size={22} />
+            <div>
+              <div className="font-semibold">Получать бонусы и скидки</div>
+              <div className="text-sm opacity-80">Авторизуйтесь, чтобы копить баллы</div>
+            </div>
+            <ChevronRight size={20} className="ml-auto opacity-70" />
+          </div>
+        )}
+        {settings.showStories && (
+          <div
+            className="h-20 rounded-xl flex items-center justify-center text-xs opacity-60"
+            style={{ backgroundColor: isDark ? "#333" : "#e5e7eb", ...borderStyle }}
+          >
+            Истории
+          </div>
+        )}
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {["Все", "Популярное", "Напитки", "Закуски"].map((l) => (
+            <span
+              key={l}
+              className="text-xs px-3 py-1.5 rounded-full shrink-0"
+              style={{ backgroundColor: isDark ? "#333" : "#e5e7eb" }}
+            >
+              {l}
+            </span>
+          ))}
+        </div>
+        <div className="text-sm font-semibold">Меню</div>
+        <div className="grid grid-cols-3 gap-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div
+              key={i}
+              className="rounded-lg p-2 border"
+              style={{
+                backgroundColor: isDark ? "#222" : "#fff",
+                borderColor: isDark ? "#444" : "#e5e7eb",
+                ...borderStyle,
+              }}
+            >
+              <div className="aspect-square rounded-lg bg-white/10 mb-2" />
+              <div className="text-xs font-medium truncate">Товар {i}</div>
+              <div className="text-xs opacity-70">от 300 ₽</div>
+            </div>
+          ))}
+        </div>
+      </div>
+      <div
+        className="flex justify-center gap-8 py-2 border-t shrink-0"
+        style={{ borderColor: isDark ? "#333" : "#e5e7eb" }}
+      >
+        <span className="text-sm opacity-100">Главная</span>
+        <span className="text-sm opacity-60">Профиль</span>
+        <span className="text-sm opacity-60">Информация</span>
+      </div>
+    </div>
+  );
+}
+
 function PreviewHomeContent({
   settings,
   isDark,
@@ -493,20 +635,23 @@ function PreviewHomeContent({
       >
         Поиск товаров
       </div>
+      {settings.showLoyalty && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 rounded-lg bg-amber-400/90 text-black text-sm"
+          style={borderStyle}
+        >
+          <Coins size={18} />
+          <span className="font-medium">Получать бонусы и скидки</span>
+          <ChevronRight size={16} className="ml-auto opacity-70" />
+        </div>
+      )}
       {settings.showStories && (
-        settings.coverUrl ? (
-          <div
-            className="h-20 rounded-lg bg-cover bg-center"
-            style={{ backgroundImage: `url(${settings.coverUrl})`, ...borderStyle }}
-          />
-        ) : (
-          <div
-            className="h-20 rounded-lg flex items-center justify-center text-xs opacity-60"
-            style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
-          >
-            Баннер
-          </div>
-        )
+        <div
+          className="h-16 rounded-lg flex items-center justify-center text-xs opacity-60"
+          style={{ backgroundColor: isDark ? "#333" : "#eee", ...borderStyle }}
+        >
+          Истории
+        </div>
       )}
       <div className="flex gap-1 overflow-x-auto pb-1">
         {["Все", "Популярное", "Напитки"].map((l) => (

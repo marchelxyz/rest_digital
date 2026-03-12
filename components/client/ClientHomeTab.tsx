@@ -1,22 +1,30 @@
 "use client";
 
 import { useState } from "react";
-import { MapPin, ShoppingCart } from "lucide-react";
+import { MapPin, ShoppingCart, ChevronRight, Coins } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { MenuSection } from "./MenuSection";
 import { StoriesStrip } from "./StoriesStrip";
 import type { Settings, Category, Story } from "./ClientApp";
 
+export type OrderType = "PICKUP" | "DINE_IN";
+
 export function ClientHomeTab({
   settings,
   categories,
   stories,
+  orderType,
+  onOrderTypeChange,
   onCartClick,
+  onProfileClick,
 }: {
   settings: Settings;
   categories: Category[];
   stories: Story[];
+  orderType: OrderType;
+  onOrderTypeChange: (t: OrderType) => void;
   onCartClick: () => void;
+  onProfileClick: () => void;
 }) {
   const [search, setSearch] = useState("");
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all" | "popular">("all");
@@ -56,6 +64,43 @@ export function ClientHomeTab({
             {cartTotal > 0 ? `${cartTotal} ₽` : "Корзина"}
           </button>
         </div>
+
+        {/* Order type: Самовывоз / В зале */}
+        <div className="flex px-4 pb-3 gap-2 items-center">
+          <button
+            type="button"
+            onClick={() => onOrderTypeChange("PICKUP")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              orderType === "PICKUP"
+                ? "text-white"
+                : "bg-muted/50 hover:bg-muted"
+            }`}
+            style={
+              orderType === "PICKUP"
+                ? { backgroundColor: settings.primaryColor, borderRadius: settings.borderRadius }
+                : { borderRadius: settings.borderRadius }
+            }
+          >
+            Самовывоз
+          </button>
+          <button
+            type="button"
+            onClick={() => onOrderTypeChange("DINE_IN")}
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+              orderType === "DINE_IN"
+                ? "text-white"
+                : "bg-muted/50 hover:bg-muted"
+            }`}
+            style={
+              orderType === "DINE_IN"
+                ? { backgroundColor: settings.primaryColor, borderRadius: settings.borderRadius }
+                : { borderRadius: settings.borderRadius }
+            }
+          >
+            В зале
+          </button>
+        </div>
+
         <div className="px-4 pb-3">
           <input
             type="search"
@@ -66,6 +111,36 @@ export function ClientHomeTab({
           />
         </div>
       </header>
+
+      {/* Hero banner: только на PC */}
+      {settings.coverUrl && (
+        <div className="hidden md:block px-4 py-3">
+          <div
+            className="w-full h-40 md:h-48 rounded-xl bg-cover bg-center"
+            style={{
+              backgroundImage: `url(${settings.coverUrl})`,
+              borderRadius: settings.borderRadius + 4,
+            }}
+          />
+        </div>
+      )}
+
+      {/* Loyalty teaser: жёлтая полоса (дублирует карту в профиле, призывает авторизоваться) */}
+      {settings.showLoyalty && (
+        <button
+          type="button"
+          onClick={onProfileClick}
+          className="w-full mx-4 mb-3 flex items-center gap-3 px-4 py-3 rounded-xl bg-amber-400/90 hover:bg-amber-400 text-black transition-colors text-left"
+          style={{ borderRadius: settings.borderRadius + 4 }}
+        >
+          <Coins size={24} className="shrink-0 opacity-90" />
+          <div className="flex-1 min-w-0">
+            <div className="font-semibold">Получать бонусы и скидки</div>
+            <div className="text-sm opacity-80">Авторизуйтесь, чтобы копить и использовать баллы</div>
+          </div>
+          <ChevronRight size={20} className="shrink-0 opacity-70" />
+        </button>
+      )}
 
       {settings.showStories && stories.length > 0 && (
         <StoriesStrip
@@ -98,7 +173,7 @@ export function ClientHomeTab({
         ))}
       </div>
 
-      <main className="max-w-lg mx-auto px-4 pb-4">
+      <main className="max-w-6xl mx-auto px-4 pb-4 md:pb-8">
         {filteredCategories.map((cat) => (
           <MenuSection
             key={cat.id}
