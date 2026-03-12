@@ -100,10 +100,10 @@ export function ClientApp({
 
   const safeAreaStyles = isMobile
     ? {
-        root: { paddingTop: 44, paddingBottom: "calc(5rem + 20px)" } as const,
+        root: { paddingTop: 56, paddingBottom: "calc(5rem + 20px)" } as const,
         nav: { paddingBottom: 20 } as const,
       }
-    : { root: { paddingTop: 0, paddingBottom: "6rem" } as const, nav: { paddingBottom: 0 } as const };
+    : { root: { paddingTop: 0, paddingBottom: "5rem" } as const, nav: { paddingBottom: 0 } as const };
 
   return (
     <CartStore tenantId={settings.tenantId}>
@@ -143,18 +143,21 @@ export function ClientApp({
         >
           <div className="flex">
             <TabButton
+              isMobile={isMobile}
               active={activeTab === "home"}
               icon={<Home size={24} strokeWidth={activeTab === "home" ? 2.5 : 2} />}
               ariaLabel="Главная"
               onClick={() => setActiveTab("home")}
             />
             <TabButton
+              isMobile={isMobile}
               active={activeTab === "profile"}
               icon={<User size={24} strokeWidth={activeTab === "profile" ? 2.5 : 2} />}
               ariaLabel="Профиль"
               onClick={() => setActiveTab("profile")}
             />
             <TabButton
+              isMobile={isMobile}
               active={activeTab === "info"}
               icon={<Menu size={24} strokeWidth={activeTab === "info" ? 2.5 : 2} />}
               ariaLabel="Информация"
@@ -168,11 +171,13 @@ export function ClientApp({
 }
 
 function TabButton({
+  isMobile,
   active,
   icon,
   ariaLabel,
   onClick,
 }: {
+  isMobile: boolean;
   active: boolean;
   icon: React.ReactNode;
   ariaLabel: string;
@@ -182,9 +187,9 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 py-3 px-2 flex items-center justify-center ${
-        active ? "opacity-100" : "opacity-60"
-      }`}
+      className={`flex-1 px-2 flex items-center justify-center ${
+        isMobile ? "py-3" : "py-2"
+      } ${active ? "opacity-100" : "opacity-60"}`}
       aria-label={ariaLabel}
     >
       {icon}
