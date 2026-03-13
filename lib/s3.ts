@@ -44,6 +44,7 @@ export async function uploadToS3(
   if (!client) {
     throw new Error("S3 is not configured. Set YANDEX_S3_* env variables.");
   }
+  console.log("[S3] upload start", { key, size: body.length, contentType });
   await client.send(
     new PutObjectCommand({
       Bucket: bucket,
@@ -52,5 +53,7 @@ export async function uploadToS3(
       ContentType: contentType,
     })
   );
-  return `${publicUrl.replace(/\/$/, "")}/${key}`;
+  const url = `${publicUrl.replace(/\/$/, "")}/${key}`;
+  console.log("[S3] upload done", { key, url });
+  return url;
 }

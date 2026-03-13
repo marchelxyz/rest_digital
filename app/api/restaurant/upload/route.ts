@@ -35,12 +35,15 @@ export async function POST(req: NextRequest) {
   }
   const isVideo = field === "story" && ALLOWED_VIDEO_TYPES.includes(file.type);
   const isImage = isAllowedImageType(file.type);
-  const valid = isVideo || (isImage && (field === "story" || field === "story_cover"));
+  const valid =
+    isVideo ||
+    (isImage && ["story", "story_cover", "product", "category"].includes(field));
   if (!valid) {
-    return NextResponse.json(
-      { error: "story: PNG/JPEG или MP4/WebM; story_cover: PNG/JPEG" },
-      { status: 400 }
-    );
+    const msg =
+      field === "story"
+        ? "story: PNG/JPEG или MP4/WebM; story_cover: PNG/JPEG"
+        : "product/category: нужен PNG или JPEG";
+    return NextResponse.json({ error: msg }, { status: 400 });
   }
   const maxSize = isVideo ? MAX_VIDEO_SIZE : MAX_SIZE;
   if (file.size > maxSize) {
@@ -51,21 +54,36 @@ export async function POST(req: NextRequest) {
   }
 
   try {
+    console.log("[upload] start", {
+      field,
+      tenantId: emp.tenantId,
+      fileName: file.name,
+      fileSize: file.size,
+      fileType: file.type,
+    });
     const buffer = Buffer.from(await file.arrayBuffer());
     let url: string;
     if (isVideo) {
       const ext = file.type.includes("webm") ? "webm" : "mp4";
       const key = `tenants/${emp.tenantId}/stories/${randomUUID()}.${ext}`;
       url = await uploadToS3(key, buffer, file.type);
+      console.log("[upload] video done", { key, url });
     } else {
+      console.log("[upload] converting to AVIF...");
       const avifBuffer = await convertToAvif(buffer);
+      console.log("[upload] AVIF done", {
+        inputSize: buffer.length,
+        outputSize: avifBuffer.length,
+      });
       const folder = field === "story" || field === "story_cover" ? "stories" : `${field}s`;
       const key = `tenants/${emp.tenantId}/${folder}/${randomUUID()}.avif`;
       url = await uploadToS3(key, avifBuffer, "image/avif");
+      console.log("[upload] image done", { key, url });
     }
     return NextResponse.json({ url });
   } catch (e) {
     const msg = e instanceof Error ? e.message : "Upload failed";
+    console.error("[upload] error", { field, error: msg, stack: e instanceof Error ? e.stack : undefined });
     return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

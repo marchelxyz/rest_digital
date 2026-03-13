@@ -20,9 +20,17 @@ export async function convertToAvif(input: Buffer): Promise<Buffer> {
   const meta = await pipeline.metadata();
   const format = meta.format;
   if (format && !["png", "jpeg", "jpg"].includes(format)) {
-    throw new Error(`Unsupported format: ${format}. Use PNG or JPEG.`);
+    const err = `Unsupported format: ${format}. Use PNG or JPEG.`;
+    console.error("[convertToAvif]", err);
+    throw new Error(err);
   }
-  return pipeline
+  const output = await pipeline
     .avif({ quality: AVIF_QUALITY, effort: AVIF_EFFORT })
     .toBuffer();
+  console.log("[convertToAvif] success", {
+    format,
+    inputSize: input.length,
+    outputSize: output.length,
+  });
+  return output;
 }
