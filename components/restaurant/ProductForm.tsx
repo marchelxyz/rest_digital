@@ -241,16 +241,24 @@ export function ProductForm({
     const file = e.target.files?.[0];
     if (!file) return;
     setUploading(true);
+    setError("");
     try {
       const fd = new FormData();
       fd.set("field", "product");
       fd.set("file", file);
       const res = await fetch("/api/restaurant/upload", { method: "POST", body: fd });
       const data = await res.json();
-      if (res.ok && data.url) setForm((f) => ({ ...f, imageUrl: data.url }));
-      else setError(data.error ?? "Ошибка загрузки");
-    } catch {
-      setError("Ошибка загрузки");
+      if (res.ok && data.url) {
+        setForm((f) => ({ ...f, imageUrl: data.url }));
+      } else {
+        const errMsg = data.error ?? "Ошибка загрузки";
+        setError(errMsg);
+        console.error("[ProductForm] upload failed", { status: res.status, error: errMsg, data });
+      }
+    } catch (err) {
+      const errMsg = "Ошибка загрузки";
+      setError(errMsg);
+      console.error("[ProductForm] upload error", err);
     } finally {
       setUploading(false);
     }
