@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, User, Menu, ShoppingCart, ListFilter } from "lucide-react";
+import { Home, User, Menu, ShoppingCart, ListFilter, Check } from "lucide-react";
 import { CartStore, useCartStore } from "@/components/client/cart-store";
 import { ClientHomeTab } from "./ClientHomeTab";
 import { ClientProfileTab } from "./ClientProfileTab";
@@ -90,7 +90,7 @@ export function ClientApp({
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
   const [isMobile, setIsMobile] = useState(true);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all" | "popular">("all");
-  const [selectedBadge, setSelectedBadge] = useState<string | null>(null);
+  const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
 
   useEffect(() => {
@@ -139,7 +139,7 @@ export function ClientApp({
             onProfileClick={() => setActiveTab("profile")}
             selectedCategoryId={selectedCategoryId}
             onCategoryChange={setSelectedCategoryId}
-            selectedBadge={selectedBadge}
+            selectedBadges={selectedBadges}
           />
         )}
         {activeTab === "profile" && <ClientProfileTab settings={settings} />}
@@ -162,10 +162,11 @@ export function ClientApp({
             onCategoryChange={(id) => {
               setSelectedCategoryId(id);
             }}
-            selectedBadge={selectedBadge}
-            onBadgeChange={setSelectedBadge}
+            selectedBadges={selectedBadges}
+            onBadgesChange={setSelectedBadges}
             filterOpen={filterOpen}
             onFilterToggle={() => setFilterOpen((v) => !v)}
+            isMobile={isMobile}
           />
         )}
 
@@ -208,20 +209,22 @@ function CartBar({
   onCartClick,
   selectedCategoryId,
   onCategoryChange,
-  selectedBadge,
-  onBadgeChange,
+  selectedBadges,
+  onBadgesChange,
   filterOpen,
   onFilterToggle,
+  isMobile,
 }: {
   settings: Settings;
   categories: Category[];
   onCartClick: () => void;
   selectedCategoryId: string | "all" | "popular";
   onCategoryChange: (id: string | "all" | "popular") => void;
-  selectedBadge: string | null;
-  onBadgeChange: (badge: string | null) => void;
+  selectedBadges: string[];
+  onBadgesChange: (badges: string[]) => void;
   filterOpen: boolean;
   onFilterToggle: () => void;
+  isMobile: boolean;
 }) {
   const { items, total } = useCartStore();
   const hasItems = items.length > 0;
@@ -261,86 +264,172 @@ function CartBar({
             <ListFilter size={22} strokeWidth={2} />
           </button>
           {filterOpen && (
-            <>
-              <div
-                className="fixed inset-0 z-[45]"
-                aria-hidden
-                onClick={onFilterToggle}
-              />
-              <div
-                className="absolute bottom-full right-0 mb-2 w-52 max-h-80 overflow-y-auto rounded-xl border bg-background shadow-lg z-50 py-2"
-                style={{ borderRadius: settings.borderRadius + 4 }}
-              >
-                <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                  Категории
-                </div>
-                <button
-                  type="button"
-                  onClick={() => onCategoryChange("all")}
-                  className={`w-full px-4 py-2 text-left text-sm ${
-                    selectedCategoryId === "all" ? "font-medium bg-muted/50" : ""
-                  }`}
-                >
-                  Все
-                </button>
-                {settings.showPopular && (
-                  <button
-                    type="button"
-                    onClick={() => onCategoryChange("popular")}
-                    className={`w-full px-4 py-2 text-left text-sm ${
-                      selectedCategoryId === "popular" ? "font-medium bg-muted/50" : ""
-                    }`}
-                  >
-                    Популярное
-                  </button>
-                )}
-                {categories.map((c) => (
-                  <button
-                    key={c.id}
-                    type="button"
-                    onClick={() => onCategoryChange(c.id)}
-                    className={`w-full px-4 py-2 text-left text-sm ${
-                      selectedCategoryId === c.id ? "font-medium bg-muted/50" : ""
-                    }`}
-                  >
-                    {c.name}
-                  </button>
-                ))}
-                {allBadges.length > 0 && (
-                  <>
-                    <div className="my-2 border-t" />
-                    <div className="px-3 py-1 text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                      Подкатегории
-                    </div>
-                    <button
-                      type="button"
-                      onClick={() => onBadgeChange(null)}
-                      className={`w-full px-4 py-2 text-left text-sm ${
-                        selectedBadge === null ? "font-medium bg-muted/50" : ""
-                      }`}
-                    >
-                      Все
-                    </button>
-                    {allBadges.map((badge) => (
-                      <button
-                        key={badge}
-                        type="button"
-                        onClick={() => onBadgeChange(badge)}
-                        className={`w-full px-4 py-2 text-left text-sm ${
-                          selectedBadge === badge ? "font-medium bg-muted/50" : ""
-                        }`}
-                      >
-                        {badge}
-                      </button>
-                    ))}
-                  </>
-                )}
-              </div>
-            </>
+            <FilterSheet
+              isMobile={isMobile}
+              settings={settings}
+              categories={categories}
+              allBadges={allBadges}
+              selectedCategoryId={selectedCategoryId}
+              onCategoryChange={onCategoryChange}
+              selectedBadges={selectedBadges}
+              onBadgesChange={onBadgesChange}
+              onClose={onFilterToggle}
+            />
           )}
         </div>
       </div>
     </div>
+  );
+}
+
+/**
+ * Bottom sheet (mobile) или popover (desktop) фильтра.
+ * Секция «Фильтр» — чекбоксы бейджей.
+ * Секция «Категории» — список выбора без чекбоксов.
+ */
+function FilterSheet({
+  isMobile,
+  settings,
+  categories,
+  allBadges,
+  selectedCategoryId,
+  onCategoryChange,
+  selectedBadges,
+  onBadgesChange,
+  onClose,
+}: {
+  isMobile: boolean;
+  settings: Settings;
+  categories: Category[];
+  allBadges: string[];
+  selectedCategoryId: string | "all" | "popular";
+  onCategoryChange: (id: string | "all" | "popular") => void;
+  selectedBadges: string[];
+  onBadgesChange: (badges: string[]) => void;
+  onClose: () => void;
+}) {
+  const toggleBadge = (badge: string) => {
+    if (selectedBadges.includes(badge)) {
+      onBadgesChange(selectedBadges.filter((b) => b !== badge));
+    } else {
+      onBadgesChange([...selectedBadges, badge]);
+    }
+  };
+
+  const content = (
+    <>
+      {/* Ручка для перетаскивания (только mobile) */}
+      {isMobile && (
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" aria-hidden />
+        </div>
+      )}
+      <h2 className="text-lg font-bold px-4 pt-2 pb-3">Фильтр</h2>
+      {allBadges.length > 0 && (
+        <div className="px-4 space-y-2 pb-4">
+          {allBadges.map((badge) => (
+            <label
+              key={badge}
+              className="flex items-center gap-3 py-2 cursor-pointer"
+              onClick={() => toggleBadge(badge)}
+            >
+              <div
+                role="checkbox"
+                aria-checked={selectedBadges.includes(badge)}
+                tabIndex={0}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleBadge(badge);
+                  }
+                }}
+                className="w-5 h-5 rounded border flex items-center justify-center shrink-0 border-input"
+                style={
+                  selectedBadges.includes(badge)
+                    ? {
+                        backgroundColor: settings.primaryColor,
+                        borderColor: settings.primaryColor,
+                        color: "#fff",
+                      }
+                    : {}
+                }
+              >
+                {selectedBadges.includes(badge) && <Check size={12} strokeWidth={3} />}
+              </div>
+              <span className="text-sm">{badge}</span>
+            </label>
+          ))}
+        </div>
+      )}
+      <h3 className="text-base font-bold px-4 pt-2 pb-3">Категории</h3>
+      <div className="px-4 pb-6 space-y-0">
+        <button
+          type="button"
+          onClick={() => onCategoryChange("all")}
+          className={`w-full py-3 text-left text-sm rounded-lg ${
+            selectedCategoryId === "all" ? "bg-muted/60 font-medium" : ""
+          }`}
+        >
+          Все
+        </button>
+        {settings.showPopular && (
+          <button
+            type="button"
+            onClick={() => onCategoryChange("popular")}
+            className={`w-full py-3 text-left text-sm rounded-lg ${
+              selectedCategoryId === "popular" ? "bg-muted/60 font-medium" : ""
+            }`}
+          >
+            Популярное
+          </button>
+        )}
+        {categories.map((c) => (
+          <button
+            key={c.id}
+            type="button"
+            onClick={() => onCategoryChange(c.id)}
+            className={`w-full py-3 text-left text-sm rounded-lg ${
+              selectedCategoryId === c.id ? "bg-muted/60 font-medium" : ""
+            }`}
+          >
+            {c.name}
+          </button>
+        ))}
+      </div>
+    </>
+  );
+
+  return (
+    <>
+      <div
+        className="fixed inset-0 z-[45] bg-black/40"
+        aria-hidden
+        onClick={onClose}
+      />
+      <div
+        className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto md:max-w-2xl md:left-1/2 md:-translate-x-1/2"
+        style={{
+          ...(isMobile
+            ? {
+                bottom: 0,
+                maxHeight: "80dvh",
+                borderTopLeftRadius: 16,
+                borderTopRightRadius: 16,
+              }
+            : {
+                bottom: "calc(4.5rem + 3.5rem + 1rem)",
+                maxHeight: "70vh",
+                width: 280,
+                left: "50%",
+                transform: "translateX(-50%)",
+                borderRadius: settings.borderRadius + 4,
+                border: "1px solid hsl(var(--border))",
+              }),
+        }}
+      >
+        {content}
+      </div>
+    </>
   );
 }
 
