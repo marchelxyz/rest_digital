@@ -19,7 +19,7 @@ export function ClientHomeTab({
   onProfileClick,
   selectedCategoryId,
   onCategoryChange,
-  selectedBadge,
+  selectedBadges,
 }: {
   settings: Settings;
   categories: Category[];
@@ -30,7 +30,7 @@ export function ClientHomeTab({
   onProfileClick: () => void;
   selectedCategoryId: string | "all" | "popular";
   onCategoryChange: (id: string | "all" | "popular") => void;
-  selectedBadge: string | null;
+  selectedBadges: string[];
 }) {
   const [search, setSearch] = useState("");
   const { items } = useCartStore();
@@ -43,14 +43,17 @@ export function ClientHomeTab({
         ? categories
         : categories.filter((c) => c.id === selectedCategoryId);
 
-  const filteredCategories = selectedBadge
-    ? baseCategories
-        .map((cat) => ({
-          ...cat,
-          products: cat.products.filter((p) => p.badges?.includes(selectedBadge)),
-        }))
-        .filter((cat) => cat.products.length > 0)
-    : baseCategories;
+  const filteredCategories =
+    selectedBadges.length > 0
+      ? baseCategories
+          .map((cat) => ({
+            ...cat,
+            products: cat.products.filter((p) =>
+              selectedBadges.some((b) => p.badges?.includes(b)),
+            ),
+          }))
+          .filter((cat) => cat.products.length > 0)
+      : baseCategories;
 
   return (
     <>
