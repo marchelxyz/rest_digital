@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Home, User, Menu, ShoppingCart, SlidersHorizontal } from "lucide-react";
+import { Home, User, Menu, ShoppingCart, ListFilter } from "lucide-react";
 import { CartStore, useCartStore } from "@/components/client/cart-store";
 import { ClientHomeTab } from "./ClientHomeTab";
 import { ClientProfileTab } from "./ClientProfileTab";
@@ -258,7 +258,7 @@ function CartBar({
             style={{ borderRadius: settings.borderRadius + 4 }}
             aria-label="Фильтр меню"
           >
-            <SlidersHorizontal size={22} strokeWidth={2} />
+            <ListFilter size={22} strokeWidth={2} />
           </button>
           {filterOpen && (
             <>
