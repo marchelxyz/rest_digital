@@ -17,6 +17,9 @@ export function ClientHomeTab({
   onOrderTypeChange,
   onCartClick,
   onProfileClick,
+  selectedCategoryId,
+  onCategoryChange,
+  selectedBadge,
 }: {
   settings: Settings;
   categories: Category[];
@@ -25,22 +28,33 @@ export function ClientHomeTab({
   onOrderTypeChange: (t: OrderType) => void;
   onCartClick: () => void;
   onProfileClick: () => void;
+  selectedCategoryId: string | "all" | "popular";
+  onCategoryChange: (id: string | "all" | "popular") => void;
+  selectedBadge: string | null;
 }) {
   const [search, setSearch] = useState("");
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all" | "popular">("all");
   const { items } = useCartStore();
   const cartTotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
-  const filteredCategories =
+  const baseCategories =
     selectedCategoryId === "all"
       ? categories
       : selectedCategoryId === "popular"
         ? categories
         : categories.filter((c) => c.id === selectedCategoryId);
 
+  const filteredCategories = selectedBadge
+    ? baseCategories
+        .map((cat) => ({
+          ...cat,
+          products: cat.products.filter((p) => p.badges?.includes(selectedBadge)),
+        }))
+        .filter((cat) => cat.products.length > 0)
+    : baseCategories;
+
   return (
     <>
-      <header className="sticky top-0 z-10 bg-inherit border-b">
+      <header className="bg-inherit border-b">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2">
             {settings.logoUrl ? (
@@ -171,13 +185,13 @@ export function ClientHomeTab({
         <CategoryChip
           label="Все"
           active={selectedCategoryId === "all"}
-          onClick={() => setSelectedCategoryId("all")}
+          onClick={() => onCategoryChange("all")}
         />
         {settings.showPopular && (
           <CategoryChip
             label="Популярное"
             active={selectedCategoryId === "popular"}
-            onClick={() => setSelectedCategoryId("popular")}
+            onClick={() => onCategoryChange("popular")}
           />
         )}
         {categories.map((c) => (
@@ -185,7 +199,7 @@ export function ClientHomeTab({
             key={c.id}
             label={c.name}
             active={selectedCategoryId === c.id}
-            onClick={() => setSelectedCategoryId(c.id)}
+            onClick={() => onCategoryChange(c.id)}
           />
         ))}
       </div>

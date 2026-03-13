@@ -29,6 +29,7 @@ import {
   Coins,
   Gift,
   ShoppingCart,
+  SlidersHorizontal,
 } from "lucide-react";
 
 type Settings = {
@@ -498,7 +499,10 @@ function PhonePreview({ settings }: { settings: Settings }) {
       className="w-[320px] h-[600px] rounded-3xl border-4 border-gray-800 overflow-hidden shadow-2xl flex flex-col"
       style={{ backgroundColor: bg }}
     >
-      <div className="flex-1 overflow-auto p-3" style={{ color: fg }}>
+      <div
+        className="flex-1 overflow-auto p-3 pb-2 pt-6"
+        style={{ color: fg }}
+      >
         {activeTab === "home" && (
           <PreviewHomeContent settings={settings} isDark={isDark} borderStyle={borderStyle} />
         )}
@@ -509,6 +513,39 @@ function PhonePreview({ settings }: { settings: Settings }) {
           <PreviewInfoContent settings={settings} isDark={isDark} borderStyle={borderStyle} />
         )}
       </div>
+      {activeTab === "home" && (
+        <div
+          className="flex items-center gap-2 px-3 py-2 shrink-0 border-t"
+          style={{
+            backgroundColor: bg,
+            borderColor: isDark ? "#333" : "#eee",
+          }}
+        >
+          <div
+            className="flex-1 flex items-center gap-2 px-3 py-2 rounded-xl text-white text-sm font-medium"
+            style={{
+              backgroundColor: settings.primaryColor,
+              borderRadius: settings.borderRadius + 4,
+            }}
+          >
+            <ShoppingCart size={20} strokeWidth={2} className="shrink-0" />
+            <span className="truncate">Корзина</span>
+            <span className="shrink-0">920 ₽</span>
+          </div>
+          <button
+            type="button"
+            className="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0"
+            style={{
+              borderColor: isDark ? "#444" : "#e5e7eb",
+              backgroundColor: isDark ? "#222" : "#f5f5f5",
+              borderRadius: settings.borderRadius + 4,
+            }}
+            aria-label="Фильтр меню"
+          >
+            <SlidersHorizontal size={20} strokeWidth={2} style={{ color: fg }} />
+          </button>
+        </div>
+      )}
       <nav
         className="flex border-t shrink-0"
         style={{ backgroundColor: bg, borderColor: isDark ? "#333" : "#eee" }}
@@ -657,6 +694,32 @@ function PcPreview({ settings }: { settings: Settings }) {
               <div className="text-xs opacity-70">от 300 ₽</div>
             </div>
           ))}
+        </div>
+      </div>
+      <div
+        className="flex items-center gap-2 px-4 py-2 border-t shrink-0"
+        style={{ borderColor: isDark ? "#333" : "#e5e7eb" }}
+      >
+        <div
+          className="flex-1 flex items-center gap-2 px-4 py-2 rounded-xl text-white text-sm font-medium"
+          style={{
+            backgroundColor: settings.primaryColor,
+            borderRadius: settings.borderRadius + 4,
+          }}
+        >
+          <ShoppingCart size={20} strokeWidth={2} className="shrink-0" />
+          <span>Корзина</span>
+          <span className="shrink-0">920 ₽</span>
+        </div>
+        <div
+          className="w-10 h-10 rounded-xl border flex items-center justify-center shrink-0"
+          style={{
+            borderColor: isDark ? "#444" : "#e5e7eb",
+            backgroundColor: isDark ? "#222" : "#f5f5f5",
+            borderRadius: settings.borderRadius + 4,
+          }}
+        >
+          <SlidersHorizontal size={20} strokeWidth={2} />
         </div>
       </div>
       <div
