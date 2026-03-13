@@ -29,7 +29,7 @@ import {
   Coins,
   Gift,
   ShoppingCart,
-  SlidersHorizontal,
+  ListFilter,
 } from "lucide-react";
 
 type Settings = {
@@ -542,7 +542,7 @@ function PhonePreview({ settings }: { settings: Settings }) {
             }}
             aria-label="Фильтр меню"
           >
-            <SlidersHorizontal size={20} strokeWidth={2} style={{ color: fg }} />
+            <ListFilter size={20} strokeWidth={2} style={{ color: fg }} />
           </button>
         </div>
       )}
@@ -719,7 +719,7 @@ function PcPreview({ settings }: { settings: Settings }) {
             borderRadius: settings.borderRadius + 4,
           }}
         >
-          <SlidersHorizontal size={20} strokeWidth={2} />
+          <ListFilter size={20} strokeWidth={2} />
         </div>
       </div>
       <div
