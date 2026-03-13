@@ -49,7 +49,7 @@ export function ClientHomeTab({
           .map((cat) => ({
             ...cat,
             products: cat.products.filter((p) =>
-              selectedBadges.every((b) => p.badges?.includes(b)),
+              selectedBadges.some((b) => p.badges?.includes(b)),
             ),
           }))
           .filter((cat) => cat.products.length > 0)
