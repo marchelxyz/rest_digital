@@ -166,7 +166,6 @@ export function ClientApp({
             onBadgeChange={setSelectedBadge}
             filterOpen={filterOpen}
             onFilterToggle={() => setFilterOpen((v) => !v)}
-            settings={settings}
           />
         )}
 
