@@ -13,7 +13,7 @@ import {
   CardTitle,
   CardDescription,
 } from "@/components/ui/card";
-import { X, Plus, Pencil, Trash2 } from "lucide-react";
+import { X, Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 
 type Category = { id: string; name: string };
 type ModifierOption = {
@@ -420,15 +420,23 @@ export function ProductForm({
               <div>
                 <Label>Фото</Label>
                 <div className="flex gap-3 items-center mt-1">
-                  {form.imageUrl ? (
-                    <img
-                      src={form.imageUrl}
-                      alt=""
-                      className="w-20 h-20 rounded-lg object-cover"
-                    />
-                  ) : (
-                    <div className="w-20 h-20 rounded-lg bg-muted" />
-                  )}
+                  <div className="relative w-20 h-20 rounded-lg overflow-hidden shrink-0">
+                    {form.imageUrl ? (
+                      <img
+                        src={form.imageUrl}
+                        alt=""
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-muted" />
+                    )}
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                        <Loader2 size={24} className="animate-spin text-white" />
+                        <span className="text-xs text-white">Обработка...</span>
+                      </div>
+                    )}
+                  </div>
                   <div>
                     <input
                       type="file"
@@ -437,7 +445,7 @@ export function ProductForm({
                       disabled={uploading}
                       className="text-sm"
                     />
-                    {form.imageUrl && (
+                    {form.imageUrl && !uploading && (
                       <Button
                         type="button"
                         variant="ghost"
@@ -734,10 +742,17 @@ export function ProductForm({
           )}
 
           <div className="flex gap-2 pt-4">
-            <Button type="submit" disabled={saving}>
-              {saving ? "Сохранение..." : isEdit ? "Сохранить" : "Создать"}
+            <Button type="submit" disabled={saving || uploading}>
+              {saving ? (
+                <>
+                  <Loader2 size={18} className="animate-spin mr-2" />
+                  Сохранение...
+                </>
+              ) : (
+                isEdit ? "Сохранить" : "Создать"
+              )}
             </Button>
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button type="button" variant="outline" onClick={onClose} disabled={saving}>
               Отмена
             </Button>
           </div>
