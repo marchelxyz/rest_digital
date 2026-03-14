@@ -1,22 +1,41 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import {
   Bell,
   ChevronRight,
   Users,
   ShoppingBag,
-  MapPin,
   User,
-  CreditCard,
-  Globe,
   LogOut,
-  Share2,
   Smartphone,
   Moon,
   Sun,
+  Coins,
+  Info,
+  QrCode,
 } from "lucide-react";
+import QRCode from "qrcode";
 import { useMiniApp } from "./MiniAppProvider";
 import type { Settings } from "./ClientApp";
+
+function normalizeCardNumber(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length >= 11 && digits.startsWith("7")) return digits.slice(0, 11);
+  if (digits.length >= 10) return "7" + digits.slice(-10);
+  return digits;
+}
+
+function formatPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  if (digits.length >= 11 && digits.startsWith("7")) {
+    return `+7 (${digits.slice(1, 4)}) ${digits.slice(4, 7)}-${digits.slice(7, 9)}-${digits.slice(9, 11)}`;
+  }
+  if (digits.length >= 10) {
+    return `+7 (${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6, 8)}-${digits.slice(8, 10)}`;
+  }
+  return phone;
+}
 
 type ClientProfileTabProps = {
   settings: Settings;
@@ -24,13 +43,22 @@ type ClientProfileTabProps = {
 };
 
 export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfileTabProps) {
-  const { profile, theme, setTheme, share, addToHome, canAddToHome } = useMiniApp();
+  const { profile, theme, setTheme, share, addToHome, canAddToHome, storage } = useMiniApp();
+  const [phone, setPhone] = useState<string | null>(null);
+  const [qrModalOpen, setQrModalOpen] = useState(false);
+
+  useEffect(() => {
+    storage.get(settings.tenantId, "profile_phone").then((v) => {
+      if (v?.trim()) setPhone(v.trim());
+    });
+  }, [settings.tenantId, storage]);
+
   const showThemeToggle = adminTheme === "auto";
   const displayName =
     profile?.firstName || profile?.lastName
       ? [profile.firstName, profile.lastName].filter(Boolean).join(" ")
       : "Гость";
-  const displayPhone = "+7 (___) ___-__-__";
+  const displayPhone = phone ? formatPhone(phone) : "+7 (___) ___-__-__";
 
   async function handleShare() {
     const text = `${settings.appName} — закажи вкусно`;
@@ -60,16 +88,25 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
       )}
 
       {settings.showLoyalty && settings.loyaltyType === "points" && (
-        <LoyaltyPointsCard
-          points={0}
-          cashbackPct={settings.loyaltyCashbackPct}
-          tier="Начинающий"
-          borderRadius={settings.borderRadius}
-          gradientColors={settings.loyaltyCardGradientColors}
-          gradientOpacity={settings.loyaltyCardGradientOpacity ?? 100}
-          gradientType={settings.loyaltyCardGradientType ?? "linear"}
-          primaryColor={settings.primaryColor}
-        />
+        <>
+          <LoyaltyPointsCard
+            points={0}
+            cashbackPct={settings.loyaltyCashbackPct}
+            tier="Начинающий серфер"
+            borderRadius={settings.borderRadius}
+            gradientColors={settings.loyaltyCardGradientColors}
+            gradientOpacity={settings.loyaltyCardGradientOpacity ?? 100}
+            gradientType={settings.loyaltyCardGradientType ?? "linear"}
+            primaryColor={settings.primaryColor}
+            onQrClick={() => setQrModalOpen(true)}
+          />
+          <LoyaltyCardModal
+            open={qrModalOpen}
+            onClose={() => setQrModalOpen(false)}
+            cardNumber={phone ? normalizeCardNumber(phone) : null}
+            borderRadius={settings.borderRadius}
+          />
+        </>
       )}
       {settings.showLoyalty && settings.loyaltyType === "stamps" && (
         <LoyaltyStampsCard
@@ -178,6 +215,7 @@ function LoyaltyPointsCard({
   gradientOpacity,
   gradientType,
   primaryColor,
+  onQrClick,
 }: {
   points: number;
   cashbackPct: number;
@@ -187,6 +225,7 @@ function LoyaltyPointsCard({
   gradientOpacity?: number;
   gradientType?: string;
   primaryColor?: string;
+  onQrClick?: () => void;
 }) {
   const bgStyle = buildGradientStyle(
     gradientColors,
@@ -196,22 +235,123 @@ function LoyaltyPointsCard({
   );
   const hasGradient = !!gradientColors?.trim();
   return (
-    <div
-      className={`p-4 rounded-xl border transition-colors duration-200 ${hasGradient ? "text-white border-white/20" : ""}`}
-      style={{ borderRadius, ...bgStyle }}
-    >
-      <div className="flex items-center justify-between mb-2">
-        <span className="font-medium">{tier}</span>
-        <button type="button" className="text-sm opacity-70" aria-label="Подробнее">
-          i
-        </button>
-      </div>
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="font-semibold">{points}</span> баллов
+    <div className="space-y-3">
+      <div
+        className={`p-4 rounded-xl border shadow-sm transition-colors duration-200 ${hasGradient ? "text-white border-white/20" : ""}`}
+        style={{ borderRadius: borderRadius + 4, ...bgStyle }}
+      >
+        <div className="flex items-start justify-between mb-3">
+          <span className="font-medium">{tier}</span>
+          <button
+            type="button"
+            className="w-6 h-6 rounded-full border flex items-center justify-center text-xs opacity-80 hover:opacity-100 transition-opacity"
+            aria-label="Подробнее"
+          >
+            <Info size={12} strokeWidth={2.5} />
+          </button>
         </div>
-        <span className="text-sm">{cashbackPct}% Кэшбэк</span>
-        <button type="button" className="text-sm">QR-код</button>
+        <div className="flex items-end justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-2xl font-bold">{points}</span>
+            <Coins size={24} strokeWidth={2} className="opacity-90" />
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              className="px-3 py-1.5 rounded-lg border-2 border-current/50 text-sm font-medium hover:bg-white/10 transition-colors"
+              onClick={() => {}}
+              aria-label="Кэшбэк"
+            >
+              {cashbackPct}% Кэшбэк
+            </button>
+            <button
+              type="button"
+              onClick={onQrClick}
+              className="flex flex-col items-center gap-0.5 py-1 hover:opacity-90 transition-opacity"
+              aria-label="QR-код"
+            >
+              <QrCode size={24} strokeWidth={2} />
+              <span className="text-xs">QR-код</span>
+            </button>
+          </div>
+        </div>
+      </div>
+      <div className="px-1">
+        <div className="text-sm font-medium mb-1">Повысьте кэшбэк до 5%</div>
+        <div className="text-xs text-muted-foreground mb-2">Закажите ещё, чтобы увеличить кэшбэк</div>
+        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+          <div className="h-full bg-green-500 rounded-full" style={{ width: "20%" }} />
+        </div>
+      </div>
+      <button
+        type="button"
+        className="w-full flex items-center gap-3 px-4 py-3 rounded-xl border-2 text-left transition-all duration-200 hover:bg-amber-50 dark:hover:bg-amber-950/20 active:scale-[0.99]"
+        style={{
+          borderRadius: borderRadius + 4,
+          borderColor: "rgb(234 179 8 / 0.5)",
+          backgroundColor: "rgb(254 252 232 / 0.8)",
+        }}
+      >
+        <Coins size={22} strokeWidth={2} className="shrink-0 text-amber-600" />
+        <div className="flex-1">
+          <div className="font-medium">Активировать баллы</div>
+          <div className="text-sm opacity-70">Дополните данные профиля, чтобы использовать баллы</div>
+        </div>
+        <ChevronRight size={18} className="opacity-50 shrink-0" />
+      </button>
+    </div>
+  );
+}
+
+function LoyaltyCardModal({
+  open,
+  onClose,
+  cardNumber,
+  borderRadius,
+}: {
+  open: boolean;
+  onClose: () => void;
+  cardNumber: string | null;
+  borderRadius: number;
+}) {
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!open || !cardNumber) return;
+    QRCode.toDataURL(cardNumber, { width: 200, margin: 2 }).then(setQrDataUrl).catch(() => setQrDataUrl(null));
+  }, [open, cardNumber]);
+
+  if (!open) return null;
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+      <div
+        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6 text-center"
+        style={{ borderRadius: borderRadius + 8 }}
+      >
+        <h2 className="text-xl font-bold mb-2">Карта лояльности</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Покажите QR-код персоналу, чтобы использовать баллы
+        </p>
+        {qrDataUrl && cardNumber ? (
+          <>
+            <img src={qrDataUrl} alt="QR-код карты" className="w-48 h-48 mx-auto mb-4" />
+            <div className="font-mono font-bold text-lg mb-6">{cardNumber}</div>
+          </>
+        ) : (
+          <p className="text-sm text-muted-foreground py-8">
+            Номер карты появится после первого заказа с указанием телефона
+          </p>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
+          style={{ borderRadius: borderRadius + 4 }}
+        >
+          Закрыть
+        </button>
       </div>
     </div>
   );
@@ -284,10 +424,7 @@ function ProfileMenuList({
       action: onShare,
     },
     { icon: ShoppingBag, label: "Мои заказы" },
-    { icon: MapPin, label: "Мои адреса" },
     { icon: User, label: "Мои данные" },
-    { icon: CreditCard, label: "Банковские карты" },
-    { icon: Globe, label: "Город" },
     { icon: LogOut, label: "Выйти" },
   ];
 
