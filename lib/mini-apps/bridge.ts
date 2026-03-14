@@ -61,17 +61,34 @@ export type EnabledMessengers = {
 };
 
 /**
- * Определяет платформу по глобальным объектам.
- * Учитывает только включённые мессенджеры (enabled); если мессенджер выключен — не применяется.
+ * Проверяет, что приложение открыто в MAX по URL (hash/query).
+ * MAX передаёт WebAppPlatform, WebAppVersion, WebAppData в URL.
+ */
+function isMaxFromUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  const raw = window.location.hash || window.location.search;
+  if (!raw) return false;
+  try {
+    const params = new URLSearchParams(raw.replace(/^#/, ""));
+    return params.has("WebAppPlatform") || params.has("WebAppVersion") || params.has("WebAppData");
+  } catch {
+    return false;
+  }
+}
+
+/**
+ * Определяет платформу по глобальным объектам и URL.
+ * MAX проверяется первым (по URL и window.WebApp), т.к. при открытии в MAX
+ * может присутствовать и telegram-web-app.js — тогда Telegram не должен иметь приоритет.
  */
 export function detectPlatform(enabled?: EnabledMessengers): MiniAppPlatform {
   if (typeof window === "undefined") return "standalone";
   const useTg = enabled?.telegram !== false;
   const useVk = enabled?.vk !== false;
   const useMax = enabled?.max !== false;
+  if (useMax && (isMaxFromUrl() || window.WebApp)) return "max";
   if (useTg && window.Telegram?.WebApp) return "telegram";
   if (useVk && window.VK?.Bridge) return "vk";
-  if (useMax && window.WebApp) return "max";
   return "standalone";
 }
 
