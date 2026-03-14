@@ -64,7 +64,7 @@ export function ClientHomeTab({
 
   return (
     <>
-      <header className="bg-inherit border-b">
+      <header className="bg-inherit">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-2 min-w-0">
             {settings.logoUrl ? (
@@ -201,17 +201,21 @@ export function ClientHomeTab({
         />
       )}
 
-      <div className="flex gap-2 px-4 pb-3 overflow-x-auto border-b">
+      <div className="flex gap-2 px-4 pb-3 overflow-x-auto">
         <CategoryChip
           label="Все"
           active={selectedCategoryId === "all"}
           onClick={() => onCategoryChange("all")}
+          primaryColor={settings.primaryColor}
+          borderRadius={settings.borderRadius}
         />
         {settings.showPopular && (
           <CategoryChip
             label="Популярное"
             active={selectedCategoryId === "popular"}
             onClick={() => onCategoryChange("popular")}
+            primaryColor={settings.primaryColor}
+            borderRadius={settings.borderRadius}
           />
         )}
         {categoriesWithProducts.map((c) => (
@@ -220,6 +224,8 @@ export function ClientHomeTab({
             label={c.name}
             active={selectedCategoryId === c.id}
             onClick={() => onCategoryChange(c.id)}
+            primaryColor={settings.primaryColor}
+            borderRadius={settings.borderRadius}
           />
         ))}
       </div>
@@ -247,16 +253,24 @@ function CategoryChip({
   label,
   active,
   onClick,
+  primaryColor,
+  borderRadius,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  primaryColor: string;
+  borderRadius: number;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 px-4 py-2 rounded-full text-sm transition-all duration-200 active:scale-95 ${active ? "font-medium" : "opacity-70 hover:opacity-90"}`}
+      className="shrink-0 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 active:scale-95 bg-muted/60 hover:bg-muted/80"
+      style={{
+        borderRadius: borderRadius + 2,
+        backgroundColor: active ? `${primaryColor}33` : undefined,
+      }}
     >
       {label}
     </button>
