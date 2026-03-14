@@ -8,6 +8,7 @@ type StoriesStripProps = {
   stories: Story[];
   primaryColor: string;
   borderRadius: number;
+  appName?: string;
 };
 
 /** Карточки историй 3:4, обложка — coverUrl (или mediaUrl для фото) */
@@ -17,7 +18,7 @@ function getCoverUrl(s: Story): string {
   return s.mediaUrl;
 }
 
-export function StoriesStrip({ stories, primaryColor, borderRadius }: StoriesStripProps) {
+export function StoriesStrip({ stories, primaryColor, borderRadius, appName }: StoriesStripProps) {
   const [viewerIndex, setViewerIndex] = useState<number | null>(null);
 
   if (!stories.length) return null;
@@ -81,6 +82,7 @@ export function StoriesStrip({ stories, primaryColor, borderRadius }: StoriesStr
           initialIndex={viewerIndex}
           onClose={() => setViewerIndex(null)}
           primaryColor={primaryColor}
+          appName={appName}
         />
       )}
     </>

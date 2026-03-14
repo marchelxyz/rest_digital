@@ -213,6 +213,7 @@ export default function BuilderPage() {
                   <SelectContent>
                     <SelectItem value="light">Светлая</SelectItem>
                     <SelectItem value="dark">Тёмная</SelectItem>
+                    <SelectItem value="auto">Как у пользователя</SelectItem>
                   </SelectContent>
                 </Select>
               </div>

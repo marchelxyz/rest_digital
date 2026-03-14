@@ -1,6 +1,7 @@
 "use client";
 
-import { createContext, useContext, useCallback, useState, ReactNode } from "react";
+import { createContext, useContext, useCallback, useState, useEffect, ReactNode } from "react";
+import { storageGet, storageSet } from "@/lib/mini-apps/bridge";
 
 export type CartItemModifier = {
   optionId: string;
@@ -27,6 +28,8 @@ function makeLineId(productId: string, modifiers?: CartItemModifier[]): string {
   return `${productId}::${key}`;
 }
 
+const CART_STORAGE_KEY = "cart_items";
+
 type CartState = {
   items: CartItem[];
   addItem: (
@@ -52,6 +55,34 @@ export function CartStore({
   children: ReactNode;
 }) {
   const [items, setItems] = useState<CartItem[]>([]);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    storageGet(tenantId, CART_STORAGE_KEY).then((raw) => {
+      if (cancelled || !raw) {
+        setHydrated(true);
+        return;
+      }
+      try {
+        const parsed = JSON.parse(raw) as CartItem[];
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setItems(parsed);
+        }
+      } catch {
+        // ignore invalid data
+      }
+      setHydrated(true);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [tenantId]);
+
+  useEffect(() => {
+    if (!hydrated) return;
+    storageSet(tenantId, CART_STORAGE_KEY, JSON.stringify(items)).catch(() => {});
+  }, [tenantId, hydrated, items]);
 
   const addItem = useCallback(
     (

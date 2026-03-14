@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { Home, User, Menu, ShoppingCart, ListFilter, Check } from "lucide-react";
 import { CartStore, useCartStore } from "@/components/client/cart-store";
+import { MiniAppProvider, useMiniApp } from "./MiniAppProvider";
 import { ClientHomeTab } from "./ClientHomeTab";
 import { ClientProfileTab } from "./ClientProfileTab";
 import { ClientInfoTab } from "./ClientInfoTab";
@@ -80,10 +81,32 @@ export function ClientApp({
   settings,
   stories,
   categories,
+  adminTheme = "light",
 }: {
   settings: Settings;
   stories: Story[];
   categories: Category[];
+  adminTheme?: "light" | "dark" | "auto";
+}) {
+  return (
+    <MiniAppProvider tenantId={settings.tenantId} adminTheme={adminTheme}>
+      <CartStore tenantId={settings.tenantId}>
+        <ClientAppInner settings={settings} adminTheme={adminTheme} stories={stories} categories={categories} />
+      </CartStore>
+    </MiniAppProvider>
+  );
+}
+
+function ClientAppInner({
+  settings,
+  stories,
+  categories,
+  adminTheme,
+}: {
+  settings: Settings;
+  stories: Story[];
+  categories: Category[];
+  adminTheme: "light" | "dark" | "auto";
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [cartOpen, setCartOpen] = useState(false);
@@ -92,6 +115,7 @@ export function ClientApp({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all" | "popular">("all");
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
+  const { theme, showBack, hideBack } = useMiniApp();
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
@@ -100,6 +124,14 @@ export function ClientApp({
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   }, []);
+
+  useEffect(() => {
+    if (activeTab !== "home") {
+      const cleanup = showBack(() => setActiveTab("home"));
+      return cleanup;
+    }
+    hideBack();
+  }, [activeTab, showBack, hideBack]);
 
   const cartBarHeight = activeTab === "home" ? "3.5rem" : "0";
   const safeAreaStyles = isMobile
@@ -118,16 +150,17 @@ export function ClientApp({
         nav: { paddingBottom: 0 } as const,
       };
 
+  const isDark = theme === "dark";
+
   return (
-    <CartStore tenantId={settings.tenantId}>
-      <div
-        className="min-h-screen"
-        style={{
-          background: settings.theme === "dark" ? "#1a1a1a" : "#f8fafc",
-          color: settings.theme === "dark" ? "#fff" : "#171717",
-          ...safeAreaStyles.root,
-        }}
-      >
+    <div
+      className={`min-h-screen transition-colors duration-300 ${isDark ? "dark" : ""}`}
+      style={{
+        background: isDark ? "#0f0f0f" : "#f8fafc",
+        color: isDark ? "#fafafa" : "#171717",
+        ...safeAreaStyles.root,
+      }}
+    >
         {activeTab === "home" && (
           <ClientHomeTab
             settings={settings}
@@ -142,7 +175,7 @@ export function ClientApp({
             selectedBadges={selectedBadges}
           />
         )}
-        {activeTab === "profile" && <ClientProfileTab settings={settings} />}
+        {activeTab === "profile" && <ClientProfileTab settings={settings} adminTheme={adminTheme} />}
         {activeTab === "info" && <ClientInfoTab settings={settings} />}
 
         <CartDrawer
@@ -199,7 +232,6 @@ export function ClientApp({
           </div>
         </nav>
       </div>
-    </CartStore>
   );
 }
 
@@ -242,7 +274,7 @@ function CartBar({
           <button
             type="button"
             onClick={onCartClick}
-            className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl text-white font-medium min-w-0"
+            className="flex-1 flex items-center gap-2 px-4 py-3 rounded-xl text-white font-medium min-w-0 transition-transform duration-200 active:scale-[0.98]"
             style={{
               backgroundColor: settings.primaryColor,
               borderRadius: settings.borderRadius + 4,
@@ -257,7 +289,7 @@ function CartBar({
           <button
             type="button"
             onClick={onFilterToggle}
-            className="w-12 h-12 rounded-xl border bg-background flex items-center justify-center"
+            className="w-12 h-12 rounded-xl border bg-background flex items-center justify-center transition-all duration-200 active:scale-95"
             style={{ borderRadius: settings.borderRadius + 4 }}
             aria-label="Фильтр меню"
           >
@@ -402,12 +434,12 @@ function FilterSheet({
   return (
     <>
       <div
-        className="fixed inset-0 z-[45] bg-black/40"
+        className="fixed inset-0 z-[45] bg-black/40 transition-opacity duration-200"
         aria-hidden
         onClick={onClose}
       />
       <div
-        className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto md:max-w-2xl md:left-1/2 md:-translate-x-1/2"
+        className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto md:max-w-2xl md:left-1/2 md:-translate-x-1/2 transition-transform duration-300 ease-out"
         style={{
           ...(isMobile
             ? {
@@ -450,9 +482,9 @@ function TabButton({
     <button
       type="button"
       onClick={onClick}
-      className={`flex-1 px-2 flex items-center justify-center ${
+      className={`flex-1 px-2 flex items-center justify-center transition-all duration-200 ease-out active:scale-95 ${
         isMobile ? "py-3" : "py-2"
-      } ${active ? "opacity-100" : "opacity-60"}`}
+      } ${active ? "opacity-100" : "opacity-60 hover:opacity-80"}`}
       aria-label={ariaLabel}
     >
       {icon}
