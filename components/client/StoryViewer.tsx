@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { X, Share2 } from "lucide-react";
+import { useMiniApp } from "./MiniAppProvider";
 import type { Story } from "./ClientApp";
 
 type StoryViewerProps = {
@@ -9,6 +10,7 @@ type StoryViewerProps = {
   initialIndex: number;
   onClose: () => void;
   primaryColor?: string;
+  appName?: string;
 };
 
 /**
@@ -16,7 +18,8 @@ type StoryViewerProps = {
  * PC: модалка с градиентом, скруглёнными углами, иконками X и Share.
  * Mobile: полноэкранный.
  */
-export function StoryViewer({ stories, initialIndex, onClose, primaryColor }: StoryViewerProps) {
+export function StoryViewer({ stories, initialIndex, onClose, primaryColor, appName = "Меню" }: StoryViewerProps) {
+  const { share, haptic } = useMiniApp();
   const [currentIndex, setCurrentIndex] = useState(initialIndex);
   const [isDesktop, setIsDesktop] = useState(false);
   const story = stories[currentIndex];
@@ -56,6 +59,14 @@ export function StoryViewer({ stories, initialIndex, onClose, primaryColor }: St
   }, [onClose, goNext, goPrev]);
 
   if (!story) return null;
+
+  async function handleShare() {
+    haptic.impact("light");
+    const text = `${story!.title} — ${appName}`;
+    const link = typeof window !== "undefined" ? window.location.href : "";
+    const mediaUrl = story!.mediaType === "image" ? story!.mediaUrl : story!.coverUrl ?? story!.mediaUrl;
+    await share(text, link, mediaUrl);
+  }
 
   const content = (
     <div
@@ -105,7 +116,8 @@ export function StoryViewer({ stories, initialIndex, onClose, primaryColor }: St
           <div className="absolute top-3 right-3 z-10 flex gap-2">
             <button
               type="button"
-              className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center text-gray-700 hover:bg-white"
+              onClick={handleShare}
+              className="w-9 h-9 rounded-full bg-white/80 flex items-center justify-center text-gray-700 hover:bg-white transition-transform duration-200 active:scale-95"
               aria-label="Поделиться"
             >
               <Share2 size={18} />
@@ -158,14 +170,24 @@ export function StoryViewer({ stories, initialIndex, onClose, primaryColor }: St
       className="fixed inset-0 z-[100] bg-black flex flex-col items-center justify-center"
       style={{ touchAction: "none" }}
     >
-      <button
-        type="button"
-        onClick={onClose}
-        className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white"
-        aria-label="Закрыть"
-      >
-        <X size={24} />
-      </button>
+      <div className="absolute top-4 right-4 z-10 flex gap-2">
+        <button
+          type="button"
+          onClick={handleShare}
+          className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white transition-transform duration-200 active:scale-95"
+          aria-label="Поделиться"
+        >
+          <Share2 size={20} />
+        </button>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-10 h-10 rounded-full bg-black/50 flex items-center justify-center text-white transition-transform duration-200 active:scale-95"
+          aria-label="Закрыть"
+        >
+          <X size={24} />
+        </button>
+      </div>
 
       <div
         className="absolute left-0 top-0 bottom-0 w-1/3 cursor-pointer"

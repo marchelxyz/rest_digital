@@ -87,7 +87,7 @@ export function ClientHomeTab({
           <button
             type="button"
             onClick={() => onOrderTypeChange("PICKUP")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
               orderType === "PICKUP"
                 ? "text-white"
                 : "bg-muted/50 hover:bg-muted"
@@ -103,7 +103,7 @@ export function ClientHomeTab({
           <button
             type="button"
             onClick={() => onOrderTypeChange("DINE_IN")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
+            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
               orderType === "DINE_IN"
                 ? "text-white"
                 : "bg-muted/50 hover:bg-muted"
@@ -181,6 +181,7 @@ export function ClientHomeTab({
           stories={stories}
           primaryColor={settings.primaryColor}
           borderRadius={settings.borderRadius}
+          appName={settings.appName}
         />
       )}
 
@@ -239,7 +240,7 @@ function CategoryChip({
     <button
       type="button"
       onClick={onClick}
-      className={`shrink-0 px-4 py-2 rounded-full text-sm ${active ? "font-medium" : "opacity-70"}`}
+      className={`shrink-0 px-4 py-2 rounded-full text-sm transition-all duration-200 active:scale-95 ${active ? "font-medium" : "opacity-70 hover:opacity-90"}`}
     >
       {label}
     </button>

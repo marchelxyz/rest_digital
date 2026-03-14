@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChevronRight } from "lucide-react";
 import { getBadgeStyle } from "./badge-colors";
 import { useCartStore } from "./cart-store";
+import { useMiniApp } from "./MiniAppProvider";
 import { ProductDetailModal } from "./ProductDetailModal";
 import type { ModifierGroup } from "./ProductModifierDialog";
 
@@ -145,9 +146,11 @@ export function MenuSection({
   layout?: "grid" | "list" | "carousel";
 }) {
   const { addItem } = useCartStore();
+  const { haptic } = useMiniApp();
   const [detailProduct, setDetailProduct] = useState<Product | null>(null);
 
   function handleCardClick(p: Product) {
+    haptic.selection();
     setDetailProduct(p);
   }
 
@@ -156,6 +159,7 @@ export function MenuSection({
     selectedModifiers: { optionId: string; optionName: string; priceDelta: number; quantity?: number }[]
   ) {
     if (!detailProduct) return;
+    haptic.impact("medium");
     addItem(
       detailProduct.id,
       detailProduct.name,

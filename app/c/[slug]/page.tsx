@@ -80,9 +80,12 @@ export default async function ClientAppPage({
     infoAboutText: s.infoAboutText,
   };
 
+  const adminTheme = (s.theme === "auto" ? "auto" : s.theme) as "light" | "dark" | "auto";
+
   return (
     <ClientApp
       settings={settings}
+      adminTheme={adminTheme}
       stories={stories}
       categories={categories.map((c) => ({
         id: c.id,

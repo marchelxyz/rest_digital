@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
 import { useCartStore } from "./cart-store";
+import { useMiniApp } from "./MiniAppProvider";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -35,6 +36,7 @@ export function CartDrawer({
   orderType?: OrderType;
 }) {
   const { items, removeItem, updateQty, total, clear } = useCartStore();
+  const { haptic } = useMiniApp();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -75,6 +77,7 @@ export function CartDrawer({
         alert(d.error ?? "Ошибка");
         return;
       }
+      haptic.success();
       setDone(true);
       clear();
       setTimeout(onClose, 1500);
@@ -90,11 +93,11 @@ export function CartDrawer({
   return (
     <div className="fixed inset-0 z-50">
       <div
-        className="absolute inset-0 bg-black/50"
+        className="absolute inset-0 bg-black/50 transition-opacity duration-200"
         onClick={onClose}
         aria-hidden
       />
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-background text-foreground shadow-xl overflow-auto">
+      <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-background text-foreground shadow-xl overflow-auto transition-transform duration-300 ease-out">
         <div className="p-4 flex justify-between items-center border-b">
           <h2 className="text-lg font-semibold">Корзина</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>
