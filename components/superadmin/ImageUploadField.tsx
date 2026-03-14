@@ -4,6 +4,7 @@ import { useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 type ImageUploadFieldProps = {
   label: string;
@@ -81,7 +82,14 @@ export function ImageUploadField({
           onClick={() => inputRef.current?.click()}
           disabled={uploading}
         >
-          {uploading ? "..." : "Файл"}
+          {uploading ? (
+            <>
+              <Loader2 size={16} className="animate-spin mr-1" />
+              Загрузка...
+            </>
+          ) : (
+            "Файл"
+          )}
         </Button>
       </div>
       {error && <p className="text-sm text-destructive">{error}</p>}

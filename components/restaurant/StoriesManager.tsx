@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
-import { Plus, Pencil, Trash2 } from "lucide-react";
+import { Plus, Pencil, Trash2, Loader2 } from "lucide-react";
 
 type Story = {
   id: string;
@@ -28,6 +28,7 @@ export function StoriesManager() {
     mediaType: "image" as "image" | "video",
   });
   const [uploading, setUploading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
   function load() {
     fetch("/api/restaurant/stories")
@@ -79,29 +80,34 @@ export function StoriesManager() {
       alert("Загрузите обложку 3:4 для карточки");
       return;
     }
-    const payload = {
-      title: form.title.trim(),
-      coverUrl: form.coverUrl.trim() || null,
-      mediaUrl: form.mediaUrl.trim(),
-      mediaType: form.mediaType,
-    };
-    if (editing) {
-      await fetch(`/api/restaurant/stories/${editing}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-    } else {
-      await fetch("/api/restaurant/stories", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
+    setSaving(true);
+    try {
+      const payload = {
+        title: form.title.trim(),
+        coverUrl: form.coverUrl.trim() || null,
+        mediaUrl: form.mediaUrl.trim(),
+        mediaType: form.mediaType,
+      };
+      if (editing) {
+        await fetch(`/api/restaurant/stories/${editing}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      } else {
+        await fetch("/api/restaurant/stories", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+      }
+      setEditing(null);
+      setAdding(false);
+      setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image" });
+      load();
+    } finally {
+      setSaving(false);
     }
-    setEditing(null);
-    setAdding(false);
-    setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image" });
-    load();
   }
 
   function cancelForm() {
@@ -126,7 +132,14 @@ export function StoriesManager() {
     });
   }
 
-  if (loading) return <p className="text-muted-foreground">Загрузка...</p>;
+  if (loading) {
+    return (
+      <div className="flex items-center gap-2 text-muted-foreground">
+        <Loader2 size={20} className="animate-spin" />
+        Загрузка...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -151,16 +164,32 @@ export function StoriesManager() {
                 className="text-sm"
               />
               {form.coverUrl && (
-                <div className="mt-2">
-                  <img src={form.coverUrl} alt="" className="h-24 rounded-lg object-cover aspect-[3/4] w-auto" />
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-1"
-                    onClick={() => setForm((f) => ({ ...f, coverUrl: "" }))}
-                  >
-                    Удалить
-                  </Button>
+                <div className="mt-2 relative inline-block">
+                  <div className="relative h-24 rounded-lg overflow-hidden aspect-[3/4] w-auto bg-muted">
+                    <img src={form.coverUrl} alt="" className="h-full w-auto object-cover" />
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                        <Loader2 size={20} className="animate-spin text-white" />
+                        <span className="text-xs text-white">Обработка...</span>
+                      </div>
+                    )}
+                  </div>
+                  {!uploading && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1"
+                      onClick={() => setForm((f) => ({ ...f, coverUrl: "" }))}
+                    >
+                      Удалить
+                    </Button>
+                  )}
+                </div>
+              )}
+              {uploading && !form.coverUrl && (
+                <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 size={18} className="animate-spin" />
+                  Загрузка и обработка...
                 </div>
               )}
             </div>
@@ -182,34 +211,55 @@ export function StoriesManager() {
                   className="text-sm"
                 />
               </div>
-              {form.mediaUrl && (
-                <div className="mt-2">
-                  {form.mediaType === "video" ? (
-                    <video
-                      src={form.mediaUrl}
-                      className="h-24 rounded-lg object-cover"
-                      muted
-                      playsInline
-                    />
-                  ) : (
-                    <img src={form.mediaUrl} alt="" className="h-24 rounded-lg object-cover" />
+              {(form.mediaUrl || uploading) && (
+                <div className="mt-2 relative inline-block">
+                  <div className="relative h-24 rounded-lg overflow-hidden bg-muted min-w-[6rem]">
+                    {form.mediaUrl ? (
+                      form.mediaType === "video" ? (
+                        <video
+                          src={form.mediaUrl}
+                          className="h-full object-cover"
+                          muted
+                          playsInline
+                        />
+                      ) : (
+                        <img src={form.mediaUrl} alt="" className="h-full object-cover" />
+                      )
+                    ) : (
+                      <div className="w-24 h-full" />
+                    )}
+                    {uploading && (
+                      <div className="absolute inset-0 bg-black/60 flex flex-col items-center justify-center gap-1">
+                        <Loader2 size={20} className="animate-spin text-white" />
+                        <span className="text-xs text-white">Обработка...</span>
+                      </div>
+                    )}
+                  </div>
+                  {form.mediaUrl && !uploading && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-1"
+                      onClick={() => setForm((f) => ({ ...f, mediaUrl: "" }))}
+                    >
+                      Удалить
+                    </Button>
                   )}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="mt-1"
-                    onClick={() => setForm((f) => ({ ...f, mediaUrl: "" }))}
-                  >
-                    Удалить
-                  </Button>
                 </div>
               )}
             </div>
             <div className="flex gap-2">
-              <Button onClick={handleSave} disabled={uploading}>
-                {editing ? "Сохранить" : "Добавить"}
+              <Button onClick={handleSave} disabled={uploading || saving}>
+                {saving ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin mr-1" />
+                    Сохранение...
+                  </>
+                ) : (
+                  editing ? "Сохранить" : "Добавить"
+                )}
               </Button>
-              <Button variant="outline" onClick={cancelForm}>
+              <Button variant="outline" onClick={cancelForm} disabled={saving}>
                 Отмена
               </Button>
             </div>
