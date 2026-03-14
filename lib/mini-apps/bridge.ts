@@ -54,19 +54,31 @@ declare global {
   }
 }
 
-/** Определяет платформу по глобальным объектам. */
-export function detectPlatform(): MiniAppPlatform {
+export type EnabledMessengers = {
+  telegram?: boolean;
+  vk?: boolean;
+  max?: boolean;
+};
+
+/**
+ * Определяет платформу по глобальным объектам.
+ * Учитывает только включённые мессенджеры (enabled); если мессенджер выключен — не применяется.
+ */
+export function detectPlatform(enabled?: EnabledMessengers): MiniAppPlatform {
   if (typeof window === "undefined") return "standalone";
-  if (window.Telegram?.WebApp) return "telegram";
-  if (window.VK?.Bridge) return "vk";
-  if (window.WebApp) return "max";
+  const useTg = enabled?.telegram !== false;
+  const useVk = enabled?.vk !== false;
+  const useMax = enabled?.max !== false;
+  if (useTg && window.Telegram?.WebApp) return "telegram";
+  if (useVk && window.VK?.Bridge) return "vk";
+  if (useMax && window.WebApp) return "max";
   return "standalone";
 }
 
 /** Возвращает профиль гостя из initData (если доступен). */
-export function getProfile(): GuestProfile | null {
+export function getProfile(enabled?: EnabledMessengers): GuestProfile | null {
   if (typeof window === "undefined") return null;
-  const platform = detectPlatform();
+  const platform = detectPlatform(enabled);
   if (platform === "telegram") {
     const u = window.Telegram?.WebApp?.initDataUnsafe?.user;
     if (!u) return null;

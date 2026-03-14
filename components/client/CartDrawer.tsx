@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Minus, Plus, X } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { useMiniApp } from "./MiniAppProvider";
+import { getStoredUtm } from "@/lib/utm";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,7 +37,7 @@ export function CartDrawer({
   orderType?: OrderType;
 }) {
   const { items, removeItem, updateQty, total, clear } = useCartStore();
-  const { haptic } = useMiniApp();
+  const { haptic, platform, profile } = useMiniApp();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -64,6 +65,9 @@ export function CartDrawer({
           phone: phone.trim(),
           name: name.trim() || undefined,
           type: orderType,
+          platform: platform !== "standalone" ? platform : undefined,
+          platformUserId: profile?.platformUserId,
+          ...getStoredUtm(),
           items: items.map((i) => ({
             productId: i.productId,
             quantity: i.quantity,

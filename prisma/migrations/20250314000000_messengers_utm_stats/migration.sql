@@ -1,0 +1,21 @@
+-- Мессенджеры: выключатели в TenantSettings
+ALTER TABLE "TenantSettings" ADD COLUMN IF NOT EXISTS "messengerTelegram" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "TenantSettings" ADD COLUMN IF NOT EXISTS "messengerVk" BOOLEAN NOT NULL DEFAULT true;
+ALTER TABLE "TenantSettings" ADD COLUMN IF NOT EXISTS "messengerMax" BOOLEAN NOT NULL DEFAULT true;
+
+-- UTM и платформа для Order
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "platform" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "utmSource" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "utmMedium" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "utmCampaign" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "utmTerm" TEXT;
+ALTER TABLE "Order" ADD COLUMN IF NOT EXISTS "utmContent" TEXT;
+
+-- UTM и платформа для Customer
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "platform" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "platformUserId" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "utmSource" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "utmMedium" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "utmCampaign" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "utmTerm" TEXT;
+ALTER TABLE "Customer" ADD COLUMN IF NOT EXISTS "utmContent" TEXT;

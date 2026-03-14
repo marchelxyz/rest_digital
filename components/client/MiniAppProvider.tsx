@@ -26,6 +26,7 @@ import {
   storageGet,
 } from "@/lib/mini-apps/bridge";
 import type { MiniAppPlatform, ThemeMode } from "@/lib/mini-apps/types";
+import type { EnabledMessengers } from "@/lib/mini-apps/bridge";
 
 const STORAGE_THEME_KEY = "theme_preference";
 
@@ -54,17 +55,19 @@ export function MiniAppProvider({
   children,
   tenantId,
   adminTheme,
+  enabledMessengers,
 }: {
   children: ReactNode;
   tenantId: string;
   adminTheme: "light" | "dark" | "auto";
+  enabledMessengers?: EnabledMessengers;
 }) {
-  const platform = detectPlatform();
+  const platform = detectPlatform(enabledMessengers);
   const isMiniApp = platform !== "standalone";
   const [effectiveTheme, setEffectiveTheme] = useState<ThemeMode>("light");
   const [userThemeOverride, setUserThemeOverride] = useState<ThemeMode | null>(null);
 
-  const profile = useMemo(() => getProfile(), []);
+  const profile = useMemo(() => getProfile(enabledMessengers), [enabledMessengers]);
 
   useEffect(() => {
     ready();

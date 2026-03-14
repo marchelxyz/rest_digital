@@ -13,6 +13,7 @@ const SETTINGS_KEYS = [
   "borderRadius", "iikoApiKey", "rkeeperApiKey", "yandexMetricaId",
   "loyaltyType", "loyaltyStampGoal", "loyaltyCashbackPct",
   "loyaltyInteraction",
+  "messengerTelegram", "messengerVk", "messengerMax",
   "infoAddress", "infoHours", "infoPhone", "infoTermsUrl", "infoFaqUrl",
   "infoPartnerUrl", "infoCaloriesUrl", "infoContactText",
   "infoSocialInstagram", "infoSocialTelegram", "infoSocialVk", "infoAboutText",
@@ -51,6 +52,9 @@ type SettingsInput = Partial<{
   infoSocialTelegram: string;
   infoSocialVk: string;
   infoAboutText: string;
+  messengerTelegram: boolean;
+  messengerVk: boolean;
+  messengerMax: boolean;
 }>;
 
 function toPrisma(data: SettingsInput): Record<string, unknown> {
