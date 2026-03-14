@@ -161,7 +161,6 @@ function ClientAppInner({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all" | "popular">("all");
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const [categoriesAtTop, setCategoriesAtTop] = useState(true);
 
   useEffect(() => {
     if (filterOpen) {
@@ -201,7 +200,7 @@ function ClientAppInner({
     ? {
         root: {
           paddingTop: topPadding,
-          paddingBottom: `calc(5rem + 20px + ${cartBarHeight})`,
+          paddingBottom: `calc(5rem + 10px + ${cartBarHeight})`,
         } as const,
         nav: { paddingBottom: 20 } as const,
       }
@@ -238,7 +237,6 @@ function ClientAppInner({
             selectedCategoryId={selectedCategoryId}
             onCategoryChange={setSelectedCategoryId}
             selectedBadges={selectedBadges}
-            onCategoriesAtTopChange={setCategoriesAtTop}
           />
         )}
         {activeTab === "profile" && <ClientProfileTab settings={settings} adminTheme={adminTheme} />}
@@ -267,7 +265,7 @@ function ClientAppInner({
             filterOpen={filterOpen}
             onFilterToggle={() => setFilterOpen((v) => !v)}
             isMobile={isMobile}
-            showFilterButton={categoriesAtTop}
+            showFilterButton
           />
         )}
 
