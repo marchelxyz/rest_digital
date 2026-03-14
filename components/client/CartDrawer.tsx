@@ -29,12 +29,14 @@ export function CartDrawer({
   settings,
   categories,
   orderType = "PICKUP",
+  onOrderSuccess,
 }: {
   open: boolean;
   onClose: () => void;
   settings: Settings;
   categories: Category[];
   orderType?: OrderType;
+  onOrderSuccess?: (order: { items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[]; totalAmount: number }) => void;
 }) {
   const { items, removeItem, updateQty, total, clear } = useCartStore();
   const { haptic, platform, profile } = useMiniApp();
@@ -81,8 +83,21 @@ export function CartDrawer({
         alert(d.error ?? "Ошибка");
         return;
       }
+      const orderData = await res.json();
       haptic.success();
       setDone(true);
+      if (onOrderSuccess && orderData.items) {
+        onOrderSuccess({
+          items: orderData.items.map((oi: { productId: string; quantity: number; price: unknown; product?: { name: string }; modifiers?: string }) => ({
+            productId: oi.productId,
+            name: oi.product?.name ?? "",
+            price: Number(oi.price),
+            quantity: oi.quantity,
+            modifiers: oi.modifiers ? (typeof oi.modifiers === "string" ? JSON.parse(oi.modifiers || "[]") : oi.modifiers) : undefined,
+          })),
+          totalAmount: Number(orderData.totalAmount ?? total),
+        });
+      }
       clear();
       setTimeout(onClose, 1500);
     } catch {

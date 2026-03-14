@@ -22,14 +22,15 @@ model Tenant {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  settings   TenantSettings?
-  employees  Employee[]
-  categories Category[]
-  products   Product[]
-  customers  Customer[]
-  orders     Order[]
-  reviews    Review[]
-  stories    Story[]
+  settings       TenantSettings?
+  employees      Employee[]
+  categories     Category[]
+  products       Product[]
+  customers      Customer[]
+  orders         Order[]
+  reviews        Review[]
+  stories        Story[]
+  forYouProducts ForYouProduct[]
 }
 
 model TenantSettings {
@@ -69,6 +70,14 @@ model TenantSettings {
   messengerTelegram Boolean @default(true)
   messengerVk       Boolean @default(true)
   messengerMax      Boolean @default(true)
+  messengerTelegramBotId String?
+  messengerMaxBotId      String?
+  messengerVkGroupToken  String?
+
+  // Бонусная карта: градиент (цвета через запятую, opacity 0-100, тип linear/radial)
+  loyaltyCardGradientColors  String?  // "#hex1,#hex2,..."
+  loyaltyCardGradientOpacity Int      @default(100)
+  loyaltyCardGradientType    String   @default("linear") // "linear" | "radial"
 
   // Лояльность: points = баллы+кэшбек, stamps = закрашенные кружки
   loyaltyType        String  @default("points") // "points" | "stamps"
@@ -105,10 +114,21 @@ model Story {
   coverUrl  String?  // обложка 3:4 для карточки
   mediaUrl  String   // контент: фото или видео
   mediaType String   @default("image") // "image" | "video"
+  linkUrl   String?  // ссылка при клике на обложку (вместо просмотра контента)
   sortOrder Int      @default(0)
   isActive  Boolean  @default(true)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+}
+
+// «Для вас» — выбранные партнёром блюда для блока после историй
+model ForYouProduct {
+  id        String  @id @default(uuid())
+  tenantId  String
+  tenant    Tenant  @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  sortOrder Int     @default(0)
 }
 
 // Суперадмин (глобальный, не привязан к tenant)
@@ -197,9 +217,10 @@ model Product {
   isHit        Boolean  @default(false)
   isDiscounted Boolean  @default(false)
 
-  orderItems     OrderItem[]
-  modifierGroups ModifierGroup[]
-  productBadges  ProductBadgeItem[]
+  orderItems       OrderItem[]
+  modifierGroups   ModifierGroup[]
+  productBadges    ProductBadgeItem[]
+  forYouProductRef ForYouProduct[]
 }
 
 model ProductBadgeItem {

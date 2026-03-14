@@ -26,6 +26,7 @@ export function StoriesManager() {
     coverUrl: "" as string,
     mediaUrl: "",
     mediaType: "image" as "image" | "video",
+    linkUrl: "",
   });
   const [uploading, setUploading] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -87,6 +88,7 @@ export function StoriesManager() {
         coverUrl: form.coverUrl.trim() || null,
         mediaUrl: form.mediaUrl.trim(),
         mediaType: form.mediaType,
+        linkUrl: form.linkUrl.trim() || null,
       };
       if (editing) {
         await fetch(`/api/restaurant/stories/${editing}`, {
@@ -103,7 +105,7 @@ export function StoriesManager() {
       }
       setEditing(null);
       setAdding(false);
-      setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image" });
+      setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image", linkUrl: "" });
       load();
     } finally {
       setSaving(false);
@@ -113,7 +115,7 @@ export function StoriesManager() {
   function cancelForm() {
     setEditing(null);
     setAdding(false);
-    setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image" });
+    setForm({ title: "", coverUrl: "", mediaUrl: "", mediaType: "image", linkUrl: "" });
   }
 
   async function handleDelete(id: string) {
@@ -122,13 +124,14 @@ export function StoriesManager() {
     load();
   }
 
-  function startEdit(s: Story) {
+  function startEdit(s: Story & { linkUrl?: string | null }) {
     setEditing(s.id);
     setForm({
       title: s.title,
       coverUrl: s.coverUrl ?? "",
       mediaUrl: s.mediaUrl,
       mediaType: s.mediaType as "image" | "video",
+      linkUrl: s.linkUrl ?? "",
     });
   }
 
@@ -144,7 +147,7 @@ export function StoriesManager() {
   return (
     <div className="space-y-4">
       <p className="text-sm text-muted-foreground">
-        Добавьте акции. Обложка 3:4 показывается на карточке. Контент (фото/видео) — при открытии.
+        Добавьте акции. Обложка 3:4 — на карточке. Контент — при открытии. Ссылка — при клике откроется вместо просмотра.
       </p>
       {(editing || adding) && (
         <Card>
@@ -192,6 +195,15 @@ export function StoriesManager() {
                   Загрузка и обработка...
                 </div>
               )}
+            </div>
+            <div>
+              <p className="text-sm font-medium mb-2">Ссылка при клике (опционально)</p>
+              <Input
+                placeholder="https://..."
+                value={form.linkUrl}
+                onChange={(e) => setForm((f) => ({ ...f, linkUrl: e.target.value }))}
+              />
+              <p className="text-xs text-muted-foreground mt-1">Если указана — при клике откроется ссылка вместо просмотра</p>
             </div>
             <div>
               <p className="text-sm font-medium mb-2">Контент (фото или видео)</p>
@@ -293,6 +305,7 @@ export function StoriesManager() {
                 <div className="text-sm text-muted-foreground">
                   {s.mediaType === "video" ? "Видео" : "Фото"}
                   {s.coverUrl ? " + обложка" : ""}
+                  {(s as { linkUrl?: string })?.linkUrl ? " + ссылка" : ""}
                 </div>
               </div>
               <div className="flex gap-1">

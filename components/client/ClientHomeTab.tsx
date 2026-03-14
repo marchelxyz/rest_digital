@@ -1,11 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { MapPin, ShoppingCart, ChevronRight, Coins, Gift } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { MenuSection } from "./MenuSection";
 import { StoriesStrip } from "./StoriesStrip";
-import type { Settings, Category, Story } from "./ClientApp";
+import { ForYouSection } from "./ForYouSection";
+import type { Settings, Category, Story, ForYouProduct } from "./ClientApp";
 
 export type OrderType = "PICKUP" | "DINE_IN";
 
@@ -20,6 +21,9 @@ export function ClientHomeTab({
   selectedCategoryId,
   onCategoryChange,
   selectedBadges,
+  onCategoriesAtTopChange,
+  forYouProducts,
+  lastOrder,
 }: {
   settings: Settings;
   categories: Category[];
@@ -31,17 +35,35 @@ export function ClientHomeTab({
   selectedCategoryId: string | "all" | "popular";
   onCategoryChange: (id: string | "all" | "popular") => void;
   selectedBadges: string[];
+  onCategoriesAtTopChange?: (atTop: boolean) => void;
+  forYouProducts?: ForYouProduct[];
+  lastOrder?: {
+    items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[];
+    totalAmount: number;
+  } | null;
 }) {
-  const [search, setSearch] = useState("");
   const { items } = useCartStore();
+  const categoriesRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const el = categoriesRef.current;
+    if (!el || !onCategoriesAtTopChange) return;
+    const io = new IntersectionObserver(
+      ([e]) => onCategoriesAtTopChange(e.isIntersecting),
+      { threshold: 0.1, rootMargin: "0px 0px -80% 0px" }
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, [onCategoriesAtTopChange]);
   const cartTotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
+  const categoriesWithProducts = categories.filter((c) => c.products.length > 0);
   const baseCategories =
     selectedCategoryId === "all"
-      ? categories
+      ? categoriesWithProducts
       : selectedCategoryId === "popular"
-        ? categories
-        : categories.filter((c) => c.id === selectedCategoryId);
+        ? categoriesWithProducts
+        : categoriesWithProducts.filter((c) => c.id === selectedCategoryId);
 
   const filteredCategories =
     selectedBadges.length > 0
@@ -118,15 +140,6 @@ export function ClientHomeTab({
           </button>
         </div>
 
-        <div className="px-4 pb-3">
-          <input
-            type="search"
-            placeholder="Поиск товаров"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full px-4 py-2 rounded-lg border bg-inherit"
-          />
-        </div>
       </header>
 
       {/* Hero banner: только на PC */}
@@ -185,7 +198,16 @@ export function ClientHomeTab({
         />
       )}
 
-      <div className="flex gap-2 px-4 pb-3 overflow-x-auto border-b">
+      {(forYouProducts?.length || lastOrder) && (
+        <ForYouSection
+          forYouProducts={forYouProducts ?? []}
+          lastOrder={lastOrder}
+          primaryColor={settings.primaryColor}
+          borderRadius={settings.borderRadius}
+        />
+      )}
+
+      <div ref={categoriesRef} className="flex gap-2 px-4 pb-3 overflow-x-auto border-b">
         <CategoryChip
           label="Все"
           active={selectedCategoryId === "all"}
@@ -198,7 +220,7 @@ export function ClientHomeTab({
             onClick={() => onCategoryChange("popular")}
           />
         )}
-        {categories.map((c) => (
+        {categoriesWithProducts.map((c) => (
           <CategoryChip
             key={c.id}
             label={c.name}

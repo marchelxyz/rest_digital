@@ -27,6 +27,7 @@ export async function POST(req: NextRequest) {
     coverUrl?: string | null;
     mediaUrl?: string;
     mediaType?: "image" | "video";
+    linkUrl?: string | null;
     sortOrder?: number;
     isActive?: boolean;
   };
@@ -43,6 +44,7 @@ export async function POST(req: NextRequest) {
       coverUrl: body.coverUrl?.trim() || null,
       mediaUrl,
       mediaType,
+      linkUrl: body.linkUrl?.trim() || null,
       sortOrder: body.sortOrder ?? 0,
       isActive: body.isActive ?? true,
     },
