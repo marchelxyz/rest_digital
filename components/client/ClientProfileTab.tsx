@@ -92,7 +92,7 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
           <LoyaltyPointsCard
             points={0}
             cashbackPct={settings.loyaltyCashbackPct}
-            tier="Начинающий серфер"
+            tier="Бонусная карта"
             borderRadius={settings.borderRadius}
             gradientColors={settings.loyaltyCardGradientColors}
             gradientOpacity={settings.loyaltyCardGradientOpacity ?? 100}
@@ -237,7 +237,7 @@ function LoyaltyPointsCard({
   return (
     <div className="space-y-3">
       <div
-        className={`p-4 rounded-xl border shadow-sm transition-colors duration-200 ${hasGradient ? "text-white border-white/20" : ""}`}
+        className={`p-6 min-h-[140px] rounded-xl border shadow-sm transition-colors duration-200 flex flex-col justify-between ${hasGradient ? "text-white border-white/20" : ""}`}
         style={{ borderRadius: borderRadius + 4, ...bgStyle }}
       >
         <div className="flex items-start justify-between mb-3">
@@ -274,13 +274,6 @@ function LoyaltyPointsCard({
               <span className="text-xs">QR-код</span>
             </button>
           </div>
-        </div>
-      </div>
-      <div className="px-1">
-        <div className="text-sm font-medium mb-1">Повысьте кэшбэк до 5%</div>
-        <div className="text-xs text-muted-foreground mb-2">Закажите ещё, чтобы увеличить кэшбэк</div>
-        <div className="h-1.5 bg-muted rounded-full overflow-hidden">
-          <div className="h-full bg-green-500 rounded-full" style={{ width: "20%" }} />
         </div>
       </div>
       <button

@@ -520,18 +520,20 @@ function FilterSheet({
             Популярное
           </button>
         )}
-        {categories.map((c) => (
-          <button
-            key={c.id}
-            type="button"
-            onClick={() => onCategoryChange(c.id)}
-            className={`w-full py-3 text-left text-sm rounded-lg ${
-              selectedCategoryId === c.id ? "bg-muted/60 font-medium" : ""
-            }`}
-          >
-            {c.name}
-          </button>
-        ))}
+        {categories
+          .filter((c) => c.products.length > 0)
+          .map((c) => (
+            <button
+              key={c.id}
+              type="button"
+              onClick={() => onCategoryChange(c.id)}
+              className={`w-full py-3 text-left text-sm rounded-lg ${
+                selectedCategoryId === c.id ? "bg-muted/60 font-medium" : ""
+              }`}
+            >
+              {c.name}
+            </button>
+          ))}
       </div>
     </>
   );
