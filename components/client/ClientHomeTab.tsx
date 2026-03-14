@@ -66,7 +66,7 @@ export function ClientHomeTab({
     <>
       <header className="bg-inherit border-b">
         <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 min-w-0">
             {settings.logoUrl ? (
               <img
                 src={settings.logoUrl}
@@ -74,9 +74,18 @@ export function ClientHomeTab({
                 className="w-10 h-10 object-cover shrink-0"
               />
             ) : null}
-            <button type="button" className="p-2 -ml-1" aria-label="Меню/локация">
-              <MapPin size={22} strokeWidth={2} />
-            </button>
+            {settings.infoAddress ? (
+              <div className="flex items-center gap-1.5 min-w-0 text-sm">
+                <MapPin size={18} strokeWidth={2} className="shrink-0 opacity-70" />
+                <span className="truncate" title={settings.infoAddress}>
+                  {settings.infoAddress}
+                </span>
+              </div>
+            ) : (
+              <button type="button" className="p-2 -ml-1" aria-label="Адрес">
+                <MapPin size={22} strokeWidth={2} />
+              </button>
+            )}
           </div>
           <button
             type="button"

@@ -39,7 +39,7 @@ export function CartDrawer({
   onOrderSuccess?: (order: { items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[]; totalAmount: number }) => void;
 }) {
   const { items, removeItem, updateQty, total, clear } = useCartStore();
-  const { haptic, platform, profile } = useMiniApp();
+  const { haptic, platform, profile, storage } = useMiniApp();
   const [phone, setPhone] = useState("");
   const [name, setName] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -86,6 +86,7 @@ export function CartDrawer({
       const orderData = await res.json();
       haptic.success();
       setDone(true);
+      storage.set(settings.tenantId, "profile_phone", phone.trim()).catch(() => {});
       if (onOrderSuccess && orderData.items) {
         onOrderSuccess({
           items: orderData.items.map((oi: { productId: string; quantity: number; price: unknown; product?: { name: string }; modifiers?: string }) => ({
