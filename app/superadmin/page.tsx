@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { CreateLoginDialog } from "@/components/superadmin/CreateLoginDialog";
+import { Building2, Plus } from "lucide-react";
 
 export default async function SuperadminPage() {
   const admin = await getSuperadmin();
@@ -18,11 +19,22 @@ export default async function SuperadminPage() {
   });
 
   return (
-    <div className="container max-w-4xl py-8">
+    <div className="container max-w-4xl py-8 px-4">
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-2xl font-bold">Заведения</h1>
+        <div className="flex items-center gap-3">
+          <div className="p-2 rounded-lg bg-amber-100 text-amber-700">
+            <Building2 size={24} />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold text-neutral-900">Заведения</h1>
+            <p className="text-sm text-neutral-500">Партнёры и их приложения</p>
+          </div>
+        </div>
         <Link href="/superadmin/tenants/new">
-          <Button>Добавить заведение</Button>
+          <Button>
+            <Plus size={18} className="mr-2" />
+            Добавить заведение
+          </Button>
         </Link>
       </div>
       <div className="space-y-4">

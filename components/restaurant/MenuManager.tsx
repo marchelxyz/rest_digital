@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import { ProductForm } from "./ProductForm";
 import { SortableCategories } from "./SortableCategories";
 import { SortableProducts } from "./SortableProducts";
@@ -87,6 +87,7 @@ export function MenuManager() {
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [selectedProductIds, setSelectedProductIds] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"categories" | "products">("products");
 
   const load = useCallback(() => {
     setLoading(true);
@@ -236,16 +237,31 @@ export function MenuManager() {
     }
   }
 
-  if (loading) return <p className="text-muted-foreground">Загрузка...</p>;
-
   return (
     <>
-      <Tabs defaultValue="categories">
-        <TabsList>
-          <TabsTrigger value="categories">Категории</TabsTrigger>
-          <TabsTrigger value="products">Блюда</TabsTrigger>
+      <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as "categories" | "products")}>
+        <TabsList className="bg-neutral-100 border border-neutral-200">
+          <TabsTrigger
+            value="categories"
+            className="data-[active]:bg-amber-400 data-[active]:text-black data-[active]:border-amber-400"
+          >
+            Категории
+          </TabsTrigger>
+          <TabsTrigger
+            value="products"
+            className="data-[active]:bg-amber-400 data-[active]:text-black data-[active]:border-amber-400"
+          >
+            Блюда
+          </TabsTrigger>
         </TabsList>
         <TabsContent value="categories" className="space-y-4 pt-4">
+          {loading ? (
+            <div className="flex items-center gap-2 py-8 text-muted-foreground">
+              <Loader2 size={20} className="animate-spin" />
+              Загрузка категорий...
+            </div>
+          ) : (
+          <>
           <div className="flex gap-2">
             <Input
               value={newCat}
@@ -271,8 +287,17 @@ export function MenuManager() {
             onDelete={deleteCategory}
             onReorder={reorderCategories}
           />
+          </>
+          )}
         </TabsContent>
         <TabsContent value="products" className="space-y-4 pt-4">
+          {loading ? (
+            <div className="flex items-center gap-2 py-8 text-muted-foreground">
+              <Loader2 size={20} className="animate-spin" />
+              Загрузка блюд...
+            </div>
+          ) : (
+          <>
           <div className="flex flex-wrap gap-2 items-center">
             <Input
               placeholder="Поиск по названию"
@@ -322,6 +347,8 @@ export function MenuManager() {
             onReorder={reorderProducts}
             onBulkAction={bulkProductAction}
           />
+          </>
+          )}
         </TabsContent>
       </Tabs>
 

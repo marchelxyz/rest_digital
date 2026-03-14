@@ -21,7 +21,7 @@ export default async function TenantSettingsPage({
   if (!tenant) notFound();
 
   return (
-    <div className="container max-w-2xl py-8">
+    <div className="container max-w-2xl py-8 px-4">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold">{tenant.name}</h1>
