@@ -101,12 +101,15 @@ export function ClientApp({
   categories,
   forYouProducts = [],
   adminTheme = "light",
+  platformFromHeaders,
 }: {
   settings: Settings;
   stories: Story[];
   categories: Category[];
   forYouProducts?: ForYouProduct[];
   adminTheme?: "light" | "dark" | "auto";
+  /** Платформа, определённая по HTTP-заголовкам (Referer) на сервере. Приоритет над client-side. */
+  platformFromHeaders?: "telegram" | "vk" | "max";
 }) {
   const enabledMessengers = useMemo(
     () => ({
@@ -125,6 +128,7 @@ export function ClientApp({
           stories={stories}
           categories={categories}
           forYouProducts={forYouProducts}
+          platformFromHeaders={platformFromHeaders}
         />
       </CartStore>
     </MiniAppProvider>
@@ -137,12 +141,14 @@ function ClientAppInner({
   categories,
   forYouProducts,
   adminTheme,
+  platformFromHeaders,
 }: {
   settings: Settings;
   stories: Story[];
   categories: Category[];
   forYouProducts: ForYouProduct[];
   adminTheme: "light" | "dark" | "auto";
+  platformFromHeaders?: "telegram" | "vk" | "max";
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [cartOpen, setCartOpen] = useState(false);
@@ -171,6 +177,7 @@ function ClientAppInner({
     totalAmount: number;
   } | null>(null);
   const { theme, showBack, hideBack, platform } = useMiniApp();
+  const isMax = platformFromHeaders === "max" || platform === "max";
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
@@ -189,7 +196,7 @@ function ClientAppInner({
   }, [activeTab, showBack, hideBack]);
 
   const cartBarHeight = activeTab === "home" ? "3.5rem" : "0";
-  const topPadding = platform === "max" ? 10 : 72;
+  const topPadding = isMax ? 10 : 72;
   const safeAreaStyles = isMobile
     ? {
         root: {

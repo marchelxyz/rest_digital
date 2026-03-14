@@ -1,5 +1,7 @@
 import { notFound } from "next/navigation";
+import { headers } from "next/headers";
 import { prisma } from "@/lib/db";
+import { getPlatformFromHeaders } from "@/lib/mini-apps/platform-from-headers";
 import { ClientApp } from "@/components/client/ClientApp";
 
 export default async function ClientAppPage({
@@ -8,6 +10,7 @@ export default async function ClientAppPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
+  const headersList = await headers();
   const tenant = await prisma.tenant.findUnique({
     where: { slug, isActive: true },
     include: { settings: true, stories: { where: { isActive: true }, orderBy: { sortOrder: "asc" } } },
@@ -131,9 +134,16 @@ export default async function ClientAppPage({
 
   const adminTheme = (s.theme === "auto" ? "auto" : s.theme) as "light" | "dark" | "auto";
 
+  const platformFromHeaders = getPlatformFromHeaders(headersList, {
+    telegram: s.messengerTelegram ?? true,
+    vk: s.messengerVk ?? true,
+    max: s.messengerMax ?? true,
+  });
+
   return (
     <ClientApp
       settings={settings}
+      platformFromHeaders={platformFromHeaders ?? undefined}
       adminTheme={adminTheme}
       stories={stories}
       forYouProducts={forYouProducts}
