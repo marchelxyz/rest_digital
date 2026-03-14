@@ -156,6 +156,16 @@ function ClientAppInner({
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
   const [categoriesAtTop, setCategoriesAtTop] = useState(true);
+
+  useEffect(() => {
+    if (filterOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = "hidden";
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [filterOpen]);
   const [lastOrder, setLastOrder] = useState<{
     items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[];
     totalAmount: number;
@@ -505,6 +515,7 @@ function FilterSheet({
     <>
       <div
         className="fixed inset-0 z-[45] bg-black/40 transition-opacity duration-200"
+        style={{ touchAction: "none" }}
         aria-hidden
         onClick={onClose}
       />
@@ -512,7 +523,7 @@ function FilterSheet({
         ref={sheetRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
-        className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto md:max-w-2xl md:left-1/2 md:-translate-x-1/2 transition-transform duration-300 ease-out"
+        className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto overscroll-contain md:max-w-2xl md:left-1/2 md:-translate-x-1/2 transition-transform duration-300 ease-out"
         style={{
           ...(isMobile
             ? {
