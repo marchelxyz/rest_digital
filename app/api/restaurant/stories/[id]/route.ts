@@ -19,6 +19,7 @@ export async function PATCH(
     coverUrl?: string | null;
     mediaUrl?: string;
     mediaType?: "image" | "video";
+    linkUrl?: string | null;
     sortOrder?: number;
     isActive?: boolean;
   };
@@ -27,6 +28,7 @@ export async function PATCH(
   if (body.coverUrl !== undefined) data.coverUrl = body.coverUrl?.trim() || null;
   if (body.mediaUrl != null) data.mediaUrl = body.mediaUrl.trim();
   if (body.mediaType != null) data.mediaType = body.mediaType === "video" ? "video" : "image";
+  if (body.linkUrl !== undefined) data.linkUrl = body.linkUrl?.trim() || null;
   if (body.sortOrder != null) data.sortOrder = body.sortOrder;
   if (body.isActive != null) data.isActive = body.isActive;
   const updated = await prisma.story.updateMany({

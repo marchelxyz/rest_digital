@@ -14,6 +14,8 @@ const SETTINGS_KEYS = [
   "loyaltyType", "loyaltyStampGoal", "loyaltyCashbackPct",
   "loyaltyInteraction",
   "messengerTelegram", "messengerVk", "messengerMax",
+  "messengerTelegramBotId", "messengerMaxBotId", "messengerVkGroupToken",
+  "loyaltyCardGradientColors", "loyaltyCardGradientOpacity", "loyaltyCardGradientType",
   "infoAddress", "infoHours", "infoPhone", "infoTermsUrl", "infoFaqUrl",
   "infoPartnerUrl", "infoCaloriesUrl", "infoContactText",
   "infoSocialInstagram", "infoSocialTelegram", "infoSocialVk", "infoAboutText",
@@ -55,6 +57,12 @@ type SettingsInput = Partial<{
   messengerTelegram: boolean;
   messengerVk: boolean;
   messengerMax: boolean;
+  messengerTelegramBotId: string;
+  messengerMaxBotId: string;
+  messengerVkGroupToken: string;
+  loyaltyCardGradientColors: string;
+  loyaltyCardGradientOpacity: number;
+  loyaltyCardGradientType: string;
 }>;
 
 function toPrisma(data: SettingsInput): Record<string, unknown> {
@@ -62,7 +70,7 @@ function toPrisma(data: SettingsInput): Record<string, unknown> {
   for (const k of SETTINGS_KEYS) {
     const v = data[k];
     if (v === undefined) continue;
-    if (k === "loyaltyCashbackPct") out[k] = Number(v);
+    if (k === "loyaltyCashbackPct" || k === "loyaltyCardGradientOpacity") out[k] = Number(v);
     else out[k] = v;
   }
   return out;

@@ -2,12 +2,13 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ClipboardList, UtensilsCrossed, Images, Sparkles, BarChart3 } from "lucide-react";
+import { ClipboardList, UtensilsCrossed, Images, Sparkles, BarChart3, Heart } from "lucide-react";
 
 const LINKS = [
   { href: "/restaurant", icon: ClipboardList, label: "Заказы" },
   { href: "/restaurant/menu", icon: UtensilsCrossed, label: "Меню" },
   { href: "/restaurant/stories", icon: Images, label: "Истории" },
+  { href: "/restaurant/for-you", icon: Heart, label: "Для вас" },
   { href: "/restaurant/ai", icon: Sparkles, label: "AI-маркетинг" },
   { href: "/restaurant/stats", icon: BarChart3, label: "Статистика" },
 ] as const;

@@ -20,7 +20,50 @@ export default async function ClientAppPage({
     coverUrl: s.coverUrl,
     mediaUrl: s.mediaUrl,
     mediaType: s.mediaType,
+    linkUrl: s.linkUrl,
   }));
+
+  const forYouRaw = await prisma.forYouProduct.findMany({
+    where: { tenantId: tenant.id },
+    orderBy: { sortOrder: "asc" },
+    include: {
+      product: {
+        include: {
+          modifierGroups: {
+            where: { isActive: true },
+            orderBy: { sortOrder: "asc" },
+            include: {
+              options: { where: { isActive: true }, orderBy: { sortOrder: "asc" } },
+            },
+          },
+        },
+      },
+    },
+  });
+  const forYouProducts = forYouRaw
+    .map((f) => f.product)
+    .filter((p): p is NonNullable<typeof p> => p != null && p.isActive && p.isAvailable && p.isPublished)
+    .map((p) => ({
+      id: p.id,
+      name: p.name,
+      description: p.description,
+      price: Number(p.price),
+      imageUrl: p.imageUrl,
+      weight: p.weight,
+      modifierGroups: p.modifierGroups.map((g) => ({
+        id: g.id,
+        name: g.name,
+        type: g.type,
+        isRequired: g.isRequired,
+        minSelect: g.minSelect,
+        maxSelect: g.maxSelect,
+        options: g.options.map((o) => ({
+          id: o.id,
+          name: o.name,
+          priceDelta: Number(o.priceDelta),
+        })),
+      })),
+    }));
 
   const categories = await prisma.category.findMany({
     where: { tenantId: tenant.id, isActive: true, isPublished: true },
@@ -66,6 +109,9 @@ export default async function ClientAppPage({
     loyaltyStampGoal: s.loyaltyStampGoal,
     loyaltyCashbackPct: Number(s.loyaltyCashbackPct),
     loyaltyInteraction: s.loyaltyInteraction ?? "app_only",
+    loyaltyCardGradientColors: s.loyaltyCardGradientColors,
+    loyaltyCardGradientOpacity: s.loyaltyCardGradientOpacity ?? 100,
+    loyaltyCardGradientType: s.loyaltyCardGradientType ?? "linear",
     messengerTelegram: s.messengerTelegram ?? true,
     messengerVk: s.messengerVk ?? true,
     messengerMax: s.messengerMax ?? true,
@@ -90,6 +136,7 @@ export default async function ClientAppPage({
       settings={settings}
       adminTheme={adminTheme}
       stories={stories}
+      forYouProducts={forYouProducts}
       categories={categories.map((c) => ({
         id: c.id,
         name: c.name,

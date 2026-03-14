@@ -65,6 +65,12 @@ type Settings = {
   messengerTelegram: boolean;
   messengerVk: boolean;
   messengerMax: boolean;
+  messengerTelegramBotId?: string;
+  messengerMaxBotId?: string;
+  messengerVkGroupToken?: string;
+  loyaltyCardGradientColors?: string;
+  loyaltyCardGradientOpacity: number;
+  loyaltyCardGradientType: string;
 };
 
 const FONTS = [
@@ -103,6 +109,9 @@ const DEFAULT: Settings = {
   messengerTelegram: true,
   messengerVk: true,
   messengerMax: true,
+  loyaltyCardGradientColors: "",
+  loyaltyCardGradientOpacity: 100,
+  loyaltyCardGradientType: "linear",
 };
 
 const LOYALTY_INTERACTIONS = [
@@ -331,6 +340,43 @@ export default function BuilderPage() {
                 />
               </div>
 
+              {settings.showLoyalty && (
+                <div className="border-t pt-4 mt-4 space-y-3">
+                  <Label className="text-base font-medium">Градиент бонусной карты</Label>
+                  <div>
+                    <Label className="text-xs">Цвета (через запятую, например #000000,#ffffff)</Label>
+                    <Input
+                      value={settings.loyaltyCardGradientColors ?? ""}
+                      onChange={(e) => update("loyaltyCardGradientColors", e.target.value)}
+                      placeholder="#000000, #ffffff"
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Прозрачность (0–100)</Label>
+                    <Input
+                      type="number"
+                      min={0}
+                      max={100}
+                      value={settings.loyaltyCardGradientOpacity ?? 100}
+                      onChange={(e) => update("loyaltyCardGradientOpacity", Number(e.target.value) || 100)}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-xs">Тип градиента</Label>
+                    <Select
+                      value={settings.loyaltyCardGradientType ?? "linear"}
+                      onValueChange={(v) => update("loyaltyCardGradientType", v ?? "linear")}
+                    >
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="linear">Линейный</SelectItem>
+                        <SelectItem value="radial">Радиальный</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              )}
+
               <div className="border-t pt-4 mt-4">
                 <div className="mb-4">
                   <Label className="text-base font-medium">Мессенджеры</Label>
@@ -338,26 +384,57 @@ export default function BuilderPage() {
                     Включите только те платформы, которые используются для определения пользователя
                   </p>
                   <div className="flex flex-col gap-3 mt-2">
-                    <div className="flex items-center justify-between">
-                      <Label>Telegram</Label>
-                      <Switch
-                        checked={settings.messengerTelegram ?? true}
-                        onCheckedChange={(v) => update("messengerTelegram", v)}
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>Telegram</Label>
+                        <Switch
+                          checked={settings.messengerTelegram ?? true}
+                          onCheckedChange={(v) => update("messengerTelegram", v)}
+                        />
+                      </div>
+                      {settings.messengerTelegram !== false && (
+                        <Input
+                          placeholder="ID бота Telegram"
+                          value={settings.messengerTelegramBotId ?? ""}
+                          onChange={(e) => update("messengerTelegramBotId", e.target.value)}
+                          className="text-sm"
+                        />
+                      )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <Label>VK</Label>
-                      <Switch
-                        checked={settings.messengerVk ?? true}
-                        onCheckedChange={(v) => update("messengerVk", v)}
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>VK</Label>
+                        <Switch
+                          checked={settings.messengerVk ?? true}
+                          onCheckedChange={(v) => update("messengerVk", v)}
+                        />
+                      </div>
+                      {settings.messengerVk !== false && (
+                        <Input
+                          placeholder="Токен группы VK"
+                          value={settings.messengerVkGroupToken ?? ""}
+                          onChange={(e) => update("messengerVkGroupToken", e.target.value)}
+                          className="text-sm"
+                          type="password"
+                        />
+                      )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <Label>MAX (VK Кафе)</Label>
-                      <Switch
-                        checked={settings.messengerMax ?? true}
-                        onCheckedChange={(v) => update("messengerMax", v)}
-                      />
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <Label>MAX (VK Кафе)</Label>
+                        <Switch
+                          checked={settings.messengerMax ?? true}
+                          onCheckedChange={(v) => update("messengerMax", v)}
+                        />
+                      </div>
+                      {settings.messengerMax !== false && (
+                        <Input
+                          placeholder="ID бота MAX"
+                          value={settings.messengerMaxBotId ?? ""}
+                          onChange={(e) => update("messengerMaxBotId", e.target.value)}
+                          className="text-sm"
+                        />
+                      )}
                     </div>
                   </div>
                 </div>

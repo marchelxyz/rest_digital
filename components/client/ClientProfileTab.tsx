@@ -65,6 +65,10 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
           cashbackPct={settings.loyaltyCashbackPct}
           tier="Начинающий"
           borderRadius={settings.borderRadius}
+          gradientColors={settings.loyaltyCardGradientColors}
+          gradientOpacity={settings.loyaltyCardGradientOpacity ?? 100}
+          gradientType={settings.loyaltyCardGradientType ?? "linear"}
+          primaryColor={settings.primaryColor}
         />
       )}
       {settings.showLoyalty && settings.loyaltyType === "stamps" && (
@@ -72,6 +76,10 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
           stamps={0}
           goal={settings.loyaltyStampGoal}
           borderRadius={settings.borderRadius}
+          gradientColors={settings.loyaltyCardGradientColors}
+          gradientOpacity={settings.loyaltyCardGradientOpacity ?? 100}
+          gradientType={settings.loyaltyCardGradientType ?? "linear"}
+          primaryColor={settings.primaryColor}
         />
       )}
 
@@ -132,19 +140,66 @@ function ThemeToggle({
   );
 }
 
+function buildGradientStyle(
+  colors: string | undefined | null,
+  opacity: number,
+  type: string,
+  fallbackColor: string
+): React.CSSProperties {
+  if (!colors?.trim()) {
+    return { backgroundColor: fallbackColor };
+  }
+  const arr = colors.split(",").map((c) => c.trim()).filter(Boolean);
+  if (arr.length === 0) return { backgroundColor: fallbackColor };
+  const alpha = Math.max(0, Math.min(100, opacity)) / 100;
+  const withAlpha = arr.map((c) => {
+    const hex = c.replace("#", "");
+    if (hex.length === 6) {
+      const r = parseInt(hex.slice(0, 2), 16);
+      const g = parseInt(hex.slice(2, 4), 16);
+      const b = parseInt(hex.slice(4, 6), 16);
+      return `rgba(${r},${g},${b},${alpha})`;
+    }
+    return c;
+  });
+  const gradient =
+    type === "radial"
+      ? `radial-gradient(circle at 50% 50%, ${withAlpha.join(", ")})`
+      : `linear-gradient(180deg, ${withAlpha.join(", ")})`;
+  return { background: gradient };
+}
+
 function LoyaltyPointsCard({
   points,
   cashbackPct,
   tier,
   borderRadius,
+  gradientColors,
+  gradientOpacity,
+  gradientType,
+  primaryColor,
 }: {
   points: number;
   cashbackPct: number;
   tier: string;
   borderRadius: number;
+  gradientColors?: string | null;
+  gradientOpacity?: number;
+  gradientType?: string;
+  primaryColor?: string;
 }) {
+  const bgStyle = buildGradientStyle(
+    gradientColors,
+    gradientOpacity ?? 100,
+    gradientType ?? "linear",
+    primaryColor ?? "#000"
+  );
+  const hasGradient = !!gradientColors?.trim();
   return (
-    <div className="p-4 rounded-xl border transition-colors duration-200" style={{ borderRadius }}>
+    <div
+      className={`p-4 rounded-xl border transition-colors duration-200 ${hasGradient ? "text-white border-white/20" : ""}`}
+      style={{ borderRadius, ...bgStyle }}
+    >
       <div className="flex items-center justify-between mb-2">
         <span className="font-medium">{tier}</span>
         <button type="button" className="text-sm opacity-70" aria-label="Подробнее">
@@ -166,13 +221,31 @@ function LoyaltyStampsCard({
   stamps,
   goal,
   borderRadius,
+  gradientColors,
+  gradientOpacity,
+  gradientType,
+  primaryColor,
 }: {
   stamps: number;
   goal: number;
   borderRadius: number;
+  gradientColors?: string | null;
+  gradientOpacity?: number;
+  gradientType?: string;
+  primaryColor?: string;
 }) {
+  const bgStyle = buildGradientStyle(
+    gradientColors,
+    gradientOpacity ?? 100,
+    gradientType ?? "linear",
+    primaryColor ?? "#000"
+  );
+  const hasGradient = !!gradientColors?.trim();
   return (
-    <div className="p-4 rounded-xl border transition-colors duration-200" style={{ borderRadius }}>
+    <div
+      className={`p-4 rounded-xl border transition-colors duration-200 ${hasGradient ? "text-white border-white/20" : ""}`}
+      style={{ borderRadius, ...bgStyle }}
+    >
       <div className="font-medium mb-2">Штампы</div>
       <div className="flex gap-2">
         {Array.from({ length: goal }).map((_, i) => (

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { Home, User, Menu, ShoppingCart, ListFilter, Check } from "lucide-react";
 import { CartStore, useCartStore } from "@/components/client/cart-store";
 import { captureUtmFromUrl } from "@/lib/utm";
@@ -10,6 +10,16 @@ import { ClientProfileTab } from "./ClientProfileTab";
 import { ClientInfoTab } from "./ClientInfoTab";
 import { CartDrawer } from "./CartDrawer";
 import type { OrderType } from "./ClientHomeTab";
+
+export type ForYouProduct = {
+  id: string;
+  name: string;
+  price: number;
+  imageUrl?: string | null;
+  weight?: string | null;
+  description?: string | null;
+  modifierGroups?: unknown[];
+};
 
 export type Settings = {
   tenantId: string;
@@ -28,6 +38,9 @@ export type Settings = {
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
   loyaltyInteraction?: string;
+  loyaltyCardGradientColors?: string | null;
+  loyaltyCardGradientOpacity?: number;
+  loyaltyCardGradientType?: string;
   messengerTelegram?: boolean;
   messengerVk?: boolean;
   messengerMax?: boolean;
@@ -51,6 +64,7 @@ export type Story = {
   coverUrl?: string | null;
   mediaUrl: string;
   mediaType: string;
+  linkUrl?: string | null;
 };
 
 export type Category = {
@@ -85,11 +99,13 @@ export function ClientApp({
   settings,
   stories,
   categories,
+  forYouProducts = [],
   adminTheme = "light",
 }: {
   settings: Settings;
   stories: Story[];
   categories: Category[];
+  forYouProducts?: ForYouProduct[];
   adminTheme?: "light" | "dark" | "auto";
 }) {
   const enabledMessengers = useMemo(
@@ -103,7 +119,13 @@ export function ClientApp({
   return (
     <MiniAppProvider tenantId={settings.tenantId} adminTheme={adminTheme} enabledMessengers={enabledMessengers}>
       <CartStore tenantId={settings.tenantId}>
-        <ClientAppInner settings={settings} adminTheme={adminTheme} stories={stories} categories={categories} />
+        <ClientAppInner
+          settings={settings}
+          adminTheme={adminTheme}
+          stories={stories}
+          categories={categories}
+          forYouProducts={forYouProducts}
+        />
       </CartStore>
     </MiniAppProvider>
   );
@@ -113,11 +135,13 @@ function ClientAppInner({
   settings,
   stories,
   categories,
+  forYouProducts,
   adminTheme,
 }: {
   settings: Settings;
   stories: Story[];
   categories: Category[];
+  forYouProducts: ForYouProduct[];
   adminTheme: "light" | "dark" | "auto";
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
@@ -131,7 +155,12 @@ function ClientAppInner({
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all" | "popular">("all");
   const [selectedBadges, setSelectedBadges] = useState<string[]>([]);
   const [filterOpen, setFilterOpen] = useState(false);
-  const { theme, showBack, hideBack } = useMiniApp();
+  const [categoriesAtTop, setCategoriesAtTop] = useState(true);
+  const [lastOrder, setLastOrder] = useState<{
+    items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[];
+    totalAmount: number;
+  } | null>(null);
+  const { theme, showBack, hideBack, platform } = useMiniApp();
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
@@ -150,10 +179,11 @@ function ClientAppInner({
   }, [activeTab, showBack, hideBack]);
 
   const cartBarHeight = activeTab === "home" ? "3.5rem" : "0";
+  const topPadding = platform === "max" ? 10 : 72;
   const safeAreaStyles = isMobile
     ? {
         root: {
-          paddingTop: 72,
+          paddingTop: topPadding,
           paddingBottom: `calc(5rem + 20px + ${cartBarHeight})`,
         } as const,
         nav: { paddingBottom: 20 } as const,
@@ -182,6 +212,8 @@ function ClientAppInner({
             settings={settings}
             stories={stories}
             categories={categories}
+            forYouProducts={forYouProducts}
+            lastOrder={lastOrder}
             orderType={orderType}
             onOrderTypeChange={setOrderType}
             onCartClick={() => setCartOpen(true)}
@@ -189,6 +221,7 @@ function ClientAppInner({
             selectedCategoryId={selectedCategoryId}
             onCategoryChange={setSelectedCategoryId}
             selectedBadges={selectedBadges}
+            onCategoriesAtTopChange={setCategoriesAtTop}
           />
         )}
         {activeTab === "profile" && <ClientProfileTab settings={settings} adminTheme={adminTheme} />}
@@ -200,6 +233,7 @@ function ClientAppInner({
           settings={settings}
           categories={categories}
           orderType={orderType}
+          onOrderSuccess={(o) => setLastOrder(o)}
         />
 
         {activeTab === "home" && (
@@ -216,6 +250,7 @@ function ClientAppInner({
             filterOpen={filterOpen}
             onFilterToggle={() => setFilterOpen((v) => !v)}
             isMobile={isMobile}
+            showFilterButton={categoriesAtTop}
           />
         )}
 
@@ -262,6 +297,7 @@ function CartBar({
   filterOpen,
   onFilterToggle,
   isMobile,
+  showFilterButton,
 }: {
   settings: Settings;
   categories: Category[];
@@ -273,6 +309,7 @@ function CartBar({
   filterOpen: boolean;
   onFilterToggle: () => void;
   isMobile: boolean;
+  showFilterButton: boolean;
 }) {
   const { items, total } = useCartStore();
   const hasItems = items.length > 0;
@@ -301,6 +338,7 @@ function CartBar({
             <span className="shrink-0">{total} ₽</span>
           </button>
         )}
+        {showFilterButton && (
         <div className="relative shrink-0">
           <button
             type="button"
@@ -325,6 +363,7 @@ function CartBar({
             />
           )}
         </div>
+        )}
       </div>
     </div>
   );
@@ -356,6 +395,21 @@ function FilterSheet({
   onBadgesChange: (badges: string[]) => void;
   onClose: () => void;
 }) {
+  const touchStartY = useRef(0);
+  const sheetRef = useRef<HTMLDivElement>(null);
+
+  function handleTouchStart(e: React.TouchEvent) {
+    touchStartY.current = e.touches[0].clientY;
+  }
+  function handleTouchMove(e: React.TouchEvent) {
+    const y = e.touches[0].clientY;
+    const delta = y - touchStartY.current;
+    if (delta > 60 && sheetRef.current?.scrollTop === 0) {
+      onClose();
+      e.preventDefault();
+    }
+  }
+
   const toggleBadge = (badge: string) => {
     if (selectedBadges.includes(badge)) {
       onBadgesChange(selectedBadges.filter((b) => b !== badge));
@@ -455,6 +509,9 @@ function FilterSheet({
         onClick={onClose}
       />
       <div
+        ref={sheetRef}
+        onTouchStart={handleTouchStart}
+        onTouchMove={handleTouchMove}
         className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto md:max-w-2xl md:left-1/2 md:-translate-x-1/2 transition-transform duration-300 ease-out"
         style={{
           ...(isMobile

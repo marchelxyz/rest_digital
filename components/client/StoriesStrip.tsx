@@ -23,38 +23,44 @@ export function StoriesStrip({ stories, primaryColor, borderRadius, appName }: S
 
   if (!stories.length) return null;
 
-  const cardWidth = 88;
+  const cardWidth = 136;
+  const gap = 10;
   const aspectRatio = 3 / 4;
   const cardHeight = cardWidth / aspectRatio;
-  const frameWidth = 4;
 
   return (
     <>
-      <div className="px-4 py-3 overflow-x-auto">
-        <div className="flex gap-3">
+      <div className="px-4 py-3 overflow-x-auto overflow-y-hidden">
+        <div className="flex gap-[10px]" style={{ gap }}>
           {stories.map((s, i) => {
             const coverUrl = getCoverUrl(s);
             const isVideoCover = !s.coverUrl && s.mediaType === "video";
+            const hasLink = !!(s.linkUrl && s.linkUrl.trim());
             return (
               <button
                 key={s.id}
                 type="button"
-                onClick={() => setViewerIndex(i)}
+                onClick={() => {
+                  if (hasLink) {
+                    const url = s.linkUrl!;
+                    window.open(url, "_blank");
+                  } else {
+                    setViewerIndex(i);
+                  }
+                }}
                 className="shrink-0 flex flex-col items-center"
               >
                 <div
                   className="rounded-xl overflow-hidden flex items-center justify-center"
                   style={{
-                    width: cardWidth + frameWidth * 2,
-                    height: cardHeight + frameWidth * 2,
-                    padding: frameWidth,
-                    backgroundColor: primaryColor,
+                    width: cardWidth,
+                    height: cardHeight,
                     borderRadius: borderRadius + 4,
                   }}
                 >
                   <div
-                    className="rounded-lg overflow-hidden w-full h-full"
-                    style={{ borderRadius, aspectRatio: "3/4" }}
+                    className="rounded-xl overflow-hidden w-full h-full"
+                    style={{ borderRadius: borderRadius + 4, aspectRatio: "3/4" }}
                   >
                     {isVideoCover ? (
                       <video
@@ -69,7 +75,6 @@ export function StoriesStrip({ stories, primaryColor, borderRadius, appName }: S
                     )}
                   </div>
                 </div>
-                <span className="text-xs mt-1 truncate max-w-[96px] text-center">{s.title}</span>
               </button>
             );
           })}
