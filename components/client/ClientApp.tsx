@@ -384,6 +384,8 @@ function CartBar({
  * Секция «Фильтр» — чекбоксы бейджей.
  * Секция «Категории» — список выбора без чекбоксов.
  */
+const FILTER_CLOSE_DURATION_MS = 280;
+
 function FilterSheet({
   isMobile,
   settings,
@@ -407,6 +409,24 @@ function FilterSheet({
 }) {
   const touchStartY = useRef(0);
   const sheetRef = useRef<HTMLDivElement>(null);
+  const [isClosing, setIsClosing] = useState(false);
+  const closeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(
+    () => () => {
+      if (closeTimerRef.current) clearTimeout(closeTimerRef.current);
+    },
+    []
+  );
+
+  function handleClose() {
+    if (isClosing) return;
+    setIsClosing(true);
+    closeTimerRef.current = setTimeout(() => {
+      closeTimerRef.current = null;
+      onClose();
+    }, FILTER_CLOSE_DURATION_MS);
+  }
 
   function handleTouchStart(e: React.TouchEvent) {
     touchStartY.current = e.touches[0].clientY;
@@ -415,7 +435,7 @@ function FilterSheet({
     const y = e.touches[0].clientY;
     const delta = y - touchStartY.current;
     if (delta > 60 && sheetRef.current?.scrollTop === 0) {
-      onClose();
+      handleClose();
       e.preventDefault();
     }
   }
@@ -511,33 +531,41 @@ function FilterSheet({
     </>
   );
 
+  const desktopBaseTransform = "translateX(-50%)";
+  const closingTransform = isMobile ? "translateY(100%)" : `translate(-50%, 100%)`;
+
   return (
     <>
       <div
         className="fixed inset-0 z-[45] bg-black/40 transition-opacity duration-200"
-        style={{ touchAction: "none" }}
+        style={{
+          touchAction: "none",
+          opacity: isClosing ? 0 : 1,
+        }}
         aria-hidden
-        onClick={onClose}
+        onClick={handleClose}
       />
       <div
         ref={sheetRef}
         onTouchStart={handleTouchStart}
         onTouchMove={handleTouchMove}
-        className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto overscroll-contain md:max-w-2xl md:left-1/2 md:-translate-x-1/2 transition-transform duration-300 ease-out"
+        className="fixed left-0 right-0 z-50 bg-background border-t shadow-xl overflow-y-auto overscroll-contain md:max-w-2xl md:left-1/2 md:-translate-x-1/2 transition-transform ease-out"
         style={{
+          transitionDuration: `${FILTER_CLOSE_DURATION_MS}ms`,
           ...(isMobile
             ? {
                 bottom: 0,
                 maxHeight: "80dvh",
                 borderTopLeftRadius: 16,
                 borderTopRightRadius: 16,
+                transform: isClosing ? "translateY(100%)" : "none",
               }
             : {
                 bottom: "calc(4.5rem + 3.5rem + 1rem)",
                 maxHeight: "70vh",
                 width: 280,
                 left: "50%",
-                transform: "translateX(-50%)",
+                transform: isClosing ? closingTransform : desktopBaseTransform,
                 borderRadius: settings.borderRadius + 4,
                 border: "1px solid hsl(var(--border))",
               }),
