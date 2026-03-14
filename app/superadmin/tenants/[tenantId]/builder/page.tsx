@@ -62,6 +62,9 @@ type Settings = {
   infoSocialTelegram?: string;
   infoSocialVk?: string;
   infoAboutText?: string;
+  messengerTelegram: boolean;
+  messengerVk: boolean;
+  messengerMax: boolean;
 };
 
 const FONTS = [
@@ -97,6 +100,9 @@ const DEFAULT: Settings = {
   loyaltyStampGoal: 6,
   loyaltyCashbackPct: 5,
   loyaltyInteraction: "app_only",
+  messengerTelegram: true,
+  messengerVk: true,
+  messengerMax: true,
 };
 
 const LOYALTY_INTERACTIONS = [
@@ -326,6 +332,35 @@ export default function BuilderPage() {
               </div>
 
               <div className="border-t pt-4 mt-4">
+                <div className="mb-4">
+                  <Label className="text-base font-medium">Мессенджеры</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Включите только те платформы, которые используются для определения пользователя
+                  </p>
+                  <div className="flex flex-col gap-3 mt-2">
+                    <div className="flex items-center justify-between">
+                      <Label>Telegram</Label>
+                      <Switch
+                        checked={settings.messengerTelegram ?? true}
+                        onCheckedChange={(v) => update("messengerTelegram", v)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>VK</Label>
+                      <Switch
+                        checked={settings.messengerVk ?? true}
+                        onCheckedChange={(v) => update("messengerVk", v)}
+                      />
+                    </div>
+                    <div className="flex items-center justify-between">
+                      <Label>MAX (VK Кафе)</Label>
+                      <Switch
+                        checked={settings.messengerMax ?? true}
+                        onCheckedChange={(v) => update("messengerMax", v)}
+                      />
+                    </div>
+                  </div>
+                </div>
                 <div>
                   <Label>Взаимодействие с бонусной картой</Label>
                   <Select

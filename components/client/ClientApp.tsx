@@ -1,8 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { Home, User, Menu, ShoppingCart, ListFilter, Check } from "lucide-react";
 import { CartStore, useCartStore } from "@/components/client/cart-store";
+import { captureUtmFromUrl } from "@/lib/utm";
 import { MiniAppProvider, useMiniApp } from "./MiniAppProvider";
 import { ClientHomeTab } from "./ClientHomeTab";
 import { ClientProfileTab } from "./ClientProfileTab";
@@ -27,6 +28,9 @@ export type Settings = {
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
   loyaltyInteraction?: string;
+  messengerTelegram?: boolean;
+  messengerVk?: boolean;
+  messengerMax?: boolean;
   infoAddress?: string | null;
   infoHours?: string | null;
   infoPhone?: string | null;
@@ -88,8 +92,16 @@ export function ClientApp({
   categories: Category[];
   adminTheme?: "light" | "dark" | "auto";
 }) {
+  const enabledMessengers = useMemo(
+    () => ({
+      telegram: settings.messengerTelegram !== false,
+      vk: settings.messengerVk !== false,
+      max: settings.messengerMax !== false,
+    }),
+    [settings.messengerTelegram, settings.messengerVk, settings.messengerMax]
+  );
   return (
-    <MiniAppProvider tenantId={settings.tenantId} adminTheme={adminTheme}>
+    <MiniAppProvider tenantId={settings.tenantId} adminTheme={adminTheme} enabledMessengers={enabledMessengers}>
       <CartStore tenantId={settings.tenantId}>
         <ClientAppInner settings={settings} adminTheme={adminTheme} stories={stories} categories={categories} />
       </CartStore>
@@ -110,6 +122,10 @@ function ClientAppInner({
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [cartOpen, setCartOpen] = useState(false);
+
+  useEffect(() => {
+    captureUtmFromUrl();
+  }, []);
   const [orderType, setOrderType] = useState<OrderType>("PICKUP");
   const [isMobile, setIsMobile] = useState(true);
   const [selectedCategoryId, setSelectedCategoryId] = useState<string | "all" | "popular">("all");

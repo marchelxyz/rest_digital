@@ -11,6 +11,13 @@ export async function POST(req: NextRequest) {
     phone?: string;
     name?: string;
     type?: string;
+    platform?: string;
+    platformUserId?: string;
+    utmSource?: string;
+    utmMedium?: string;
+    utmCampaign?: string;
+    utmTerm?: string;
+    utmContent?: string;
     items?: {
       productId: string;
       quantity: number;
@@ -36,9 +43,24 @@ export async function POST(req: NextRequest) {
   let customer = await prisma.customer.findUnique({
     where: { tenantId_phone: { tenantId, phone } },
   });
+  const utmData = {
+    platform: body.platform ?? null,
+    platformUserId: body.platformUserId ?? null,
+    utmSource: body.utmSource ?? null,
+    utmMedium: body.utmMedium ?? null,
+    utmCampaign: body.utmCampaign ?? null,
+    utmTerm: body.utmTerm ?? null,
+    utmContent: body.utmContent ?? null,
+  };
+
   if (!customer) {
     customer = await prisma.customer.create({
-      data: { tenantId, phone, name: body.name?.trim() ?? null },
+      data: {
+        tenantId,
+        phone,
+        name: body.name?.trim() ?? null,
+        ...utmData,
+      },
     });
   } else if (body.name?.trim()) {
     customer = await prisma.customer.update({
@@ -76,6 +98,12 @@ export async function POST(req: NextRequest) {
       totalAmount,
       address: orderType === "DELIVERY" ? body.address ?? null : null,
       comment: body.comment ?? null,
+      platform: body.platform ?? null,
+      utmSource: body.utmSource ?? null,
+      utmMedium: body.utmMedium ?? null,
+      utmCampaign: body.utmCampaign ?? null,
+      utmTerm: body.utmTerm ?? null,
+      utmContent: body.utmContent ?? null,
       items: { create: orderItems },
     },
     include: { items: { include: { product: true } }, customer: true },
