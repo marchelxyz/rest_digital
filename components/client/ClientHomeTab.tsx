@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
 import { MapPin, ShoppingCart, ChevronRight, Coins, Gift } from "lucide-react";
 import { useCartStore } from "./cart-store";
 import { MenuSection } from "./MenuSection";
@@ -21,7 +20,6 @@ export function ClientHomeTab({
   selectedCategoryId,
   onCategoryChange,
   selectedBadges,
-  onCategoriesAtTopChange,
   forYouProducts,
   lastOrder,
 }: {
@@ -35,7 +33,6 @@ export function ClientHomeTab({
   selectedCategoryId: string | "all" | "popular";
   onCategoryChange: (id: string | "all" | "popular") => void;
   selectedBadges: string[];
-  onCategoriesAtTopChange?: (atTop: boolean) => void;
   forYouProducts?: ForYouProduct[];
   lastOrder?: {
     items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[];
@@ -43,18 +40,6 @@ export function ClientHomeTab({
   } | null;
 }) {
   const { items } = useCartStore();
-  const categoriesRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const el = categoriesRef.current;
-    if (!el || !onCategoriesAtTopChange) return;
-    const io = new IntersectionObserver(
-      ([e]) => onCategoriesAtTopChange(e.isIntersecting),
-      { threshold: 0.1, rootMargin: "0px 0px -80% 0px" }
-    );
-    io.observe(el);
-    return () => io.disconnect();
-  }, [onCategoriesAtTopChange]);
   const cartTotal = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
   const categoriesWithProducts = categories.filter((c) => c.products.length > 0);
@@ -207,7 +192,7 @@ export function ClientHomeTab({
         />
       )}
 
-      <div ref={categoriesRef} className="flex gap-2 px-4 pb-3 overflow-x-auto border-b">
+      <div className="flex gap-2 px-4 pb-3 overflow-x-auto border-b">
         <CategoryChip
           label="Все"
           active={selectedCategoryId === "all"}
