@@ -121,18 +121,6 @@ export async function POST(req: NextRequest) {
     include: { items: { include: { product: true } }, customer: true },
   });
 
-  const settings = await prisma.tenantSettings.findUnique({ where: { tenantId } });
-  const stampGoal = settings?.loyaltyStampGoal ?? 6;
-  const cashbackPct = settings ? Number(settings.loyaltyCashbackPct) : 0;
-  const pointsToAdd = (totalAmount * cashbackPct) / 100;
-
-  await prisma.customer.update({
-    where: { id: customer.id },
-    data: {
-      stamps: { increment: 1 },
-      points: { increment: pointsToAdd },
-    },
-  });
-
+  // Бонусы начисляются только после подтверждения заказа (см. PATCH /api/restaurant/orders/[id]/status)
   return NextResponse.json(order);
 }
