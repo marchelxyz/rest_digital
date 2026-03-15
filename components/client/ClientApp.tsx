@@ -326,6 +326,7 @@ function ClientAppInner({
           categories={categories}
           orderType={orderType}
           onOrderSuccess={(o) => setLastOrder(o)}
+          isMax={isMax}
         />
 
         {activeTab === "home" && (
