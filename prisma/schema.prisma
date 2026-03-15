@@ -276,7 +276,14 @@ model Customer {
   tenantId String
   tenant   Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   phone   String
-  name    String?
+  name    String?  // Имя
+
+  lastName   String?   // Фамилия
+  patronymic String?   // Отчество
+  dateOfBirth DateTime? // День рождения
+  email      String?   // Эл. почта
+  city       String?   // Город
+  consentToMailing Boolean @default(false) // Согласие на рассылку
 
   stamps Int     @default(0)
   points Decimal @default(0) @db.Decimal(10, 2)
@@ -284,6 +291,10 @@ model Customer {
   // Канал привлечения
   platform      String? // "telegram" | "vk" | "max" | "standalone"
   platformUserId String?
+  // ID пользователя в каждом мессенджере (для определения аккаунта в любом канале)
+  telegramUserId String?
+  vkUserId       String?
+  maxUserId      String?
   utmSource     String?
   utmMedium     String?
   utmCampaign   String?

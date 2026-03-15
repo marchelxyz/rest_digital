@@ -99,6 +99,23 @@ export type Category = {
   }[];
 };
 
+export type CustomerData = {
+  id: string;
+  name?: string;
+  phone: string;
+  points: number;
+  stamps: number;
+  telegramUserId?: string;
+  vkUserId?: string;
+  maxUserId?: string;
+  lastName?: string;
+  patronymic?: string;
+  dateOfBirth?: string;
+  email?: string;
+  city?: string;
+  consentToMailing?: boolean;
+};
+
 type TabId = "home" | "profile" | "info";
 
 export function ClientApp({
@@ -181,8 +198,54 @@ function ClientAppInner({
     items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[];
     totalAmount: number;
   } | null>(null);
-  const { theme, showBack, hideBack, platform } = useMiniApp();
+  const [customer, setCustomer] = useState<CustomerData | null>(null);
+  const [customerLoading, setCustomerLoading] = useState(true);
+  const { theme, showBack, hideBack, platform, profile, storage } = useMiniApp();
   const isMax = platformFromHeaders === "max" || platform === "max";
+
+  useEffect(() => {
+    let cancelled = false;
+    const tenantId = settings.tenantId;
+    async function loadCustomer() {
+      const phoneFromStorage = await storage.get(tenantId, "profile_phone");
+      const phone = (phoneFromStorage ?? "").trim();
+      const name =
+        profile?.firstName || profile?.lastName
+          ? [profile.firstName, profile.lastName].filter(Boolean).join(" ")
+          : "";
+      try {
+        const res = await fetch("/api/public/customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tenantId,
+            platform: platform === "standalone" ? "" : platform,
+            platformUserId: profile?.platformUserId ?? "",
+            phone: phone || undefined,
+            name: name || undefined,
+          }),
+        });
+        if (cancelled) return;
+        if (res.ok) {
+          const data = (await res.json()) as CustomerData;
+          setCustomer(data);
+          if (data.phone) {
+            storage.set(tenantId, "profile_phone", data.phone).catch(() => {});
+          }
+        } else {
+          setCustomer(null);
+        }
+      } catch {
+        if (!cancelled) setCustomer(null);
+      } finally {
+        if (!cancelled) setCustomerLoading(false);
+      }
+    }
+    loadCustomer();
+    return () => {
+      cancelled = true;
+    };
+  }, [settings.tenantId, platform, profile?.platformUserId, storage]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
@@ -245,7 +308,15 @@ function ClientAppInner({
             selectedBadges={selectedBadges}
           />
         )}
-        {activeTab === "profile" && <ClientProfileTab settings={settings} adminTheme={adminTheme} />}
+        {activeTab === "profile" && (
+          <ClientProfileTab
+            settings={settings}
+            adminTheme={adminTheme}
+            customer={customer}
+            customerLoading={customerLoading}
+            onCustomerUpdated={(c) => setCustomer(c)}
+          />
+        )}
         {activeTab === "info" && <ClientInfoTab settings={settings} />}
 
         <CartDrawer

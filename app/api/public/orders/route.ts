@@ -52,6 +52,12 @@ export async function POST(req: NextRequest) {
     utmTerm: body.utmTerm ?? null,
     utmContent: body.utmContent ?? null,
   };
+  const platform = body.platform ?? "";
+  const platformUserId = (body.platformUserId ?? "").trim();
+  const messengerLink: { telegramUserId?: string; vkUserId?: string; maxUserId?: string } = {};
+  if (platform === "telegram" && platformUserId) messengerLink.telegramUserId = platformUserId;
+  if (platform === "vk" && platformUserId) messengerLink.vkUserId = platformUserId;
+  if (platform === "max" && platformUserId) messengerLink.maxUserId = platformUserId;
 
   if (!customer) {
     customer = await prisma.customer.create({
@@ -60,13 +66,19 @@ export async function POST(req: NextRequest) {
         phone,
         name: body.name?.trim() ?? null,
         ...utmData,
+        ...messengerLink,
       },
     });
-  } else if (body.name?.trim()) {
-    customer = await prisma.customer.update({
-      where: { id: customer.id },
-      data: { name: body.name.trim() },
-    });
+  } else {
+    const updateData: { name?: string; telegramUserId?: string; vkUserId?: string; maxUserId?: string } = {};
+    if (body.name?.trim()) updateData.name = body.name.trim();
+    if (Object.keys(messengerLink).length > 0) Object.assign(updateData, messengerLink);
+    if (Object.keys(updateData).length > 0) {
+      customer = await prisma.customer.update({
+        where: { id: customer.id },
+        data: updateData,
+      });
+    }
   }
 
   const productIds = items.map((i) => i.productId);

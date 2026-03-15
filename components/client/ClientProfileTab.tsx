@@ -17,7 +17,7 @@ import {
 } from "lucide-react";
 import QRCode from "qrcode";
 import { useMiniApp } from "./MiniAppProvider";
-import type { Settings } from "./ClientApp";
+import type { CustomerData, Settings } from "./ClientApp";
 
 function normalizeCardNumber(phone: string): string {
   const digits = phone.replace(/\D/g, "");
@@ -40,29 +40,35 @@ function formatPhone(phone: string): string {
 type ClientProfileTabProps = {
   settings: Settings;
   adminTheme?: "light" | "dark" | "auto";
+  customer: CustomerData | null;
+  customerLoading: boolean;
+  onCustomerUpdated: (customer: CustomerData | null) => void;
 };
 
-export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfileTabProps) {
+export function ClientProfileTab({
+  settings,
+  adminTheme = "light",
+  customer,
+  customerLoading,
+  onCustomerUpdated,
+}: ClientProfileTabProps) {
   const { profile, theme, setTheme, share, addToHome, canAddToHome, storage } = useMiniApp();
-  const [phone, setPhone] = useState<string | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [faqModalOpen, setFaqModalOpen] = useState(false);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [ordersModalOpen, setOrdersModalOpen] = useState(false);
   const [dataModalOpen, setDataModalOpen] = useState(false);
 
-  useEffect(() => {
-    storage.get(settings.tenantId, "profile_phone").then((v) => {
-      if (v?.trim()) setPhone(v.trim());
-    });
-  }, [settings.tenantId, storage]);
-
   const showThemeToggle = adminTheme === "auto";
   const displayName =
-    profile?.firstName || profile?.lastName
+    customer?.name?.trim() ||
+    (profile?.firstName || profile?.lastName
       ? [profile.firstName, profile.lastName].filter(Boolean).join(" ")
-      : "Гость";
-  const displayPhone = phone ? formatPhone(phone) : "+7 (___) ___-__-__";
+      : "Гость");
+  const displayPhone = customer?.phone
+    ? formatPhone(customer.phone)
+    : "+7 (___) ___-__-__";
+  const cardNumber = customer?.phone ? normalizeCardNumber(customer.phone) : null;
 
   async function handleShare() {
     const text = (settings.inviteText?.trim() || `${settings.appName} — закажи вкусно`);
@@ -79,7 +85,9 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
     <div className="max-w-lg mx-auto px-4 py-4 space-y-4">
       <header className="flex items-center justify-between">
         <div>
-          <div className="font-semibold">{displayName}</div>
+          <div className="font-semibold">
+            {customerLoading ? "Загрузка…" : displayName}
+          </div>
           <div className="text-sm opacity-70">{displayPhone}</div>
         </div>
         <button
@@ -104,7 +112,7 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
       {settings.showLoyalty && settings.loyaltyType === "points" && (
         <>
           <LoyaltyPointsCard
-            points={0}
+            points={customer?.points ?? 0}
             cashbackPct={settings.loyaltyCashbackPct}
             tier="Бонусная карта"
             borderRadius={settings.borderRadius}
@@ -124,14 +132,14 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
           <LoyaltyCardModal
             open={qrModalOpen}
             onClose={() => setQrModalOpen(false)}
-            cardNumber={phone ? normalizeCardNumber(phone) : null}
+            cardNumber={cardNumber}
             borderRadius={settings.borderRadius}
           />
         </>
       )}
       {settings.showLoyalty && settings.loyaltyType === "stamps" && (
         <LoyaltyStampsCard
-          stamps={0}
+          stamps={customer?.stamps ?? 0}
           goal={settings.loyaltyStampGoal}
           borderRadius={settings.borderRadius}
           gradientColors={settings.loyaltyCardGradientColors}
@@ -161,9 +169,16 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
       <MyDataModal
         open={dataModalOpen}
         onClose={() => setDataModalOpen(false)}
-        displayName={displayName}
-        displayPhone={displayPhone}
+        customer={customer}
+        settings={settings}
+        profile={profile}
         borderRadius={settings.borderRadius}
+        onSaved={(updated) => {
+          onCustomerUpdated(updated);
+          if (updated?.phone) {
+            storage.set(settings.tenantId, "profile_phone", updated.phone).catch(() => {});
+          }
+        }}
       />
     </div>
   );
@@ -452,40 +467,249 @@ function OrdersModal({
 function MyDataModal({
   open,
   onClose,
-  displayName,
-  displayPhone,
+  customer,
+  settings,
+  profile,
   borderRadius,
+  onSaved,
 }: {
   open: boolean;
   onClose: () => void;
-  displayName: string;
-  displayPhone: string;
+  customer: CustomerData | null;
+  settings: Settings;
+  profile: { platform?: string; platformUserId?: string } | null;
   borderRadius: number;
+  onSaved: (customer: CustomerData | null) => void;
 }) {
+  const [name, setName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [patronymic, setPatronymic] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [email, setEmail] = useState("");
+  const [city, setCity] = useState("");
+  const [consentToMailing, setConsentToMailing] = useState(false);
+  const [phone, setPhone] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (open) {
+      setName(customer?.name ?? "");
+      setLastName(customer?.lastName ?? "");
+      setPatronymic(customer?.patronymic ?? "");
+      setDateOfBirth(customer?.dateOfBirth ?? "");
+      setEmail(customer?.email ?? "");
+      setCity(customer?.city ?? "");
+      setConsentToMailing(customer?.consentToMailing ?? false);
+      setPhone(customer?.phone ?? "");
+    }
+  }, [
+    open,
+    customer?.name,
+    customer?.lastName,
+    customer?.patronymic,
+    customer?.dateOfBirth,
+    customer?.email,
+    customer?.city,
+    customer?.consentToMailing,
+    customer?.phone,
+  ]);
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!settings.tenantId) return;
+    const trimmedPhone = phone.trim();
+    if (!trimmedPhone) return;
+    setSaving(true);
+    try {
+      const payload = {
+        tenantId: settings.tenantId,
+        platform: profile?.platform ?? "",
+        platformUserId: profile?.platformUserId ?? "",
+        name: name.trim() || undefined,
+        lastName: lastName.trim() || undefined,
+        patronymic: patronymic.trim() || undefined,
+        dateOfBirth: dateOfBirth.trim() || undefined,
+        email: email.trim() || undefined,
+        city: city.trim() || undefined,
+        consentToMailing,
+        phone: trimmedPhone,
+      };
+      if (customer?.id) {
+        const res = await fetch("/api/public/customer", {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ ...payload, customerId: customer.id }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as CustomerData;
+          onSaved(data);
+          onClose();
+        }
+      } else {
+        const res = await fetch("/api/public/customer", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as CustomerData;
+          onSaved(data);
+          onClose();
+        }
+      }
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  const showTelegram = settings.messengerTelegram !== false;
+  const showVk = settings.messengerVk !== false;
+  const showMax = settings.messengerMax !== false;
+
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
       <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
       <div
-        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6"
+        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto"
         style={{ borderRadius: borderRadius + 8 }}
       >
-        <h2 className="text-xl font-bold mb-2">Мои данные</h2>
-        <div className="text-sm space-y-1 mb-4">
-          <div><span className="text-muted-foreground">Имя: </span>{displayName}</div>
-          <div><span className="text-muted-foreground">Телефон: </span>{displayPhone}</div>
-        </div>
-        <p className="text-xs text-muted-foreground mb-4">
-          Телефон сохраняется при оформлении заказа и используется как номер бонусной карты.
-        </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
-          style={{ borderRadius: borderRadius + 4 }}
-        >
-          Закрыть
-        </button>
+        <h2 className="text-xl font-bold mb-4">Мои данные</h2>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="text-sm font-medium text-muted-foreground block mb-1">Имя</label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Имя"
+              style={{ borderRadius: settings.borderRadius }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground block mb-1">День рождения</label>
+            <input
+              type="date"
+              value={dateOfBirth}
+              onChange={(e) => setDateOfBirth(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              style={{ borderRadius: settings.borderRadius }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground block mb-1">Эл. почта</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="example@mail.ru"
+              style={{ borderRadius: settings.borderRadius }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground block mb-1">Фамилия</label>
+            <input
+              type="text"
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Фамилия"
+              style={{ borderRadius: settings.borderRadius }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground block mb-1">Отчество</label>
+            <input
+              type="text"
+              value={patronymic}
+              onChange={(e) => setPatronymic(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Отчество"
+              style={{ borderRadius: settings.borderRadius }}
+            />
+          </div>
+          <label className="flex items-center gap-2 cursor-pointer">
+            <input
+              type="checkbox"
+              checked={consentToMailing}
+              onChange={(e) => setConsentToMailing(e.target.checked)}
+              className="rounded border-input"
+            />
+            <span className="text-sm text-muted-foreground">Согласие на рассылку</span>
+          </label>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground block mb-1">Город</label>
+            <input
+              type="text"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="Город"
+              style={{ borderRadius: settings.borderRadius }}
+            />
+          </div>
+          <div>
+            <label className="text-sm font-medium text-muted-foreground block mb-1">Телефон</label>
+            <input
+              type="tel"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              className="w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+              placeholder="+7 (999) 123-45-67"
+              style={{ borderRadius: settings.borderRadius }}
+            />
+            <p className="text-xs text-muted-foreground mt-1">
+              Используется как номер бонусной карты
+            </p>
+          </div>
+          {(showTelegram || showVk || showMax) && (
+            <div className="pt-2 border-t">
+              <div className="text-sm font-medium text-muted-foreground mb-2">ID в мессенджерах</div>
+              <div className="text-sm space-y-1">
+                {showTelegram && (
+                  <div>
+                    <span className="text-muted-foreground">Telegram ID: </span>
+                    {customer?.telegramUserId ?? "—"}
+                  </div>
+                )}
+                {showVk && (
+                  <div>
+                    <span className="text-muted-foreground">VK ID: </span>
+                    {customer?.vkUserId ?? "—"}
+                  </div>
+                )}
+                {showMax && (
+                  <div>
+                    <span className="text-muted-foreground">MAX ID: </span>
+                    {customer?.maxUserId ?? "—"}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <button
+            type="submit"
+            disabled={saving}
+            className="w-full py-3 rounded-xl font-medium transition-colors text-white disabled:opacity-50"
+            style={{
+              borderRadius: borderRadius + 4,
+              backgroundColor: settings.primaryColor,
+            }}
+          >
+            {saving ? "Сохранение…" : "Сохранить"}
+          </button>
+          <div className="text-center pt-2">
+            <button
+              type="button"
+              onClick={() => {}}
+              className="text-sm text-muted-foreground hover:underline"
+            >
+              Удалить аккаунт
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );

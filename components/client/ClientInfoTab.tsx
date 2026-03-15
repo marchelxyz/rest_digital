@@ -48,20 +48,37 @@ export function ClientInfoTab({ settings }: { settings: Settings }) {
             {settings.infoPhone}
           </a>
         )}
-        <div className="flex gap-4 mt-3">
+        <div className="flex gap-4 mt-3 items-center">
           {settings.infoSocialInstagram && (
-            <a href={settings.infoSocialInstagram} target="_blank" rel="noopener noreferrer">
+            <a
+              href={settings.infoSocialInstagram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-sm"
+            >
               Instagram
             </a>
           )}
           {settings.infoSocialTelegram && (
-            <a href={settings.infoSocialTelegram} target="_blank" rel="noopener noreferrer">
-              Telegram
+            <a
+              href={settings.infoSocialTelegram}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-8 h-8 rounded-full opacity-80 hover:opacity-100 transition-opacity"
+              aria-label="Telegram"
+            >
+              <img src="/telegram.svg" alt="" className="w-6 h-6" width={24} height={24} />
             </a>
           )}
           {settings.infoSocialVk && (
-            <a href={settings.infoSocialVk} target="_blank" rel="noopener noreferrer">
-              VK
+            <a
+              href={settings.infoSocialVk}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center justify-center w-8 h-8 rounded-full opacity-80 hover:opacity-100 transition-opacity"
+              aria-label="ВКонтакте"
+            >
+              <img src="/vk.svg" alt="" className="w-6 h-6" width={24} height={24} />
             </a>
           )}
         </div>
