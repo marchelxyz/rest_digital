@@ -30,6 +30,7 @@ export function CartDrawer({
   categories,
   orderType = "PICKUP",
   onOrderSuccess,
+  isMax = false,
 }: {
   open: boolean;
   onClose: () => void;
@@ -37,6 +38,7 @@ export function CartDrawer({
   categories: Category[];
   orderType?: OrderType;
   onOrderSuccess?: (order: { items: { productId: string; name: string; price: number; quantity: number; modifiers?: unknown[] }[]; totalAmount: number }) => void;
+  isMax?: boolean;
 }) {
   const { items, removeItem, updateQty, total, clear } = useCartStore();
   const { haptic, platform, profile, storage } = useMiniApp();
@@ -117,7 +119,10 @@ export function CartDrawer({
         onClick={onClose}
         aria-hidden
       />
-      <div className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-background text-foreground shadow-xl overflow-auto transition-transform duration-300 ease-out">
+      <div
+        className="absolute right-0 top-0 bottom-0 w-full max-w-md bg-background text-foreground shadow-xl overflow-auto transition-transform duration-300 ease-out"
+        style={{ paddingTop: isMax ? 0 : 72 }}
+      >
         <div className="p-4 flex justify-between items-center border-b">
           <h2 className="text-lg font-semibold">Корзина</h2>
           <Button variant="ghost" size="sm" onClick={onClose}>

@@ -7,7 +7,6 @@ import {
   Users,
   ShoppingBag,
   User,
-  LogOut,
   Smartphone,
   Moon,
   Sun,
@@ -368,31 +367,36 @@ function LoyaltyFaqModal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+    <>
+      <div className="fixed inset-0 z-50 bg-black/40 transition-opacity" onClick={onClose} aria-hidden />
       <div
-        className="relative z-10 w-full max-w-sm max-h-[80vh] overflow-y-auto bg-background rounded-2xl shadow-xl p-6"
-        style={{ borderRadius: borderRadius + 8 }}
+        className="fixed left-0 right-0 bottom-0 z-50 bg-background border-t shadow-xl overflow-y-auto overscroll-contain md:max-w-2xl md:left-1/2 md:-translate-x-1/2"
+        style={{ maxHeight: "80dvh", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
       >
-        <h2 className="text-xl font-bold mb-4">Программа лояльности</h2>
-        {html?.trim() ? (
-          <div
-            className="prose prose-sm prose-p:my-2 prose-a:text-primary prose-a:underline break-words"
-            dangerouslySetInnerHTML={{ __html: html }}
-          />
-        ) : (
-          <p className="text-sm text-muted-foreground">Описание программы пока не добавлено.</p>
-        )}
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full mt-4 py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
-          style={{ borderRadius: borderRadius + 4 }}
-        >
-          Закрыть
-        </button>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" aria-hidden />
+        </div>
+        <h2 className="text-lg font-bold px-4 pt-2 pb-3">Программа лояльности</h2>
+        <div className="px-4 pb-6">
+          {html?.trim() ? (
+            <div
+              className="prose prose-sm prose-p:my-2 prose-a:text-primary prose-a:underline break-words"
+              dangerouslySetInnerHTML={{ __html: html }}
+            />
+          ) : (
+            <p className="text-sm text-muted-foreground">Описание программы пока не добавлено.</p>
+          )}
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full mt-4 py-3 text-left text-sm rounded-lg bg-muted/60 font-medium"
+            style={{ borderRadius: borderRadius + 2 }}
+          >
+            Закрыть
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -407,26 +411,31 @@ function NotificationsModal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+    <>
+      <div className="fixed inset-0 z-50 bg-black/40 transition-opacity" onClick={onClose} aria-hidden />
       <div
-        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6"
-        style={{ borderRadius: borderRadius + 8 }}
+        className="fixed left-0 right-0 bottom-0 z-50 bg-background border-t shadow-xl overflow-y-auto overscroll-contain md:max-w-2xl md:left-1/2 md:-translate-x-1/2"
+        style={{ maxHeight: "80dvh", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
       >
-        <h2 className="text-xl font-bold mb-2">Уведомления</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Здесь будут уведомления о заказах и акциях.
-        </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
-          style={{ borderRadius: borderRadius + 4 }}
-        >
-          Закрыть
-        </button>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" aria-hidden />
+        </div>
+        <h2 className="text-lg font-bold px-4 pt-2 pb-3">Уведомления</h2>
+        <div className="px-4 pb-6">
+          <p className="text-sm text-muted-foreground mb-4">
+            Здесь будут уведомления о заказах и акциях.
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-3 text-left text-sm rounded-lg bg-muted/60 font-medium"
+            style={{ borderRadius: borderRadius + 2 }}
+          >
+            Закрыть
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -441,26 +450,31 @@ function OrdersModal({
 }) {
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+    <>
+      <div className="fixed inset-0 z-50 bg-black/40 transition-opacity" onClick={onClose} aria-hidden />
       <div
-        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6"
-        style={{ borderRadius: borderRadius + 8 }}
+        className="fixed left-0 right-0 bottom-0 z-50 bg-background border-t shadow-xl overflow-y-auto overscroll-contain md:max-w-2xl md:left-1/2 md:-translate-x-1/2"
+        style={{ maxHeight: "80dvh", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
       >
-        <h2 className="text-xl font-bold mb-2">Мои заказы</h2>
-        <p className="text-sm text-muted-foreground mb-4">
-          Здесь будет история ваших заказов.
-        </p>
-        <button
-          type="button"
-          onClick={onClose}
-          className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
-          style={{ borderRadius: borderRadius + 4 }}
-        >
-          Закрыть
-        </button>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" aria-hidden />
+        </div>
+        <h2 className="text-lg font-bold px-4 pt-2 pb-3">Мои заказы</h2>
+        <div className="px-4 pb-6">
+          <p className="text-sm text-muted-foreground mb-4">
+            Здесь будет история ваших заказов.
+          </p>
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-full py-3 text-left text-sm rounded-lg bg-muted/60 font-medium"
+            style={{ borderRadius: borderRadius + 2 }}
+          >
+            Закрыть
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -568,13 +582,17 @@ function MyDataModal({
 
   if (!open) return null;
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+    <>
+      <div className="fixed inset-0 z-50 bg-black/40 transition-opacity" onClick={onClose} aria-hidden />
       <div
-        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6 max-h-[90vh] overflow-y-auto"
-        style={{ borderRadius: borderRadius + 8 }}
+        className="fixed left-0 right-0 bottom-0 z-50 bg-background border-t shadow-xl overflow-y-auto overscroll-contain md:max-w-2xl md:left-1/2 md:-translate-x-1/2"
+        style={{ maxHeight: "80dvh", borderTopLeftRadius: 16, borderTopRightRadius: 16 }}
       >
-        <h2 className="text-xl font-bold mb-4">Мои данные</h2>
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" aria-hidden />
+        </div>
+        <h2 className="text-lg font-bold px-4 pt-2 pb-3">Мои данные</h2>
+        <div className="px-4 pb-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
             <label className="text-sm font-medium text-muted-foreground block mb-1">Имя</label>
@@ -710,8 +728,9 @@ function MyDataModal({
             </button>
           </div>
         </form>
+        </div>
       </div>
-    </div>
+    </>
   );
 }
 
@@ -841,7 +860,6 @@ function ProfileMenuList({
     },
     { icon: ShoppingBag, label: "Мои заказы", action: onOrdersClick },
     { icon: User, label: "Мои данные", action: onDataClick },
-    { icon: LogOut, label: "Выйти" },
   ];
 
   const items = [
