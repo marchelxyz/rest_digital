@@ -98,40 +98,42 @@ export function ClientHomeTab({
           </button>
         </div>
 
-        {/* Order type: Самовывоз / В зале */}
-        <div className="flex px-4 pb-3 gap-2 items-center">
-          <button
-            type="button"
-            onClick={() => onOrderTypeChange("PICKUP")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
-              orderType === "PICKUP"
-                ? "text-white"
-                : "bg-muted/50 hover:bg-muted"
-            }`}
-            style={
-              orderType === "PICKUP"
-                ? { backgroundColor: settings.primaryColor, borderRadius: settings.borderRadius }
-                : { borderRadius: settings.borderRadius }
-            }
+        {/* Order type: Самовывоз / В зале с анимацией переключения */}
+        <div className="flex px-4 pb-3 items-center">
+          <div
+            className="relative grid grid-cols-2 rounded-lg p-0.5 bg-muted/60"
+            style={{ borderRadius: settings.borderRadius + 2 }}
           >
-            Самовывоз
-          </button>
-          <button
-            type="button"
-            onClick={() => onOrderTypeChange("DINE_IN")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 active:scale-[0.98] ${
-              orderType === "DINE_IN"
-                ? "text-white"
-                : "bg-muted/50 hover:bg-muted"
-            }`}
-            style={
-              orderType === "DINE_IN"
-                ? { backgroundColor: settings.primaryColor, borderRadius: settings.borderRadius }
-                : { borderRadius: settings.borderRadius }
-            }
-          >
-            В зале
-          </button>
+            <button
+              type="button"
+              onClick={() => onOrderTypeChange("PICKUP")}
+              className={`relative z-10 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                orderType === "PICKUP" ? "text-white" : "text-foreground"
+              }`}
+              style={{ borderRadius: settings.borderRadius }}
+            >
+              Самовывоз
+            </button>
+            <button
+              type="button"
+              onClick={() => onOrderTypeChange("DINE_IN")}
+              className={`relative z-10 px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${
+                orderType === "DINE_IN" ? "text-white" : "text-foreground"
+              }`}
+              style={{ borderRadius: settings.borderRadius }}
+            >
+              В зале
+            </button>
+            <div
+              className="absolute top-0.5 bottom-0.5 w-[calc(50%-2px)] rounded-lg transition-[left] duration-300 ease-out"
+              style={{
+                left: orderType === "PICKUP" ? "2px" : "calc(50% + 2px)",
+                backgroundColor: settings.primaryColor,
+                borderRadius: settings.borderRadius,
+              }}
+              aria-hidden
+            />
+          </div>
         </div>
 
       </header>

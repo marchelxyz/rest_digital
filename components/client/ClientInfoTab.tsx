@@ -13,8 +13,6 @@ export function ClientInfoTab({ settings }: { settings: Settings }) {
 
   return (
     <div className="max-w-lg mx-auto px-4 py-6 space-y-6">
-      <h1 className="text-xl font-bold">Меню</h1>
-
       {links.length > 0 && (
         <div className="space-y-2">
           {links.map((l) => (

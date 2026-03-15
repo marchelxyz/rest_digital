@@ -31,7 +31,7 @@ export function StoriesStrip({ stories, primaryColor, borderRadius, appName }: S
   return (
     <>
       <div className="px-4 py-3 overflow-x-auto overflow-y-hidden">
-        <div className="flex gap-[10px]" style={{ gap }}>
+        <div className="flex gap-[10px] pr-4" style={{ gap }}>
           {stories.map((s, i) => {
             const coverUrl = getCoverUrl(s);
             const isVideoCover = !s.coverUrl && s.mediaType === "video";
