@@ -56,6 +56,12 @@ export type Settings = {
   infoSocialTelegram?: string | null;
   infoSocialVk?: string | null;
   infoAboutText?: string | null;
+  /** HTML-описание программы лояльности (FAQ на бонусной карте). */
+  loyaltyFaqHtml?: string | null;
+  /** Текст приглашения для «Приглашайте друзей». */
+  inviteText?: string | null;
+  /** Ссылка приглашения (если пусто — текущий URL с utm_source=invite). */
+  inviteLink?: string | null;
 };
 
 export type Story = {

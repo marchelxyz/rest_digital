@@ -71,6 +71,9 @@ type Settings = {
   loyaltyCardGradientColors?: string;
   loyaltyCardGradientOpacity: number;
   loyaltyCardGradientType: string;
+  loyaltyFaqHtml?: string;
+  inviteText?: string;
+  inviteLink?: string;
 };
 
 const FONTS = [
@@ -377,6 +380,21 @@ export default function BuilderPage() {
                 </div>
               )}
 
+              {settings.showLoyalty && (
+                <div className="border-t pt-4 mt-4 space-y-2">
+                  <Label className="text-base font-medium">Описание программы лояльности (FAQ)</Label>
+                  <p className="text-xs text-muted-foreground">
+                    Показывается по нажатию на кнопку (i) на бонусной карте. Можно использовать HTML: &lt;b&gt;, &lt;u&gt;, &lt;a href=&quot;...&quot;&gt;ссылка&lt;/a&gt;
+                  </p>
+                  <textarea
+                    className="w-full min-h-[120px] rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    value={settings.loyaltyFaqHtml ?? ""}
+                    onChange={(e) => update("loyaltyFaqHtml", e.target.value)}
+                    placeholder="<p>Как копить баллы...</p>"
+                  />
+                </div>
+              )}
+
               <div className="border-t pt-4 mt-4">
                 <div className="mb-4">
                   <Label className="text-base font-medium">Мессенджеры</Label>
@@ -561,6 +579,28 @@ export default function BuilderPage() {
                   onChange={(e) => update("infoAboutText", e.target.value)}
                   placeholder="Работает на Rest Digital"
                 />
+              </div>
+              <div className="border-t pt-4 mt-4 space-y-2">
+                <Label className="text-base font-medium">Приглашение друзей</Label>
+                <p className="text-xs text-muted-foreground">
+                  Текст и ссылка при нажатии «Приглашайте друзей». Если ссылка пуста — используется текущий URL с utm_source=invite
+                </p>
+                <div>
+                  <Label className="text-xs">Текст приглашения</Label>
+                  <Input
+                    value={settings.inviteText ?? ""}
+                    onChange={(e) => update("inviteText", e.target.value)}
+                    placeholder={`${settings.appName ?? "Мы"} — закажи вкусно`}
+                  />
+                </div>
+                <div>
+                  <Label className="text-xs">Ссылка приглашения (оставьте пустым для текущего URL + UTM)</Label>
+                  <Input
+                    value={settings.inviteLink ?? ""}
+                    onChange={(e) => update("inviteLink", e.target.value)}
+                    placeholder="https://..."
+                  />
+                </div>
               </div>
             </TabsContent>
           </Tabs>

@@ -46,6 +46,10 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
   const { profile, theme, setTheme, share, addToHome, canAddToHome, storage } = useMiniApp();
   const [phone, setPhone] = useState<string | null>(null);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [faqModalOpen, setFaqModalOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [ordersModalOpen, setOrdersModalOpen] = useState(false);
+  const [dataModalOpen, setDataModalOpen] = useState(false);
 
   useEffect(() => {
     storage.get(settings.tenantId, "profile_phone").then((v) => {
@@ -61,9 +65,14 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
   const displayPhone = phone ? formatPhone(phone) : "+7 (___) ___-__-__";
 
   async function handleShare() {
-    const text = `${settings.appName} — закажи вкусно`;
-    const link = typeof window !== "undefined" ? window.location.href : "";
-    await share(text, link);
+    const text = (settings.inviteText?.trim() || `${settings.appName} — закажи вкусно`);
+    let link = settings.inviteLink?.trim();
+    if (!link && typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.set("utm_source", "invite");
+      link = url.toString();
+    }
+    await share(text, link ?? undefined);
   }
 
   return (
@@ -73,7 +82,12 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
           <div className="font-semibold">{displayName}</div>
           <div className="text-sm opacity-70">{displayPhone}</div>
         </div>
-        <button type="button" className="p-2 relative" aria-label="Уведомления">
+        <button
+          type="button"
+          className="p-2 relative"
+          aria-label="Уведомления"
+          onClick={() => setNotificationsOpen(true)}
+        >
           <Bell size={22} strokeWidth={2} />
         </button>
       </header>
@@ -99,6 +113,13 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
             gradientType={settings.loyaltyCardGradientType ?? "linear"}
             primaryColor={settings.primaryColor}
             onQrClick={() => setQrModalOpen(true)}
+            onFaqClick={() => setFaqModalOpen(true)}
+          />
+          <LoyaltyFaqModal
+            open={faqModalOpen}
+            onClose={() => setFaqModalOpen(false)}
+            html={settings.loyaltyFaqHtml}
+            borderRadius={settings.borderRadius}
           />
           <LoyaltyCardModal
             open={qrModalOpen}
@@ -120,10 +141,29 @@ export function ClientProfileTab({ settings, adminTheme = "light" }: ClientProfi
         />
       )}
 
+      <NotificationsModal
+        open={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+        borderRadius={settings.borderRadius}
+      />
       <ProfileMenuList
         settings={settings}
         onShare={handleShare}
         onAddToHome={canAddToHome ? addToHome : undefined}
+        onOrdersClick={() => setOrdersModalOpen(true)}
+        onDataClick={() => setDataModalOpen(true)}
+      />
+      <OrdersModal
+        open={ordersModalOpen}
+        onClose={() => setOrdersModalOpen(false)}
+        borderRadius={settings.borderRadius}
+      />
+      <MyDataModal
+        open={dataModalOpen}
+        onClose={() => setDataModalOpen(false)}
+        displayName={displayName}
+        displayPhone={displayPhone}
+        borderRadius={settings.borderRadius}
       />
     </div>
   );
@@ -216,6 +256,7 @@ function LoyaltyPointsCard({
   gradientType,
   primaryColor,
   onQrClick,
+  onFaqClick,
 }: {
   points: number;
   cashbackPct: number;
@@ -226,6 +267,7 @@ function LoyaltyPointsCard({
   gradientType?: string;
   primaryColor?: string;
   onQrClick?: () => void;
+  onFaqClick?: () => void;
 }) {
   const bgStyle = buildGradientStyle(
     gradientColors,
@@ -237,7 +279,7 @@ function LoyaltyPointsCard({
   return (
     <div className="space-y-3">
       <div
-        className={`p-6 min-h-[140px] rounded-xl border shadow-sm transition-colors duration-200 flex flex-col justify-between ${hasGradient ? "text-white border-white/20" : ""}`}
+        className={`p-6 min-h-[210px] rounded-xl border shadow-sm transition-colors duration-200 flex flex-col justify-between ${hasGradient ? "text-white border-white/20" : ""}`}
         style={{ borderRadius: borderRadius + 4, ...bgStyle }}
       >
         <div className="flex items-start justify-between mb-3">
@@ -245,7 +287,11 @@ function LoyaltyPointsCard({
           <button
             type="button"
             className="w-6 h-6 rounded-full border flex items-center justify-center text-xs opacity-80 hover:opacity-100 transition-opacity"
-            aria-label="Подробнее"
+            aria-label="Программа лояльности"
+            onClick={(e) => {
+              e.stopPropagation();
+              onFaqClick?.();
+            }}
           >
             <Info size={12} strokeWidth={2.5} />
           </button>
@@ -256,14 +302,12 @@ function LoyaltyPointsCard({
             <Coins size={24} strokeWidth={2} className="opacity-90" />
           </div>
           <div className="flex items-center gap-2">
-            <button
-              type="button"
-              className="px-3 py-1.5 rounded-lg border-2 border-current/50 text-sm font-medium hover:bg-white/10 transition-colors"
-              onClick={() => {}}
-              aria-label="Кэшбэк"
+            <span
+              className="px-3 py-1.5 rounded-lg border-2 border-current/50 text-sm font-medium inline-block"
+              aria-hidden
             >
               {cashbackPct}% Кэшбэк
-            </button>
+            </span>
             <button
               type="button"
               onClick={onQrClick}
@@ -292,6 +336,157 @@ function LoyaltyPointsCard({
         </div>
         <ChevronRight size={18} className="opacity-50 shrink-0" />
       </button>
+    </div>
+  );
+}
+
+function LoyaltyFaqModal({
+  open,
+  onClose,
+  html,
+  borderRadius,
+}: {
+  open: boolean;
+  onClose: () => void;
+  html?: string | null;
+  borderRadius: number;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+      <div
+        className="relative z-10 w-full max-w-sm max-h-[80vh] overflow-y-auto bg-background rounded-2xl shadow-xl p-6"
+        style={{ borderRadius: borderRadius + 8 }}
+      >
+        <h2 className="text-xl font-bold mb-4">Программа лояльности</h2>
+        {html?.trim() ? (
+          <div
+            className="prose prose-sm prose-p:my-2 prose-a:text-primary prose-a:underline break-words"
+            dangerouslySetInnerHTML={{ __html: html }}
+          />
+        ) : (
+          <p className="text-sm text-muted-foreground">Описание программы пока не добавлено.</p>
+        )}
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full mt-4 py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
+          style={{ borderRadius: borderRadius + 4 }}
+        >
+          Закрыть
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function NotificationsModal({
+  open,
+  onClose,
+  borderRadius,
+}: {
+  open: boolean;
+  onClose: () => void;
+  borderRadius: number;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+      <div
+        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6"
+        style={{ borderRadius: borderRadius + 8 }}
+      >
+        <h2 className="text-xl font-bold mb-2">Уведомления</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Здесь будут уведомления о заказах и акциях.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
+          style={{ borderRadius: borderRadius + 4 }}
+        >
+          Закрыть
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function OrdersModal({
+  open,
+  onClose,
+  borderRadius,
+}: {
+  open: boolean;
+  onClose: () => void;
+  borderRadius: number;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+      <div
+        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6"
+        style={{ borderRadius: borderRadius + 8 }}
+      >
+        <h2 className="text-xl font-bold mb-2">Мои заказы</h2>
+        <p className="text-sm text-muted-foreground mb-4">
+          Здесь будет история ваших заказов.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
+          style={{ borderRadius: borderRadius + 4 }}
+        >
+          Закрыть
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function MyDataModal({
+  open,
+  onClose,
+  displayName,
+  displayPhone,
+  borderRadius,
+}: {
+  open: boolean;
+  onClose: () => void;
+  displayName: string;
+  displayPhone: string;
+  borderRadius: number;
+}) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/50" onClick={onClose} aria-hidden />
+      <div
+        className="relative z-10 w-full max-w-sm bg-background rounded-2xl shadow-xl p-6"
+        style={{ borderRadius: borderRadius + 8 }}
+      >
+        <h2 className="text-xl font-bold mb-2">Мои данные</h2>
+        <div className="text-sm space-y-1 mb-4">
+          <div><span className="text-muted-foreground">Имя: </span>{displayName}</div>
+          <div><span className="text-muted-foreground">Телефон: </span>{displayPhone}</div>
+        </div>
+        <p className="text-xs text-muted-foreground mb-4">
+          Телефон сохраняется при оформлении заказа и используется как номер бонусной карты.
+        </p>
+        <button
+          type="button"
+          onClick={onClose}
+          className="w-full py-3 rounded-xl bg-muted hover:bg-muted/80 font-medium transition-colors"
+          style={{ borderRadius: borderRadius + 4 }}
+        >
+          Закрыть
+        </button>
+      </div>
     </div>
   );
 }
@@ -404,10 +599,14 @@ function ProfileMenuList({
   settings,
   onShare,
   onAddToHome,
+  onOrdersClick,
+  onDataClick,
 }: {
   settings: Settings;
   onShare: () => void;
   onAddToHome?: () => void;
+  onOrdersClick?: () => void;
+  onDataClick?: () => void;
 }) {
   const baseItems: { icon: typeof Users; label: string; sub?: string; action?: () => void }[] = [
     {
@@ -416,8 +615,8 @@ function ProfileMenuList({
       sub: "Дарим 300 баллов за каждого",
       action: onShare,
     },
-    { icon: ShoppingBag, label: "Мои заказы" },
-    { icon: User, label: "Мои данные" },
+    { icon: ShoppingBag, label: "Мои заказы", action: onOrdersClick },
+    { icon: User, label: "Мои данные", action: onDataClick },
     { icon: LogOut, label: "Выйти" },
   ];
 

@@ -17,6 +17,10 @@ type ForYouSectionProps = {
   borderRadius: number;
 };
 
+function hasModifiers(p: ForYouProduct): boolean {
+  return !!(p.modifierGroups && p.modifierGroups.length > 0);
+}
+
 export function ForYouSection({
   forYouProducts,
   lastOrder,
@@ -79,30 +83,43 @@ export function ForYouSection({
             </div>
           </button>
         )}
-        {forYouProducts.map((p) => (
-          <button
-            key={p.id}
-            type="button"
-            onClick={() => handleCardClick(p)}
-            className="shrink-0 w-[160px] flex flex-col rounded-xl overflow-hidden text-left hover:opacity-90 transition-opacity"
-            style={{ borderRadius: borderRadius + 4 }}
-          >
-            <div className="w-full aspect-square bg-muted overflow-hidden">
-              {p.imageUrl ? (
-                <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
-              ) : (
-                <div className="w-full h-full" />
-              )}
-            </div>
-            <div className="p-3 border bg-background">
-              <div className="font-medium text-sm truncate">{p.name}</div>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-sm font-medium">от {p.price} ₽</span>
-                <ChevronRight size={16} className="opacity-50" />
+        {forYouProducts.map((p) => {
+          const hasMods = hasModifiers(p);
+          const priceLabel = hasMods ? `от ${p.price} ₽` : `${p.price} ₽`;
+          return (
+            <button
+              key={p.id}
+              type="button"
+              onClick={() => handleCardClick(p)}
+              className="flex flex-col shrink-0 w-[160px] text-left bg-muted/30 rounded-2xl overflow-hidden hover:bg-muted/50 transition-colors"
+              style={{ borderRadius: borderRadius + 8 }}
+            >
+              <div className="relative w-full aspect-square overflow-hidden">
+                {p.imageUrl ? (
+                  <img src={p.imageUrl} alt={p.name} className="w-full h-full object-cover" />
+                ) : (
+                  <div className="w-full h-full bg-white/10" />
+                )}
               </div>
-            </div>
-          </button>
-        ))}
+              <div className="p-3 flex flex-col flex-1">
+                <div className="font-medium text-sm">{p.name}</div>
+                {p.weight && (
+                  <div className="text-xs text-muted-foreground mt-0.5">{p.weight}</div>
+                )}
+                {p.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2 mt-1">{p.description}</p>
+                )}
+                <div
+                  className="mt-2 flex items-center justify-between gap-2 py-2 px-3 rounded-xl bg-muted/50"
+                  style={{ borderRadius }}
+                >
+                  <span className="text-sm font-medium">{priceLabel}</span>
+                  <ChevronRight size={18} className="opacity-60 shrink-0" />
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {detailProduct && (

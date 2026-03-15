@@ -101,6 +101,12 @@ model TenantSettings {
   infoSocialVk     String?
   infoAboutText    String?
 
+  // Программа лояльности: описание для FAQ (HTML)
+  loyaltyFaqHtml   String?
+  // Приглашение друзей: текст и ссылка (если пусто — текущий URL + utm_source=invite)
+  inviteText       String?
+  inviteLink       String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }

@@ -130,6 +130,9 @@ export default async function ClientAppPage({
     infoSocialTelegram: s.infoSocialTelegram,
     infoSocialVk: s.infoSocialVk,
     infoAboutText: s.infoAboutText,
+    loyaltyFaqHtml: s.loyaltyFaqHtml,
+    inviteText: s.inviteText,
+    inviteLink: s.inviteLink,
   };
 
   const adminTheme = (s.theme === "auto" ? "auto" : s.theme) as "light" | "dark" | "auto";

@@ -19,6 +19,7 @@ const SETTINGS_KEYS = [
   "infoAddress", "infoHours", "infoPhone", "infoTermsUrl", "infoFaqUrl",
   "infoPartnerUrl", "infoCaloriesUrl", "infoContactText",
   "infoSocialInstagram", "infoSocialTelegram", "infoSocialVk", "infoAboutText",
+  "loyaltyFaqHtml", "inviteText", "inviteLink",
 ] as const;
 
 type SettingsInput = Partial<{
@@ -63,6 +64,9 @@ type SettingsInput = Partial<{
   loyaltyCardGradientColors: string;
   loyaltyCardGradientOpacity: number;
   loyaltyCardGradientType: string;
+  loyaltyFaqHtml: string;
+  inviteText: string;
+  inviteLink: string;
 }>;
 
 function toPrisma(data: SettingsInput): Record<string, unknown> {
