@@ -149,7 +149,7 @@ export function ClientApp({
     [settings.messengerTelegram, settings.messengerVk, settings.messengerMax]
   );
   return (
-    <MiniAppProvider tenantId={settings.tenantId} adminTheme={adminTheme} enabledMessengers={enabledMessengers}>
+    <MiniAppProvider tenantId={settings.tenantId} adminTheme={adminTheme} enabledMessengers={enabledMessengers} serverHint={platformFromHeaders}>
       <CartStore tenantId={settings.tenantId}>
         <ClientAppInner
           settings={settings}
@@ -338,11 +338,12 @@ function ClientAppInner({
 
     for (const delayMs of delays) {
       const id = setTimeout(() => {
-        const token = getStartParam() ?? "";
+        const token = getStartParam(undefined, platformFromHeaders) ?? "";
         console.log("[client] max auto-bind check", {
           attempt: delayMs,
           hasToken: !!token,
           tokenPrefix: token ? token.slice(0, 8) : null,
+          platformFromHeaders,
         });
         if (tryBind(token)) {
           timeouts.forEach(clearTimeout);

@@ -39,7 +39,8 @@ declare global {
       initData: string;
       initDataUnsafe?: {
         user?: { id: number; first_name?: string; last_name?: string; username?: string; language_code?: string; photo_url?: string };
-        start_param?: object;
+        start_param?: unknown;
+        startapp?: unknown;
       };
       ready: () => void;
       close: () => void;
@@ -78,24 +79,104 @@ function isMaxFromUrl(): boolean {
 
 /**
  * Определяет платформу по глобальным объектам и URL.
- * MAX проверяется первым (по URL и window.WebApp), т.к. при открытии в MAX
- * может присутствовать и telegram-web-app.js — тогда Telegram не должен иметь приоритет.
+ * serverHint (platformFromHeaders) имеет наивысший приоритет — сервер определяет
+ * платформу по Referer до загрузки любых скриптов.
+ * Это критично для MAX: max-web-app.js может не загрузиться, а telegram-web-app.js
+ * загружается и ставит window.Telegram.WebApp, что ведёт к неверной детекции.
  */
-export function detectPlatform(enabled?: EnabledMessengers): MiniAppPlatform {
+export function detectPlatform(enabled?: EnabledMessengers, serverHint?: MiniAppPlatform): MiniAppPlatform {
   if (typeof window === "undefined") return "standalone";
   const useTg = enabled?.telegram !== false;
   const useVk = enabled?.vk !== false;
   const useMax = enabled?.max !== false;
+  if (serverHint === "max" && useMax) return "max";
+  if (serverHint === "telegram" && useTg) return "telegram";
+  if (serverHint === "vk" && useVk) return "vk";
   if (useMax && (isMaxFromUrl() || window.WebApp)) return "max";
   if (useTg && window.Telegram?.WebApp) return "telegram";
   if (useVk && window.VK?.Bridge) return "vk";
   return "standalone";
 }
 
-/** Возвращает профиль гостя из initData (если доступен). */
-export function getProfile(enabled?: EnabledMessengers): GuestProfile | null {
+type InitDataUser = {
+  id: number;
+  first_name?: string;
+  last_name?: string;
+  username?: string;
+  language_code?: string;
+  photo_url?: string;
+};
+
+type InitDataLike = {
+  user?: InitDataUser;
+  start_param?: unknown;
+  startapp?: unknown;
+};
+
+/**
+ * Извлекает initData для MAX из всех доступных источников.
+ * max-web-app.js может не загрузиться → window.WebApp отсутствует.
+ * telegram-web-app.js в MAX-среде может получить данные через Telegram-совместимый
+ * протокол postMessage. Также пробуем парсинг tgWebAppData / WebAppData из URL hash.
+ */
+function _getMaxInitData(): InitDataLike | null {
   if (typeof window === "undefined") return null;
-  const platform = detectPlatform(enabled);
+
+  const maxInit = window.WebApp?.initDataUnsafe;
+  if (maxInit?.user) {
+    console.log("[miniapps] _getMaxInitData: window.WebApp", { userId: maxInit.user.id });
+    return maxInit as InitDataLike;
+  }
+
+  const tgInit = window.Telegram?.WebApp?.initDataUnsafe;
+  if (tgInit?.user) {
+    console.log("[miniapps] _getMaxInitData: window.Telegram.WebApp fallback", { userId: tgInit.user.id });
+    return tgInit as InitDataLike;
+  }
+
+  const fromUrl = _parseInitDataFromUrl();
+  if (fromUrl) {
+    console.log("[miniapps] _getMaxInitData: URL hash fallback", { userId: (fromUrl.user as InitDataUser | undefined)?.id });
+    return fromUrl;
+  }
+
+  console.log("[miniapps] _getMaxInitData: NO initData", {
+    hasWindowWebApp: !!window.WebApp,
+    hasTgWebApp: !!window.Telegram?.WebApp,
+    tgInitDataKeys: tgInit ? Object.keys(tgInit) : null,
+    hash: window.location.hash?.slice(0, 100),
+    search: window.location.search?.slice(0, 100),
+  });
+  return null;
+}
+
+/**
+ * Парсит initData из URL hash (tgWebAppData или WebAppData).
+ * MAX и Telegram передают данные в hash при открытии iframe.
+ */
+function _parseInitDataFromUrl(): InitDataLike | null {
+  if (typeof window === "undefined") return null;
+  const hash = window.location.hash.replace(/^#/, "");
+  if (!hash) return null;
+  try {
+    const outer = new URLSearchParams(hash);
+    const raw = outer.get("tgWebAppData") ?? outer.get("WebAppData");
+    if (!raw) return null;
+    const inner = new URLSearchParams(raw);
+    const userJson = inner.get("user");
+    const user = userJson ? (JSON.parse(userJson) as InitDataUser) : undefined;
+    const startParam = inner.get("start_param") ?? inner.get("startapp") ?? undefined;
+    return { user, start_param: startParam };
+  } catch {
+    return null;
+  }
+}
+
+/** Возвращает профиль гостя из initData (если доступен). */
+export function getProfile(enabled?: EnabledMessengers, serverHint?: MiniAppPlatform): GuestProfile | null {
+  if (typeof window === "undefined") return null;
+  const platform = detectPlatform(enabled, serverHint);
+  console.log("[miniapps] getProfile", { platform, serverHint });
   if (platform === "telegram") {
     const u = window.Telegram?.WebApp?.initDataUnsafe?.user;
     if (!u) return null;
@@ -110,7 +191,8 @@ export function getProfile(enabled?: EnabledMessengers): GuestProfile | null {
     };
   }
   if (platform === "max") {
-    const u = (window.WebApp as { initDataUnsafe?: { user?: { id: number; first_name?: string; last_name?: string; username?: string; language_code?: string; photo_url?: string } } })?.initDataUnsafe?.user;
+    const initData = _getMaxInitData();
+    const u = initData?.user;
     if (!u) return null;
     return {
       platform: "max",
@@ -123,7 +205,6 @@ export function getProfile(enabled?: EnabledMessengers): GuestProfile | null {
     };
   }
   if (platform === "vk") {
-    // VK передаёт user в другом формате — упрощённо
     return { platform: "vk", platformUserId: "" };
   }
   return null;
@@ -166,13 +247,11 @@ function _getStartParamFromUrl(): string | null {
 
 /**
  * Возвращает start_param, переданный при открытии мини‑приложения.
- * Используем для сценариев вроде привязки аккаунтов (bind‑token).
- * Для MAX добавлен fallback на чтение из URL (startapp/start_param), т.к.
- * платформа может не передавать значение в initDataUnsafe.
+ * Для MAX используется _getMaxInitData (с fallback на Telegram SDK и URL).
  */
-export function getStartParam(enabled?: EnabledMessengers): string | null {
+export function getStartParam(enabled?: EnabledMessengers, serverHint?: MiniAppPlatform): string | null {
   if (typeof window === "undefined") return null;
-  const platform = detectPlatform(enabled);
+  const platform = detectPlatform(enabled, serverHint);
   try {
     if (platform === "telegram") {
       const raw = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
@@ -185,7 +264,7 @@ export function getStartParam(enabled?: EnabledMessengers): string | null {
       return normalized;
     }
     if (platform === "max") {
-      const initData = window.WebApp?.initDataUnsafe as Record<string, unknown> | undefined;
+      const initData = _getMaxInitData();
       const fromInit =
         _normalizeStartParam(initData?.start_param) ?? _normalizeStartParam(initData?.startapp);
       const fromUrl = _getStartParamFromUrl();
