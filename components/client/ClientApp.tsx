@@ -289,59 +289,69 @@ function ClientAppInner({
   }, [settings.tenantId, platform, profile?.platformUserId, storage]);
 
   // Автозавершение привязки при запуске в MAX: start_param содержит bind-токен.
+  // MAX может передавать start_param асинхронно (SDK подставляет позже), поэтому пробуем несколько раз с задержкой.
   useEffect(() => {
-    if (!isMax) return;
-    const token = getStartParam() ?? "";
-    const maxUserId = profile?.platformUserId ?? "";
-    console.log("[client] max auto-bind check", {
-      isMax,
-      hasToken: !!token,
-      tokenPrefix: token ? token.slice(0, 8) : null,
-      hasMaxUserId: !!maxUserId,
-    });
-    if (!token || !token.startsWith("bind_") || !maxUserId) return;
-    if (maxBindAttemptRef.current === token) return;
-    maxBindAttemptRef.current = token;
+    if (!isMax || !profile?.platformUserId || !settings.tenantId) return;
 
-    console.log("[client] max auto-bind start", {
-      tenantId: settings.tenantId,
-      maxUserId,
-      tokenSuffix: token.slice(-6),
-    });
+    const maxUserId = profile.platformUserId;
+    const tenantId = settings.tenantId;
 
-    fetch("/api/public/customer/max-bind-complete", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        tenantId: settings.tenantId,
+    function tryBind(tokenRaw: string | null) {
+      const token = (tokenRaw ?? "").trim();
+      if (!token.startsWith("bind_") || !maxUserId) return false;
+      if (maxBindAttemptRef.current === token) return true; // уже отправили
+      maxBindAttemptRef.current = token;
+
+      console.log("[client] max auto-bind start", {
+        tenantId,
         maxUserId,
-        token,
-      }),
-    })
-      .then((r) => {
-        console.log("[client] max-bind-complete response", {
-          status: r.status,
-        });
-        // После попытки привязки перезагрузим клиента по MAX userId.
-        // (Даже если токен уже использован — просто обновим customer из БД.)
-        const qs = new URLSearchParams({
-          tenantId: settings.tenantId,
-          platform: "max",
-          platformUserId: maxUserId,
-        });
-        return fetch(`/api/public/customer?${qs.toString()}`, { method: "GET" });
+        tokenSuffix: token.slice(-6),
+      });
+
+      fetch("/api/public/customer/max-bind-complete", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId, maxUserId, token }),
       })
-      .then(async (r) => {
-        if (!r) return;
-        console.log("[client] reload customer after bind", {
-          status: r.status,
+        .then((r) => {
+          console.log("[client] max-bind-complete response", { status: r.status });
+          const qs = new URLSearchParams({
+            tenantId,
+            platform: "max",
+            platformUserId: maxUserId,
+          });
+          return fetch(`/api/public/customer?${qs.toString()}`, { method: "GET" });
+        })
+        .then(async (r) => {
+          if (!r?.ok) return;
+          const data = (await r.json()) as CustomerData;
+          setCustomer(data);
+          if (data.phone) storage.set(tenantId, "profile_phone", data.phone).catch(() => {});
+        })
+        .catch(() => {});
+
+      return true;
+    }
+
+    const delays = [0, 800, 2000];
+    const timeouts: ReturnType<typeof setTimeout>[] = [];
+
+    for (const delayMs of delays) {
+      const id = setTimeout(() => {
+        const token = getStartParam() ?? "";
+        console.log("[client] max auto-bind check", {
+          attempt: delayMs,
+          hasToken: !!token,
+          tokenPrefix: token ? token.slice(0, 8) : null,
         });
-        if (!r.ok) return;
-        const data = (await r.json()) as CustomerData;
-        setCustomer(data);
-        if (data.phone) storage.set(settings.tenantId, "profile_phone", data.phone).catch(() => {});
-      })
-      .catch(() => {});
+        if (tryBind(token)) {
+          timeouts.forEach(clearTimeout);
+        }
+      }, delayMs);
+      timeouts.push(id);
+    }
+
+    return () => timeouts.forEach(clearTimeout);
   }, [isMax, profile?.platformUserId, settings.tenantId, storage]);
 
   useEffect(() => {
