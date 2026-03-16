@@ -129,6 +129,36 @@ export function getProfile(enabled?: EnabledMessengers): GuestProfile | null {
   return null;
 }
 
+function _normalizeStartParam(v: unknown): string | null {
+  if (!v) return null;
+  if (typeof v === "string") return v.trim() || null;
+  if (typeof v === "number") return String(v);
+  if (typeof v === "object") {
+    const asRec = v as Record<string, unknown>;
+    const token = asRec.token;
+    if (typeof token === "string") return token.trim() || null;
+    const startParam = asRec.start_param;
+    if (typeof startParam === "string") return startParam.trim() || null;
+  }
+  return null;
+}
+
+/**
+ * Возвращает start_param, переданный при открытии мини‑приложения.
+ * Используем для сценариев вроде привязки аккаунтов (bind‑token).
+ */
+export function getStartParam(enabled?: EnabledMessengers): string | null {
+  if (typeof window === "undefined") return null;
+  const platform = detectPlatform(enabled);
+  if (platform === "telegram") {
+    return _normalizeStartParam(window.Telegram?.WebApp?.initDataUnsafe?.start_param);
+  }
+  if (platform === "max") {
+    return _normalizeStartParam(window.WebApp?.initDataUnsafe?.start_param);
+  }
+  return null;
+}
+
 /** Тема из платформы (Telegram themeParams / colorScheme). */
 export function getPlatformTheme(): ThemeMode {
   if (typeof window === "undefined") return "light";
