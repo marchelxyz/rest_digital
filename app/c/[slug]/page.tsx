@@ -133,6 +133,8 @@ export default async function ClientAppPage({
     loyaltyFaqHtml: s.loyaltyFaqHtml,
     inviteText: s.inviteText,
     inviteLink: s.inviteLink,
+    messengerTelegramBotId: s.messengerTelegramBotId,
+    messengerMaxBotId: s.messengerMaxBotId,
   };
 
   const adminTheme = (s.theme === "auto" ? "auto" : s.theme) as "light" | "dark" | "auto";
