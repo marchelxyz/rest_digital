@@ -685,11 +685,28 @@ function MyDataModal({
                     type="button"
                     className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted/60 transition-colors"
                     style={{ borderRadius: settings.borderRadius }}
-                    onClick={() => {
-                      const raw = settings.messengerMaxBotId ?? "";
-                      const url = raw.startsWith("http") ? raw : raw ? `https://${raw}` : "";
-                      if (url && typeof window !== "undefined") {
-                        window.open(url, "_blank");
+                    onClick={async () => {
+                      if (!settings.tenantId) return;
+                      try {
+                        const res = await fetch("/api/public/customer/max-bind-token", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            tenantId: settings.tenantId,
+                            customerId: customer?.id,
+                            phone: customer?.phone ?? phone,
+                          }),
+                        });
+                        if (!res.ok) return;
+                        const data = (await res.json()) as { token: string; maxBotId: string };
+                        const bot = data.maxBotId;
+                        const payload = encodeURIComponent(data.token);
+                        const url = `https://max.ru/${bot}?startapp=${payload}`;
+                        if (typeof window !== "undefined") {
+                          window.open(url, "_blank");
+                        }
+                      } catch {
+                        // noop
                       }
                     }}
                   >
