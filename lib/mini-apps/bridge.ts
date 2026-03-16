@@ -150,11 +150,29 @@ function _normalizeStartParam(v: unknown): string | null {
 export function getStartParam(enabled?: EnabledMessengers): string | null {
   if (typeof window === "undefined") return null;
   const platform = detectPlatform(enabled);
-  if (platform === "telegram") {
-    return _normalizeStartParam(window.Telegram?.WebApp?.initDataUnsafe?.start_param);
-  }
-  if (platform === "max") {
-    return _normalizeStartParam(window.WebApp?.initDataUnsafe?.start_param);
+  try {
+    if (platform === "telegram") {
+      const raw = window.Telegram?.WebApp?.initDataUnsafe?.start_param;
+      const normalized = _normalizeStartParam(raw);
+      console.log("[miniapps] getStartParam telegram", {
+        rawType: typeof raw,
+        hasValue: !!raw,
+        normalizedPrefix: normalized ? normalized.slice(0, 16) : null,
+      });
+      return normalized;
+    }
+    if (platform === "max") {
+      const raw = window.WebApp?.initDataUnsafe?.start_param;
+      const normalized = _normalizeStartParam(raw);
+      console.log("[miniapps] getStartParam max", {
+        rawType: typeof raw,
+        hasValue: !!raw,
+        normalizedPrefix: normalized ? normalized.slice(0, 16) : null,
+      });
+      return normalized;
+    }
+  } catch (e) {
+    console.log("[miniapps] getStartParam error", { platform, error: String(e) });
   }
   return null;
 }

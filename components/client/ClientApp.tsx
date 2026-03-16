@@ -223,6 +223,12 @@ function ClientAppInner({
       try {
         const effectivePlatform = platform === "standalone" ? "" : platform;
         const platformUserId = profile?.platformUserId ?? "";
+        console.log("[client] loadCustomer start", {
+          tenantId,
+          effectivePlatform,
+          hasPlatformUserId: !!platformUserId,
+          hasPhoneInStorage: !!phone,
+        });
 
         // 1) Сначала пробуем найти по platformUserId (это позволяет входить без телефона).
         if (effectivePlatform && platformUserId) {
@@ -233,6 +239,9 @@ function ClientAppInner({
           });
           if (phone) qs.set("phone", phone);
           const getRes = await fetch(`/api/public/customer?${qs.toString()}`, { method: "GET" });
+          console.log("[client] loadCustomer GET by platformUserId result", {
+            status: getRes.status,
+          });
           if (getRes.ok) {
             const data = (await getRes.json()) as CustomerData;
             if (cancelled) return;
@@ -253,6 +262,9 @@ function ClientAppInner({
             phone: phone || undefined,
             name: name || undefined,
           }),
+        });
+        console.log("[client] loadCustomer POST result", {
+          status: res.status,
         });
         if (cancelled) return;
         if (res.ok) {
@@ -281,9 +293,21 @@ function ClientAppInner({
     if (!isMax) return;
     const token = getStartParam() ?? "";
     const maxUserId = profile?.platformUserId ?? "";
+    console.log("[client] max auto-bind check", {
+      isMax,
+      hasToken: !!token,
+      tokenPrefix: token ? token.slice(0, 8) : null,
+      hasMaxUserId: !!maxUserId,
+    });
     if (!token || !token.startsWith("bind_") || !maxUserId) return;
     if (maxBindAttemptRef.current === token) return;
     maxBindAttemptRef.current = token;
+
+    console.log("[client] max auto-bind start", {
+      tenantId: settings.tenantId,
+      maxUserId,
+      tokenSuffix: token.slice(-6),
+    });
 
     fetch("/api/public/customer/max-bind-complete", {
       method: "POST",
@@ -294,7 +318,10 @@ function ClientAppInner({
         token,
       }),
     })
-      .then(() => {
+      .then((r) => {
+        console.log("[client] max-bind-complete response", {
+          status: r.status,
+        });
         // После попытки привязки перезагрузим клиента по MAX userId.
         // (Даже если токен уже использован — просто обновим customer из БД.)
         const qs = new URLSearchParams({
@@ -305,6 +332,10 @@ function ClientAppInner({
         return fetch(`/api/public/customer?${qs.toString()}`, { method: "GET" });
       })
       .then(async (r) => {
+        if (!r) return;
+        console.log("[client] reload customer after bind", {
+          status: r.status,
+        });
         if (!r.ok) return;
         const data = (await r.json()) as CustomerData;
         setCustomer(data);
