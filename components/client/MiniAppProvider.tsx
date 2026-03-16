@@ -56,18 +56,21 @@ export function MiniAppProvider({
   tenantId,
   adminTheme,
   enabledMessengers,
+  serverHint,
 }: {
   children: ReactNode;
   tenantId: string;
   adminTheme: "light" | "dark" | "auto";
   enabledMessengers?: EnabledMessengers;
+  /** Платформа, определённая по HTTP-заголовкам (Referer) на сервере. Приоритет над client-side. */
+  serverHint?: MiniAppPlatform;
 }) {
-  const platform = detectPlatform(enabledMessengers);
+  const platform = detectPlatform(enabledMessengers, serverHint);
   const isMiniApp = platform !== "standalone";
   const [effectiveTheme, setEffectiveTheme] = useState<ThemeMode>("light");
   const [userThemeOverride, setUserThemeOverride] = useState<ThemeMode | null>(null);
 
-  const profile = useMemo(() => getProfile(enabledMessengers), [enabledMessengers]);
+  const profile = useMemo(() => getProfile(enabledMessengers, serverHint), [enabledMessengers, serverHint]);
 
   useEffect(() => {
     ready();
