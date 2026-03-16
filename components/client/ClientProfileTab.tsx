@@ -72,12 +72,36 @@ export function ClientProfileTab({
 
   async function handleShare() {
     const text = (settings.inviteText?.trim() || `${settings.appName} — закажи вкусно`);
+
     let link = settings.inviteLink?.trim();
+    if (!link) {
+      // Получаем/создаём реферального клиента и smart-link
+      try {
+        const res = await fetch("/api/public/customer/referral-link", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            tenantId: settings.tenantId,
+            platform: profile?.platform,
+            platformUserId: profile?.platformUserId,
+            phone: customer?.phone,
+          }),
+        });
+        if (res.ok) {
+          const data = (await res.json()) as { referralUrl?: string };
+          link = data.referralUrl ?? undefined;
+        }
+      } catch {
+        // fallback ниже
+      }
+    }
+
     if (!link && typeof window !== "undefined") {
       const url = new URL(window.location.href);
       url.searchParams.set("utm_source", "invite");
       link = url.toString();
     }
+
     await share(text, link ?? undefined);
   }
 
