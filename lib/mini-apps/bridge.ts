@@ -144,8 +144,31 @@ function _normalizeStartParam(v: unknown): string | null {
 }
 
 /**
+ * Для MAX: читает startapp из URL (query или hash), т.к. платформа может
+ * передавать payload только в URL при открытии мини‑аппы, а не в initDataUnsafe.
+ */
+function _getStartParamFromUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  const search = new URLSearchParams(window.location.search);
+  const fromQuery = search.get("startapp") ?? search.get("start_param");
+  if (fromQuery?.trim()) return fromQuery.trim();
+  try {
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash) return null;
+    const hashParams = new URLSearchParams(hash);
+    const fromHash = hashParams.get("startapp") ?? hashParams.get("start_param");
+    if (fromHash?.trim()) return fromHash.trim();
+  } catch {
+    // hash может быть не в формате key=value
+  }
+  return null;
+}
+
+/**
  * Возвращает start_param, переданный при открытии мини‑приложения.
  * Используем для сценариев вроде привязки аккаунтов (bind‑token).
+ * Для MAX добавлен fallback на чтение из URL (startapp/start_param), т.к.
+ * платформа может не передавать значение в initDataUnsafe.
  */
 export function getStartParam(enabled?: EnabledMessengers): string | null {
   if (typeof window === "undefined") return null;
@@ -162,11 +185,14 @@ export function getStartParam(enabled?: EnabledMessengers): string | null {
       return normalized;
     }
     if (platform === "max") {
-      const raw = window.WebApp?.initDataUnsafe?.start_param;
-      const normalized = _normalizeStartParam(raw);
+      const initData = window.WebApp?.initDataUnsafe as Record<string, unknown> | undefined;
+      const fromInit =
+        _normalizeStartParam(initData?.start_param) ?? _normalizeStartParam(initData?.startapp);
+      const fromUrl = _getStartParamFromUrl();
+      const normalized = fromInit ?? fromUrl;
       console.log("[miniapps] getStartParam max", {
-        rawType: typeof raw,
-        hasValue: !!raw,
+        fromInit: !!fromInit,
+        fromUrl: !!fromUrl,
         normalizedPrefix: normalized ? normalized.slice(0, 16) : null,
       });
       return normalized;
