@@ -658,26 +658,43 @@ function MyDataModal({
             </p>
           </div>
           {(showTelegram || showVk || showMax) && (
-            <div className="pt-2 border-t">
-              <div className="text-sm font-medium text-muted-foreground mb-2">ID в мессенджерах</div>
-              <div className="text-sm space-y-1">
-                {showTelegram && (
-                  <div>
-                    <span className="text-muted-foreground">Telegram ID: </span>
-                    {customer?.telegramUserId ?? "—"}
-                  </div>
+            <div className="pt-2 border-t space-y-2">
+              <div className="text-sm font-medium text-muted-foreground">Вход через мессенджеры</div>
+              <p className="text-xs text-muted-foreground">
+                Привяжите мессенджеры к аккаунту, чтобы входить одним кликом. Кнопки показываются только для тех мессенджеров, которые ещё не привязаны.
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {showTelegram && !customer?.telegramUserId && settings.messengerTelegramBotId && (
+                  <button
+                    type="button"
+                    className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted/60 transition-colors"
+                    style={{ borderRadius: settings.borderRadius }}
+                    onClick={() => {
+                      const raw = settings.messengerTelegramBotId ?? "";
+                      const url = raw.startsWith("http") ? raw : `https://t.me/${raw}`;
+                      if (typeof window !== "undefined") {
+                        window.open(url, "_blank");
+                      }
+                    }}
+                  >
+                    Войти через Telegram
+                  </button>
                 )}
-                {showVk && (
-                  <div>
-                    <span className="text-muted-foreground">VK ID: </span>
-                    {customer?.vkUserId ?? "—"}
-                  </div>
-                )}
-                {showMax && (
-                  <div>
-                    <span className="text-muted-foreground">MAX ID: </span>
-                    {customer?.maxUserId ?? "—"}
-                  </div>
+                {showMax && !customer?.maxUserId && settings.messengerMaxBotId && (
+                  <button
+                    type="button"
+                    className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted/60 transition-colors"
+                    style={{ borderRadius: settings.borderRadius }}
+                    onClick={() => {
+                      const raw = settings.messengerMaxBotId ?? "";
+                      const url = raw.startsWith("http") ? raw : raw ? `https://${raw}` : "";
+                      if (url && typeof window !== "undefined") {
+                        window.open(url, "_blank");
+                      }
+                    }}
+                  >
+                    Войти через MAX
+                  </button>
                 )}
               </div>
             </div>

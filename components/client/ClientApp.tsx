@@ -62,6 +62,9 @@ export type Settings = {
   inviteText?: string | null;
   /** Ссылка приглашения (если пусто — текущий URL с utm_source=invite). */
   inviteLink?: string | null;
+  /** Идентификаторы ботов для входа через мессенджеры (используются для привязки аккаунта). */
+  messengerTelegramBotId?: string | null;
+  messengerMaxBotId?: string | null;
 };
 
 export type Story = {
