@@ -12,6 +12,11 @@ export async function POST(req: NextRequest) {
   const token = body.token?.trim();
 
   if (!tenantId || !maxUserId || !token) {
+    console.log("[max-bind-complete] missing fields", {
+      tenantIdPresent: !!tenantId,
+      maxUserIdPresent: !!maxUserId,
+      tokenPresent: !!token,
+    });
     return NextResponse.json({ error: "tenantId, maxUserId и token обязательны" }, { status: 400 });
   }
 
@@ -25,6 +30,10 @@ export async function POST(req: NextRequest) {
   });
 
   if (!bind) {
+    console.log("[max-bind-complete] bind token not found or expired", {
+      tenantId,
+      tokenSuffix: token.slice(-6),
+    });
     return NextResponse.json({ error: "Токен недействителен или истёк" }, { status: 400 });
   }
 
@@ -32,6 +41,10 @@ export async function POST(req: NextRequest) {
     where: { id: bind.customerId, tenantId },
   });
   if (!customer) {
+    console.log("[max-bind-complete] customer for bind not found", {
+      tenantId,
+      customerId: bind.customerId,
+    });
     return NextResponse.json({ error: "Customer not found" }, { status: 404 });
   }
 
@@ -45,6 +58,13 @@ export async function POST(req: NextRequest) {
       data: { usedAt: new Date() },
     }),
   ]);
+
+  console.log("[max-bind-complete] success", {
+    tenantId,
+    customerId: customer.id,
+    maxUserId,
+    tokenSuffix: token.slice(-6),
+  });
 
   return NextResponse.json({ ok: true });
 }
