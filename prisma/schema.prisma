@@ -31,6 +31,7 @@ model Tenant {
   reviews        Review[]
   stories        Story[]
   forYouProducts ForYouProduct[]
+  maxBindTokens  MaxBindToken[]
 }
 
 model TenantSettings {
@@ -312,6 +313,8 @@ model Customer {
   invitedByCustomerId String?
   invitedByCustomer   Customer? @relation("CustomerInvitedBy", fields: [invitedByCustomerId], references: [id])
   invitedCustomers    Customer[] @relation("CustomerInvitedBy")
+
+  maxBindTokens MaxBindToken[]
 
   createdAt DateTime @default(now())
 
