@@ -167,6 +167,7 @@ export async function POST(req: NextRequest) {
       email?: string | null;
       city?: string | null;
       consentToMailing: boolean;
+      invitedByCustomerId?: string | null;
     } = {
       tenantId,
       phone,
