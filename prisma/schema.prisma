@@ -83,6 +83,9 @@ model TenantSettings {
   loyaltyType        String  @default("points") // "points" | "stamps"
   loyaltyStampGoal   Int     @default(6)
   loyaltyCashbackPct Decimal @default(5) @db.Decimal(5, 2)
+  // Реферальная программа: фиксированные бонусы за приглашение (обоим)
+  referralBonusPoints Decimal @default(0) @db.Decimal(10, 2)
+  referralBonusStamps Int     @default(0)
 
   // Лояльность: как заведение взаимодействует с бонусной картой гостя
   loyaltyInteraction String @default("app_only") // "app_only" | "iiko" | "rkeeper"
@@ -303,6 +306,12 @@ model Customer {
 
   orders Order[]
   reviews Review[]
+
+  // Реферальная программа
+  referralCode        String?   @unique
+  invitedByCustomerId String?
+  invitedByCustomer   Customer? @relation("CustomerInvitedBy", fields: [invitedByCustomerId], references: [id])
+  invitedCustomers    Customer[] @relation("CustomerInvitedBy")
 
   createdAt DateTime @default(now())
 

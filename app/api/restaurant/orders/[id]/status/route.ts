@@ -40,16 +40,51 @@ export async function PATCH(
     const settings = await prisma.tenantSettings.findUnique({
       where: { tenantId: emp.tenantId },
     });
-    const stampGoal = settings?.loyaltyStampGoal ?? 6;
     const cashbackPct = settings ? Number(settings.loyaltyCashbackPct) : 0;
     const pointsToAdd = (Number(existing.totalAmount) * cashbackPct) / 100;
-    await prisma.customer.update({
+
+    const updatedCustomer = await prisma.customer.update({
       where: { id: existing.customerId },
       data: {
         stamps: { increment: 1 },
         points: { increment: pointsToAdd },
       },
     });
+
+    // Реферальные бонусы: только за первый завершённый заказ приглашённого
+    if (settings && settings.referralBonusPoints > 0 || settings?.referralBonusStamps) {
+      const hasCompletedBefore = await prisma.order.findFirst({
+        where: {
+          tenantId: emp.tenantId,
+          customerId: existing.customerId,
+          status: "COMPLETED",
+          id: { not: existing.id },
+        },
+        select: { id: true },
+      });
+
+      if (!hasCompletedBefore && updatedCustomer.invitedByCustomerId) {
+        const bonusPoints = Number(settings.referralBonusPoints ?? 0);
+        const bonusStamps = settings.referralBonusStamps ?? 0;
+
+        await prisma.$transaction([
+          prisma.customer.update({
+            where: { id: updatedCustomer.id },
+            data: {
+              points: bonusPoints ? { increment: bonusPoints } : undefined,
+              stamps: bonusStamps ? { increment: bonusStamps } : undefined,
+            },
+          }),
+          prisma.customer.update({
+            where: { id: updatedCustomer.invitedByCustomerId },
+            data: {
+              points: bonusPoints ? { increment: bonusPoints } : undefined,
+              stamps: bonusStamps ? { increment: bonusStamps } : undefined,
+            },
+          }),
+        ]);
+      }
+    }
   }
 
   const updated = await prisma.order.findUnique({
