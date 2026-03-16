@@ -52,7 +52,9 @@ export async function PATCH(
     });
 
     // Реферальные бонусы: только за первый завершённый заказ приглашённого
-    if (settings && settings.referralBonusPoints > 0 || settings?.referralBonusStamps) {
+    const referralPoints = settings ? Number(settings.referralBonusPoints ?? 0) : 0;
+    const referralStamps = settings?.referralBonusStamps ?? 0;
+    if ((referralPoints > 0 || referralStamps > 0) && settings) {
       const hasCompletedBefore = await prisma.order.findFirst({
         where: {
           tenantId: emp.tenantId,
@@ -64,8 +66,8 @@ export async function PATCH(
       });
 
       if (!hasCompletedBefore && updatedCustomer.invitedByCustomerId) {
-        const bonusPoints = Number(settings.referralBonusPoints ?? 0);
-        const bonusStamps = settings.referralBonusStamps ?? 0;
+        const bonusPoints = referralPoints;
+        const bonusStamps = referralStamps;
 
         await prisma.$transaction([
           prisma.customer.update({
