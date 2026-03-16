@@ -65,6 +65,8 @@ export type Settings = {
   /** Идентификаторы ботов для входа через мессенджеры (используются для привязки аккаунта). */
   messengerTelegramBotId?: string | null;
   messengerMaxBotId?: string | null;
+  /** ID ссылки на мини‑приложение MAX (никнейм, например id526214415000_bot). */
+  messengerMaxAppId?: string | null;
 };
 
 export type Story = {

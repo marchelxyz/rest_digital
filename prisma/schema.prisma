@@ -73,6 +73,8 @@ model TenantSettings {
   messengerMax      Boolean @default(true)
   messengerTelegramBotId String?
   messengerMaxBotId      String?
+  // ID ссылки на мини‑приложение MAX (никнейм, например id526214415000_bot)
+  messengerMaxAppId      String?
   messengerVkGroupToken  String?
 
   // Бонусная карта: градиент (цвета через запятую, opacity 0-100, тип linear/radial)

@@ -21,12 +21,15 @@ export async function POST(req: NextRequest) {
 
   const tenant = await prisma.tenant.findUnique({
     where: { id: tenantId, isActive: true },
-    select: { id: true, settings: { select: { messengerMaxBotId: true } } },
+    select: { id: true, settings: { select: { messengerMaxBotId: true, messengerMaxAppId: true } } },
   });
   if (!tenant) {
     return NextResponse.json({ error: "Tenant not found" }, { status: 404 });
   }
-  const maxBotId = tenant.settings?.messengerMaxBotId ?? null;
+  const maxBotId =
+    tenant.settings?.messengerMaxAppId ??
+    tenant.settings?.messengerMaxBotId ??
+    null;
   if (!maxBotId) {
     return NextResponse.json({ error: "MAX бот не настроен" }, { status: 400 });
   }
