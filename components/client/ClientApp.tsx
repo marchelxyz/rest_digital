@@ -9,6 +9,7 @@ import { ClientHomeTab } from "./ClientHomeTab";
 import { ClientProfileTab } from "./ClientProfileTab";
 import { ClientInfoTab } from "./ClientInfoTab";
 import { CartDrawer } from "./CartDrawer";
+import { getStartParam } from "@/lib/mini-apps/bridge";
 import type { OrderType } from "./ClientHomeTab";
 
 export type ForYouProduct = {
@@ -207,6 +208,7 @@ function ClientAppInner({
   const [customerLoading, setCustomerLoading] = useState(true);
   const { theme, showBack, hideBack, platform, profile, storage } = useMiniApp();
   const isMax = platformFromHeaders === "max" || platform === "max";
+  const maxBindAttemptRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -219,13 +221,35 @@ function ClientAppInner({
           ? [profile.firstName, profile.lastName].filter(Boolean).join(" ")
           : "";
       try {
+        const effectivePlatform = platform === "standalone" ? "" : platform;
+        const platformUserId = profile?.platformUserId ?? "";
+
+        // 1) Сначала пробуем найти по platformUserId (это позволяет входить без телефона).
+        if (effectivePlatform && platformUserId) {
+          const qs = new URLSearchParams({
+            tenantId,
+            platform: effectivePlatform,
+            platformUserId,
+          });
+          if (phone) qs.set("phone", phone);
+          const getRes = await fetch(`/api/public/customer?${qs.toString()}`, { method: "GET" });
+          if (getRes.ok) {
+            const data = (await getRes.json()) as CustomerData;
+            if (cancelled) return;
+            setCustomer(data);
+            if (data.phone) storage.set(tenantId, "profile_phone", data.phone).catch(() => {});
+            return;
+          }
+        }
+
+        // 2) Если не нашли — пробуем POST (создание/поиск по телефону).
         const res = await fetch("/api/public/customer", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             tenantId,
-            platform: platform === "standalone" ? "" : platform,
-            platformUserId: profile?.platformUserId ?? "",
+            platform: effectivePlatform,
+            platformUserId,
             phone: phone || undefined,
             name: name || undefined,
           }),
@@ -251,6 +275,43 @@ function ClientAppInner({
       cancelled = true;
     };
   }, [settings.tenantId, platform, profile?.platformUserId, storage]);
+
+  // Автозавершение привязки при запуске в MAX: start_param содержит bind-токен.
+  useEffect(() => {
+    if (!isMax) return;
+    const token = getStartParam() ?? "";
+    const maxUserId = profile?.platformUserId ?? "";
+    if (!token || !token.startsWith("bind_") || !maxUserId) return;
+    if (maxBindAttemptRef.current === token) return;
+    maxBindAttemptRef.current = token;
+
+    fetch("/api/public/customer/max-bind-complete", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        tenantId: settings.tenantId,
+        maxUserId,
+        token,
+      }),
+    })
+      .then(() => {
+        // После попытки привязки перезагрузим клиента по MAX userId.
+        // (Даже если токен уже использован — просто обновим customer из БД.)
+        const qs = new URLSearchParams({
+          tenantId: settings.tenantId,
+          platform: "max",
+          platformUserId: maxUserId,
+        });
+        return fetch(`/api/public/customer?${qs.toString()}`, { method: "GET" });
+      })
+      .then(async (r) => {
+        if (!r.ok) return;
+        const data = (await r.json()) as CustomerData;
+        setCustomer(data);
+        if (data.phone) storage.set(settings.tenantId, "profile_phone", data.phone).catch(() => {});
+      })
+      .catch(() => {});
+  }, [isMax, profile?.platformUserId, settings.tenantId, storage]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
