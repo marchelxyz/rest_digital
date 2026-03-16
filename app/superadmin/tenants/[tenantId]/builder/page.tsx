@@ -67,6 +67,7 @@ type Settings = {
   messengerMax: boolean;
   messengerTelegramBotId?: string;
   messengerMaxBotId?: string;
+  messengerMaxAppId?: string;
   messengerVkGroupToken?: string;
   loyaltyCardGradientColors?: string;
   loyaltyCardGradientOpacity: number;
@@ -446,12 +447,21 @@ export default function BuilderPage() {
                         />
                       </div>
                       {settings.messengerMax !== false && (
-                        <Input
-                          placeholder="ID бота MAX"
-                          value={settings.messengerMaxBotId ?? ""}
-                          onChange={(e) => update("messengerMaxBotId", e.target.value)}
-                          className="text-sm"
-                        />
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Токен бота MAX (для отправки сообщений)"
+                            value={settings.messengerMaxBotId ?? ""}
+                            onChange={(e) => update("messengerMaxBotId", e.target.value)}
+                            className="text-sm"
+                            type="password"
+                          />
+                          <Input
+                            placeholder="ID ссылки на приложение MAX (например id526214415000_bot)"
+                            value={settings.messengerMaxAppId ?? ""}
+                            onChange={(e) => update("messengerMaxAppId", e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
                       )}
                     </div>
                   </div>

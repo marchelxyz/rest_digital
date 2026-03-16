@@ -680,7 +680,9 @@ function MyDataModal({
                     Войти через Telegram
                   </button>
                 )}
-                {showMax && !customer?.maxUserId && settings.messengerMaxBotId && (
+                {showMax &&
+                  !customer?.maxUserId &&
+                  (settings.messengerMaxAppId || settings.messengerMaxBotId) && (
                   <button
                     type="button"
                     className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted/60 transition-colors"
