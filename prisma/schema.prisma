@@ -318,6 +318,21 @@ model Customer {
   @@unique([tenantId, phone])
 }
 
+// Временные токены привязки аккаунта MAX к существующему профилю
+model MaxBindToken {
+  id         String   @id @default(uuid())
+  tenantId   String
+  tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+  customerId String
+  customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  token     String   @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+
+  createdAt DateTime @default(now())
+}
+
 model Order {
   id          String      @id @default(uuid())
   tenantId    String
