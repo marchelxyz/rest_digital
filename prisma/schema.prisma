@@ -319,6 +319,8 @@ model Customer {
 
   bindTokens BindToken[]
 
+  cartJson String? // JSON-сериализованная корзина для кросс-платформенной синхронизации
+
   createdAt DateTime @default(now())
 
   @@unique([tenantId, phone])
