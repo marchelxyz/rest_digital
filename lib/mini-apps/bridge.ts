@@ -88,23 +88,58 @@ function _isVkFromUrl(): boolean {
 }
 
 /**
- * Определяет платформу по глобальным объектам и URL.
- * serverHint (platformFromHeaders) имеет наивысший приоритет — сервер определяет
- * платформу по Referer до загрузки любых скриптов.
- * Это критично для MAX: max-web-app.js может не загрузиться, а telegram-web-app.js
- * загружается и ставит window.Telegram.WebApp, что ведёт к неверной детекции.
+ * Определяет платформу по document.referrer (кто загрузил iframe).
+ * Надёжнее SDK-объектов: не зависит от загрузки скриптов.
+ */
+function _detectFromReferrer(): MiniAppPlatform | null {
+  if (typeof document === "undefined") return null;
+  const ref = (document.referrer ?? "").toLowerCase();
+  if (ref.includes("max.ru")) return "max";
+  if (ref.includes("vk.com") || ref.includes("vk.ru")) return "vk";
+  if (ref.includes("telegram.org") || ref.includes("t.me")) return "telegram";
+  return null;
+}
+
+/**
+ * Определяет платформу. Приоритет:
+ * 1. serverHint (HTTP Referer на сервере)
+ * 2. document.referrer (iframe referrer на клиенте)
+ * 3. URL-параметры (WebAppPlatform, vk_user_id)
+ * 4. SDK-объекты (window.WebApp, window.Telegram.WebApp, window.vkBridge)
  */
 export function detectPlatform(enabled?: EnabledMessengers, serverHint?: MiniAppPlatform): MiniAppPlatform {
   if (typeof window === "undefined") return "standalone";
   const useTg = enabled?.telegram !== false;
   const useVk = enabled?.vk !== false;
   const useMax = enabled?.max !== false;
+
+  const fromRef = _detectFromReferrer();
+
+  console.log("[miniapps] detectPlatform signals", {
+    serverHint: serverHint ?? null,
+    documentReferrer: fromRef,
+    isMaxFromUrl: isMaxFromUrl(),
+    isVkFromUrl: _isVkFromUrl(),
+    hasWindowWebApp: !!window.WebApp,
+    hasTgWebApp: !!window.Telegram?.WebApp,
+    hasVkBridge: !!(window.vkBridge || window.VK?.Bridge),
+    rawReferrer: (typeof document !== "undefined" ? document.referrer : "").slice(0, 60),
+  });
+
   if (serverHint === "max" && useMax) return "max";
   if (serverHint === "telegram" && useTg) return "telegram";
   if (serverHint === "vk" && useVk) return "vk";
-  if (useMax && (isMaxFromUrl() || window.WebApp)) return "max";
+
+  if (fromRef === "max" && useMax) return "max";
+  if (fromRef === "vk" && useVk) return "vk";
+  if (fromRef === "telegram" && useTg) return "telegram";
+
+  if (useMax && isMaxFromUrl()) return "max";
+  if (useVk && _isVkFromUrl()) return "vk";
+
+  if (useMax && window.WebApp) return "max";
   if (useTg && window.Telegram?.WebApp) return "telegram";
-  if (useVk && (_isVkFromUrl() || window.vkBridge || window.VK?.Bridge)) return "vk";
+  if (useVk && (window.vkBridge || window.VK?.Bridge)) return "vk";
   return "standalone";
 }
 

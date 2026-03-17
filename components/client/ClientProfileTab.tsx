@@ -562,6 +562,7 @@ function MyDataModal({
     }
   }
 
+  const currentPlatform = profile?.platform;
   const showTelegram = settings.messengerTelegram !== false;
   const showVk = settings.messengerVk !== false;
   const showMax = settings.messengerMax !== false;
@@ -665,6 +666,7 @@ function MyDataModal({
               </p>
               <div className="flex flex-wrap gap-2">
                 {showTelegram &&
+                  currentPlatform !== "telegram" &&
                   !customer?.telegramUserId &&
                   (settings.messengerTelegramAppId || settings.messengerTelegramBotId) && (
                   <BindButton
@@ -680,6 +682,7 @@ function MyDataModal({
                   />
                 )}
                 {showVk &&
+                  currentPlatform !== "vk" &&
                   !customer?.vkUserId &&
                   settings.messengerVkAppId && (
                   <BindButton
@@ -695,6 +698,7 @@ function MyDataModal({
                   />
                 )}
                 {showMax &&
+                  currentPlatform !== "max" &&
                   !customer?.maxUserId &&
                   (settings.messengerMaxAppId || settings.messengerMaxBotId) && (
                   <BindButton
@@ -757,17 +761,23 @@ function BindButton({
   async function handleClick() {
     if (!tenantId) return;
     try {
+      console.log("[bind-button] click", { tenantId, targetPlatform, customerId, hasPhone: !!phone });
       const res = await fetch("/api/public/customer/bind-token", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ tenantId, targetPlatform, customerId, phone }),
       });
-      if (!res.ok) return;
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        console.log("[bind-button] error", { status: res.status, body: text.slice(0, 200) });
+        return;
+      }
       const data = (await res.json()) as { token: string; appId: string };
       const url = buildUrl(data.appId, data.token);
+      console.log("[bind-button] opening", { url: url.slice(0, 80) });
       if (typeof window !== "undefined") window.open(url, "_blank");
-    } catch {
-      /* noop */
+    } catch (e) {
+      console.log("[bind-button] exception", { error: String(e) });
     }
   }
 
