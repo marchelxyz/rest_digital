@@ -11,6 +11,8 @@ const SETTINGS_KEYS = [
   "primaryColor", "secondaryColor", "theme", "fontFamily",
   "showStories", "showLoyalty", "showPopular", "menuLayout",
   "borderRadius", "iikoApiKey", "rkeeperApiKey", "yandexMetricaId",
+  "iikoApiLogin", "iikoOrganizationId", "iikoTerminalGroupId",
+  "iikoOrderTypeId", "iikoPaymentTypeId", "iikoWebhookSecret",
   "loyaltyType", "loyaltyStampGoal", "loyaltyCashbackPct",
   "loyaltyInteraction",
   "messengerTelegram", "messengerVk", "messengerMax",
@@ -39,6 +41,12 @@ type SettingsInput = Partial<{
   menuLayout: string;
   borderRadius: number;
   iikoApiKey: string;
+  iikoApiLogin: string;
+  iikoOrganizationId: string;
+  iikoTerminalGroupId: string;
+  iikoOrderTypeId: string;
+  iikoPaymentTypeId: string;
+  iikoWebhookSecret: string;
   rkeeperApiKey: string;
   yandexMetricaId: string;
   loyaltyType: string;

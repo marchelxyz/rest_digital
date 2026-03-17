@@ -71,6 +71,11 @@ type Settings = {
   messengerMaxAppId?: string;
   messengerVkGroupToken?: string;
   messengerVkAppId?: string;
+  iikoApiLogin?: string;
+  iikoOrganizationId?: string;
+  iikoTerminalGroupId?: string;
+  iikoOrderTypeId?: string;
+  iikoPaymentTypeId?: string;
   loyaltyCardGradientColors?: string;
   loyaltyCardGradientOpacity: number;
   loyaltyCardGradientType: string;
@@ -397,6 +402,71 @@ export default function BuilderPage() {
                   />
                 </div>
               )}
+
+              <div className="border-t pt-4 mt-4">
+                <div className="mb-4">
+                  <Label className="text-base font-medium">Интеграция iiko</Label>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    Синхронизация меню, приём заказов и статусы. Документация:{" "}
+                    <a href="https://ru.iiko.help" target="_blank" rel="noreferrer" className="underline">
+                      ru.iiko.help
+                    </a>
+                  </p>
+                  <div className="grid gap-2 mt-2">
+                    <Input
+                      placeholder="API-ключ (из Настройки Cloud API в iikoWeb)"
+                      value={settings.iikoApiLogin ?? ""}
+                      onChange={(e) => update("iikoApiLogin", e.target.value)}
+                      className="text-sm"
+                      type="password"
+                    />
+                    <Input
+                      placeholder="ID организации (UUID)"
+                      value={settings.iikoOrganizationId ?? ""}
+                      onChange={(e) => update("iikoOrganizationId", e.target.value)}
+                      className="text-sm"
+                    />
+                    <Input
+                      placeholder="ID терминальной группы (UUID)"
+                      value={settings.iikoTerminalGroupId ?? ""}
+                      onChange={(e) => update("iikoTerminalGroupId", e.target.value)}
+                      className="text-sm"
+                    />
+                    <Input
+                      placeholder="ID типа заказа (UUID, самовывоз/доставка)"
+                      value={settings.iikoOrderTypeId ?? ""}
+                      onChange={(e) => update("iikoOrderTypeId", e.target.value)}
+                      className="text-sm"
+                    />
+                    <Input
+                      placeholder="ID способа оплаты (UUID)"
+                      value={settings.iikoPaymentTypeId ?? ""}
+                      onChange={(e) => update("iikoPaymentTypeId", e.target.value)}
+                      className="text-sm"
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-fit"
+                      onClick={async () => {
+                        try {
+                          const r = await fetch(`/api/superadmin/tenants/${tenantId}/iiko/sync-menu`, {
+                            method: "POST",
+                          });
+                          const d = await r.json();
+                          if (r.ok) alert(`Синхронизировано: создано ${d.created}, обновлено ${d.updated}`);
+                          else alert(d.error ?? "Ошибка");
+                        } catch (e) {
+                          alert(String(e));
+                        }
+                      }}
+                    >
+                      Синхронизировать меню из iiko
+                    </Button>
+                  </div>
+                </div>
+              </div>
 
               <div className="border-t pt-4 mt-4">
                 <div className="mb-4">

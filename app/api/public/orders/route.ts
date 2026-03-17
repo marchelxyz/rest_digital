@@ -1,9 +1,11 @@
 /**
  * POST /api/public/orders — создание заказа от клиента
  * Body: { tenantId, phone?, name?, type, items, address?, comment? }
+ * При включённой интеграции iiko заказ также отправляется в iiko.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
+import { getAccessToken, createOrder } from "@/lib/iiko/client";
 
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
@@ -84,6 +86,7 @@ export async function POST(req: NextRequest) {
   const productIds = items.map((i) => i.productId);
   const products = await prisma.product.findMany({
     where: { id: { in: productIds }, tenantId, isAvailable: true },
+    include: { modifierGroups: { include: { options: true } } },
   });
   if (products.length !== productIds.length) {
     return NextResponse.json({ error: "Некоторые товары недоступны" }, { status: 400 });
@@ -120,6 +123,75 @@ export async function POST(req: NextRequest) {
     },
     include: { items: { include: { product: true } }, customer: true },
   });
+
+  // Отправка в iiko при настроенной интеграции
+  const settings = await prisma.tenantSettings.findUnique({
+    where: { tenantId },
+  });
+  const iikoConfig =
+    settings?.iikoApiLogin &&
+    settings?.iikoOrganizationId &&
+    settings?.iikoTerminalGroupId &&
+    settings?.iikoOrderTypeId &&
+    settings?.iikoPaymentTypeId;
+  if (iikoConfig && settings) {
+    try {
+      const token = await getAccessToken(settings.iikoApiLogin!);
+      const productMap = new Map(products.map((p) => [p.id, p]));
+      const iikoItems = orderItems.map((item) => {
+        const p = productMap.get(item.productId);
+        const iikoProductId = p?.iikoProductId ?? item.productId;
+        let modifiers: { productId: string; productGroupId: string; amount: number }[] = [];
+        if (item.modifiers && p) {
+          try {
+            const mods = JSON.parse(item.modifiers) as { optionId: string; quantity?: number }[];
+            for (const m of mods) {
+              for (const mg of p.modifierGroups) {
+                const opt = mg.options.find((o) => o.id === m.optionId);
+                if (opt?.iikoProductId && opt?.iikoProductGroupId) {
+                  modifiers.push({
+                    productId: opt.iikoProductId,
+                    productGroupId: opt.iikoProductGroupId,
+                    amount: m.quantity ?? 1,
+                  });
+                }
+              }
+            }
+          } catch {
+            // ignore
+          }
+        }
+        return {
+          productId: iikoProductId,
+          quantity: item.quantity,
+          price: Number(item.price),
+          modifiers,
+        };
+      });
+      const result = await createOrder(token, {
+        organizationId: settings.iikoOrganizationId!,
+        terminalGroupId: settings.iikoTerminalGroupId!,
+        orderTypeId: settings.iikoOrderTypeId!,
+        paymentTypeId: settings.iikoPaymentTypeId!,
+        phone,
+        customerName: customer.name ?? undefined,
+        items: iikoItems,
+        totalAmount: Number(totalAmount),
+        address: orderType === "DELIVERY" ? body.address ?? undefined : undefined,
+        comment: body.comment ?? undefined,
+        sourceKey: "rest_digital",
+      });
+      if (result.creationStatus === "Success" && result.orderId) {
+        await prisma.order.update({
+          where: { id: order.id },
+          data: { iikoOrderId: result.orderId },
+        });
+      }
+    } catch (e) {
+      console.error("[iiko] order create failed:", e);
+      // Заказ в нашей БД уже создан, iiko-ошибка не отменяет его
+    }
+  }
 
   // Бонусы начисляются только после подтверждения заказа (см. PATCH /api/restaurant/orders/[id]/status)
   return NextResponse.json(order);
