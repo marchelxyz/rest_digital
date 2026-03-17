@@ -658,7 +658,7 @@ function MyDataModal({
               Используется как номер бонусной карты
             </p>
           </div>
-          {(showTelegram || showVk || showMax) && (
+          {customer?.id && (showTelegram || showVk || showMax) && (
             <div className="pt-2 border-t space-y-2">
               <div className="text-sm font-medium text-muted-foreground">Вход через мессенджеры</div>
               <p className="text-xs text-muted-foreground">
