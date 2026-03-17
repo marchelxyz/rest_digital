@@ -141,6 +141,7 @@ export function ClientApp({
   /** Платформа, определённая по HTTP-заголовкам (Referer) на сервере. Приоритет над client-side. */
   platformFromHeaders?: "telegram" | "vk" | "max";
 }) {
+  const [customerId, setCustomerId] = useState<string | undefined>();
   const enabledMessengers = useMemo(
     () => ({
       telegram: settings.messengerTelegram !== false,
@@ -151,7 +152,7 @@ export function ClientApp({
   );
   return (
     <MiniAppProvider tenantId={settings.tenantId} adminTheme={adminTheme} enabledMessengers={enabledMessengers} serverHint={platformFromHeaders}>
-      <CartStore tenantId={settings.tenantId}>
+      <CartStore tenantId={settings.tenantId} customerId={customerId}>
         <ClientAppInner
           settings={settings}
           adminTheme={adminTheme}
@@ -159,6 +160,7 @@ export function ClientApp({
           categories={categories}
           forYouProducts={forYouProducts}
           platformFromHeaders={platformFromHeaders}
+          onCustomerIdChange={setCustomerId}
         />
       </CartStore>
     </MiniAppProvider>
@@ -172,6 +174,7 @@ function ClientAppInner({
   forYouProducts,
   adminTheme,
   platformFromHeaders,
+  onCustomerIdChange,
 }: {
   settings: Settings;
   stories: Story[];
@@ -179,6 +182,7 @@ function ClientAppInner({
   forYouProducts: ForYouProduct[];
   adminTheme: "light" | "dark" | "auto";
   platformFromHeaders?: "telegram" | "vk" | "max";
+  onCustomerIdChange: (id: string | undefined) => void;
 }) {
   const [activeTab, setActiveTab] = useState<TabId>("home");
   const [cartOpen, setCartOpen] = useState(false);
@@ -208,6 +212,10 @@ function ClientAppInner({
   const [customer, setCustomer] = useState<CustomerData | null>(null);
   const [customerLoading, setCustomerLoading] = useState(true);
   const { theme, showBack, hideBack, platform, profile, storage } = useMiniApp();
+
+  useEffect(() => {
+    onCustomerIdChange(customer?.id);
+  }, [customer?.id, onCustomerIdChange]);
   const isMax = platformFromHeaders === "max" || platform === "max";
   const bindAttemptRef = useRef<string | null>(null);
 

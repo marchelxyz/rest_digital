@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useCallback, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useCallback, useState, useEffect, useRef, ReactNode } from "react";
 import { storageGet, storageSet } from "@/lib/mini-apps/bridge";
 
 export type CartItemModifier = {
@@ -29,6 +29,7 @@ function makeLineId(productId: string, modifiers?: CartItemModifier[]): string {
 }
 
 const CART_STORAGE_KEY = "cart_items";
+const DB_SYNC_DEBOUNCE_MS = 800;
 
 type CartState = {
   items: CartItem[];
@@ -42,6 +43,7 @@ type CartState = {
   removeItem: (lineId: string) => void;
   updateQty: (lineId: string, qty: number) => void;
   clear: () => void;
+  replaceAll: (next: CartItem[]) => void;
   total: number;
 };
 
@@ -49,14 +51,19 @@ const CartContext = createContext<CartState | null>(null);
 
 export function CartStore({
   tenantId,
+  customerId,
   children,
 }: {
   tenantId: string;
+  customerId?: string;
   children: ReactNode;
 }) {
   const [items, setItems] = useState<CartItem[]>([]);
   const [hydrated, setHydrated] = useState(false);
+  const dbSyncTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const skipNextDbSync = useRef(false);
 
+  // 1) Гидрация из localStorage/CloudStorage
   useEffect(() => {
     let cancelled = false;
     storageGet(tenantId, CART_STORAGE_KEY).then((raw) => {
@@ -70,19 +77,62 @@ export function CartStore({
           setItems(parsed);
         }
       } catch {
-        // ignore invalid data
+        // ignore
       }
       setHydrated(true);
     });
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, [tenantId]);
 
+  // 2) При появлении customerId — загружаем корзину из БД (серверный источник правды)
+  useEffect(() => {
+    if (!customerId || !hydrated) return;
+    let cancelled = false;
+    fetch(`/api/public/customer/cart?customerId=${encodeURIComponent(customerId)}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (cancelled || !data?.cartJson) return;
+        try {
+          const serverItems = JSON.parse(data.cartJson) as CartItem[];
+          if (Array.isArray(serverItems) && serverItems.length > 0) {
+            skipNextDbSync.current = true;
+            setItems(serverItems);
+            storageSet(tenantId, CART_STORAGE_KEY, data.cartJson).catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [customerId, hydrated, tenantId]);
+
+  // 3) Сохранение в localStorage + debounced-сохранение в БД
   useEffect(() => {
     if (!hydrated) return;
-    storageSet(tenantId, CART_STORAGE_KEY, JSON.stringify(items)).catch(() => {});
-  }, [tenantId, hydrated, items]);
+    const json = JSON.stringify(items);
+    storageSet(tenantId, CART_STORAGE_KEY, json).catch(() => {});
+
+    if (skipNextDbSync.current) {
+      skipNextDbSync.current = false;
+      return;
+    }
+    if (!customerId) return;
+    if (dbSyncTimer.current) clearTimeout(dbSyncTimer.current);
+    dbSyncTimer.current = setTimeout(() => {
+      fetch("/api/public/customer/cart", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ customerId, cartJson: json }),
+      }).catch(() => {});
+    }, DB_SYNC_DEBOUNCE_MS);
+  }, [tenantId, hydrated, items, customerId]);
+
+  useEffect(() => {
+    return () => {
+      if (dbSyncTimer.current) clearTimeout(dbSyncTimer.current);
+    };
+  }, []);
 
   const addItem = useCallback(
     (
@@ -136,10 +186,12 @@ export function CartStore({
 
   const clear = useCallback(() => setItems([]), []);
 
+  const replaceAll = useCallback((next: CartItem[]) => setItems(next), []);
+
   const total = items.reduce((s, i) => s + i.price * i.quantity, 0);
 
   return (
-    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clear, total }}>
+    <CartContext.Provider value={{ items, addItem, removeItem, updateQty, clear, replaceAll, total }}>
       {children}
     </CartContext.Provider>
   );
