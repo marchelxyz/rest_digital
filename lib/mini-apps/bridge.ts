@@ -471,13 +471,18 @@ export function hasAddToHomeScreen(): boolean {
   return typeof window.Telegram?.WebApp?.addToHomeScreen === "function";
 }
 
+function _canUseTgCloudStorage(): boolean {
+  const tg = window.Telegram?.WebApp;
+  return !!(tg?.CloudStorage?.setItem && tg.isVersionAtLeast?.("6.9"));
+}
+
 /** CloudStorage / DeviceStorage — сохранить. */
 export async function storageSet(tenantId: string, key: string, value: string): Promise<void> {
   if (typeof window === "undefined") return;
   const fullKey = `rd_${tenantId}_${key}`;
   try {
-    const tg = window.Telegram?.WebApp;
-    if (tg?.CloudStorage?.setItem) {
+    if (_canUseTgCloudStorage()) {
+      const tg = window.Telegram!.WebApp!;
       return new Promise((res, rej) => {
         tg.CloudStorage!.setItem(fullKey, value, (err) => (err ? rej(err) : res()));
       });
@@ -502,8 +507,8 @@ export async function storageGet(tenantId: string, key: string): Promise<string 
   if (typeof window === "undefined") return null;
   const fullKey = `rd_${tenantId}_${key}`;
   try {
-    const tg = window.Telegram?.WebApp;
-    if (tg?.CloudStorage?.getItem) {
+    if (_canUseTgCloudStorage()) {
+      const tg = window.Telegram!.WebApp!;
       return new Promise((res) => {
         tg.CloudStorage!.getItem(fullKey, (_, v) => res(v ?? null));
       });
