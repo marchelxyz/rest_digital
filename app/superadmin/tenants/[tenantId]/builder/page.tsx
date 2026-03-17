@@ -66,9 +66,11 @@ type Settings = {
   messengerVk: boolean;
   messengerMax: boolean;
   messengerTelegramBotId?: string;
+  messengerTelegramAppId?: string;
   messengerMaxBotId?: string;
   messengerMaxAppId?: string;
   messengerVkGroupToken?: string;
+  messengerVkAppId?: string;
   loyaltyCardGradientColors?: string;
   loyaltyCardGradientOpacity: number;
   loyaltyCardGradientType: string;
@@ -412,12 +414,21 @@ export default function BuilderPage() {
                         />
                       </div>
                       {settings.messengerTelegram !== false && (
-                        <Input
-                          placeholder="ID бота Telegram"
-                          value={settings.messengerTelegramBotId ?? ""}
-                          onChange={(e) => update("messengerTelegramBotId", e.target.value)}
-                          className="text-sm"
-                        />
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Токен бота Telegram (для отправки сообщений)"
+                            value={settings.messengerTelegramBotId ?? ""}
+                            onChange={(e) => update("messengerTelegramBotId", e.target.value)}
+                            className="text-sm"
+                            type="password"
+                          />
+                          <Input
+                            placeholder="Username бота Telegram (например mybot)"
+                            value={settings.messengerTelegramAppId ?? ""}
+                            onChange={(e) => update("messengerTelegramAppId", e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
                       )}
                     </div>
                     <div className="space-y-2">
@@ -429,13 +440,21 @@ export default function BuilderPage() {
                         />
                       </div>
                       {settings.messengerVk !== false && (
-                        <Input
-                          placeholder="Токен группы VK"
-                          value={settings.messengerVkGroupToken ?? ""}
-                          onChange={(e) => update("messengerVkGroupToken", e.target.value)}
-                          className="text-sm"
-                          type="password"
-                        />
+                        <div className="space-y-2">
+                          <Input
+                            placeholder="Токен группы VK (для отправки сообщений)"
+                            value={settings.messengerVkGroupToken ?? ""}
+                            onChange={(e) => update("messengerVkGroupToken", e.target.value)}
+                            className="text-sm"
+                            type="password"
+                          />
+                          <Input
+                            placeholder="ID мини-приложения VK (числовой, например 51234567)"
+                            value={settings.messengerVkAppId ?? ""}
+                            onChange={(e) => update("messengerVkAppId", e.target.value)}
+                            className="text-sm"
+                          />
+                        </div>
                       )}
                     </div>
                     <div className="space-y-2">

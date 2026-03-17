@@ -35,6 +35,9 @@ declare global {
         send: (method: string, params?: object) => Promise<{ result?: unknown }>;
       };
     };
+    vkBridge?: {
+      send: (method: string, params?: object) => Promise<Record<string, unknown>>;
+    };
     WebApp?: {
       initData: string;
       initDataUnsafe?: {
@@ -77,6 +80,13 @@ function isMaxFromUrl(): boolean {
   }
 }
 
+/** VK передаёт vk_user_id и vk_app_id в URL query. */
+function _isVkFromUrl(): boolean {
+  if (typeof window === "undefined") return false;
+  const params = new URLSearchParams(window.location.search);
+  return params.has("vk_user_id") || params.has("vk_app_id");
+}
+
 /**
  * Определяет платформу по глобальным объектам и URL.
  * serverHint (platformFromHeaders) имеет наивысший приоритет — сервер определяет
@@ -94,7 +104,7 @@ export function detectPlatform(enabled?: EnabledMessengers, serverHint?: MiniApp
   if (serverHint === "vk" && useVk) return "vk";
   if (useMax && (isMaxFromUrl() || window.WebApp)) return "max";
   if (useTg && window.Telegram?.WebApp) return "telegram";
-  if (useVk && window.VK?.Bridge) return "vk";
+  if (useVk && (_isVkFromUrl() || window.vkBridge || window.VK?.Bridge)) return "vk";
   return "standalone";
 }
 
@@ -205,7 +215,13 @@ export function getProfile(enabled?: EnabledMessengers, serverHint?: MiniAppPlat
     };
   }
   if (platform === "vk") {
-    return { platform: "vk", platformUserId: "" };
+    const params = new URLSearchParams(window.location.search);
+    const vkUserId = params.get("vk_user_id");
+    if (!vkUserId) return null;
+    return {
+      platform: "vk",
+      platformUserId: vkUserId,
+    };
   }
   return null;
 }
@@ -276,6 +292,13 @@ export function getStartParam(enabled?: EnabledMessengers, serverHint?: MiniAppP
       });
       return normalized;
     }
+    if (platform === "vk") {
+      const hash = window.location.hash.replace(/^#/, "").trim();
+      console.log("[miniapps] getStartParam vk", {
+        hash: hash ? hash.slice(0, 20) : null,
+      });
+      return hash || null;
+    }
   } catch (e) {
     console.log("[miniapps] getStartParam error", { platform, error: String(e) });
   }
@@ -303,6 +326,7 @@ export function ready(): void {
   if (typeof window === "undefined") return;
   window.Telegram?.WebApp?.ready();
   window.WebApp?.ready();
+  window.vkBridge?.send("VKWebAppInit").catch(() => {});
 }
 
 /** Показать кнопку «Назад». */

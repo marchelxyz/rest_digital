@@ -17,6 +17,10 @@ export function MiniAppScripts() {
         src="https://web.max.ru/max-web-app.js"
         strategy="beforeInteractive"
       />
+      <Script
+        src="https://unpkg.com/@vkontakte/vk-bridge/dist/browser.min.js"
+        strategy="beforeInteractive"
+      />
     </>
   );
 }

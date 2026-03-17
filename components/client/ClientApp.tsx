@@ -65,9 +65,10 @@ export type Settings = {
   inviteLink?: string | null;
   /** Идентификаторы ботов для входа через мессенджеры (используются для привязки аккаунта). */
   messengerTelegramBotId?: string | null;
+  messengerTelegramAppId?: string | null;
   messengerMaxBotId?: string | null;
-  /** ID ссылки на мини‑приложение MAX (никнейм, например id526214415000_bot). */
   messengerMaxAppId?: string | null;
+  messengerVkAppId?: string | null;
 };
 
 export type Story = {
@@ -208,7 +209,7 @@ function ClientAppInner({
   const [customerLoading, setCustomerLoading] = useState(true);
   const { theme, showBack, hideBack, platform, profile, storage } = useMiniApp();
   const isMax = platformFromHeaders === "max" || platform === "max";
-  const maxBindAttemptRef = useRef<string | null>(null);
+  const bindAttemptRef = useRef<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -288,37 +289,45 @@ function ClientAppInner({
     };
   }, [settings.tenantId, platform, profile?.platformUserId, storage]);
 
-  // Автозавершение привязки при запуске в MAX: start_param содержит bind-токен.
-  // MAX может передавать start_param асинхронно (SDK подставляет позже), поэтому пробуем несколько раз с задержкой.
+  // Автозавершение привязки: при запуске с bind-токеном в start_param
+  // связываем текущую платформу с существующим аккаунтом.
+  // SDK может подставлять start_param асинхронно, поэтому пробуем несколько раз.
   useEffect(() => {
-    if (!isMax || !profile?.platformUserId || !settings.tenantId) return;
+    if (platform === "standalone" || !profile?.platformUserId || !settings.tenantId) return;
 
-    const maxUserId = profile.platformUserId;
+    const currentPlatformUserId = profile.platformUserId;
+    const currentPlatform = platform;
     const tenantId = settings.tenantId;
 
     function tryBind(tokenRaw: string | null) {
       const token = (tokenRaw ?? "").trim();
-      if (!token.startsWith("bind_") || !maxUserId) return false;
-      if (maxBindAttemptRef.current === token) return true; // уже отправили
-      maxBindAttemptRef.current = token;
+      if (!token.startsWith("bind_") || !currentPlatformUserId) return false;
+      if (bindAttemptRef.current === token) return true;
+      bindAttemptRef.current = token;
 
-      console.log("[client] max auto-bind start", {
+      console.log("[client] auto-bind start", {
         tenantId,
-        maxUserId,
+        platform: currentPlatform,
+        platformUserId: currentPlatformUserId,
         tokenSuffix: token.slice(-6),
       });
 
-      fetch("/api/public/customer/max-bind-complete", {
+      fetch("/api/public/customer/bind-complete", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tenantId, maxUserId, token }),
+        body: JSON.stringify({
+          tenantId,
+          platform: currentPlatform,
+          platformUserId: currentPlatformUserId,
+          token,
+        }),
       })
         .then((r) => {
-          console.log("[client] max-bind-complete response", { status: r.status });
+          console.log("[client] bind-complete response", { status: r.status });
           const qs = new URLSearchParams({
             tenantId,
-            platform: "max",
-            platformUserId: maxUserId,
+            platform: currentPlatform,
+            platformUserId: currentPlatformUserId,
           });
           return fetch(`/api/public/customer?${qs.toString()}`, { method: "GET" });
         })
@@ -339,11 +348,11 @@ function ClientAppInner({
     for (const delayMs of delays) {
       const id = setTimeout(() => {
         const token = getStartParam(undefined, platformFromHeaders) ?? "";
-        console.log("[client] max auto-bind check", {
+        console.log("[client] auto-bind check", {
           attempt: delayMs,
+          platform: currentPlatform,
           hasToken: !!token,
           tokenPrefix: token ? token.slice(0, 8) : null,
-          platformFromHeaders,
         });
         if (tryBind(token)) {
           timeouts.forEach(clearTimeout);
@@ -353,7 +362,7 @@ function ClientAppInner({
     }
 
     return () => timeouts.forEach(clearTimeout);
-  }, [isMax, profile?.platformUserId, settings.tenantId, storage]);
+  }, [platform, profile?.platformUserId, settings.tenantId, storage, platformFromHeaders]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1279px)");
