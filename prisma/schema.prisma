@@ -67,6 +67,14 @@ model TenantSettings {
   rkeeperApiKey   String?
   yandexMetricaId String?
 
+  // iiko Cloud API (официальная интеграция: https://ru.iiko.help)
+  iikoApiLogin         String?  // API-ключ из «Настройки Cloud API» в iikoWeb
+  iikoOrganizationId   String?  // UUID организации
+  iikoTerminalGroupId  String?  // UUID терминальной группы
+  iikoOrderTypeId      String?  // UUID типа заказа (самовывоз/доставка)
+  iikoPaymentTypeId    String?  // UUID способа оплаты
+  iikoWebhookSecret    String?  // Секрет для проверки вебхуков (опционально)
+
   // Мессенджеры (включённые платформы для определения пользователя)
   messengerTelegram Boolean @default(true)
   messengerVk       Boolean @default(true)
@@ -234,6 +242,9 @@ model Product {
   modifierGroups   ModifierGroup[]
   productBadges    ProductBadgeItem[]
   forYouProductRef ForYouProduct[]
+
+  // Связь с iiko при синхронизации меню
+  iikoProductId String?  @unique
 }
 
 model ProductBadgeItem {
@@ -259,6 +270,8 @@ model ModifierGroup {
   isActive    Boolean  @default(true)
 
   options     ModifierOption[]
+
+  iikoProductGroupId String?  // ID группы модификаторов в iiko
 }
 
 model ModifierOption {
@@ -272,6 +285,10 @@ model ModifierOption {
   isDefault   Boolean  @default(false)
   isActive    Boolean  @default(true)
   sortOrder   Int      @default(0)
+
+  // iiko: productId модификатора и productGroupId
+  iikoProductId    String?
+  iikoProductGroupId String?
 }
 
 // ==========================================
@@ -365,6 +382,7 @@ model Order {
   utmContent  String?
 
   assignedCourierId String?
+  iikoOrderId       String?   // ID заказа в iiko при интеграции
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 
