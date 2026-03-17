@@ -664,56 +664,50 @@ function MyDataModal({
                 Привяжите мессенджеры к аккаунту, чтобы входить одним кликом. Кнопки показываются только для тех мессенджеров, которые ещё не привязаны.
               </p>
               <div className="flex flex-wrap gap-2">
-                {showTelegram && !customer?.telegramUserId && settings.messengerTelegramBotId && (
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted/60 transition-colors"
-                    style={{ borderRadius: settings.borderRadius }}
-                    onClick={() => {
-                      const raw = settings.messengerTelegramBotId ?? "";
-                      const url = raw.startsWith("http") ? raw : `https://t.me/${raw}`;
-                      if (typeof window !== "undefined") {
-                        window.open(url, "_blank");
-                      }
-                    }}
-                  >
-                    Войти через Telegram
-                  </button>
+                {showTelegram &&
+                  !customer?.telegramUserId &&
+                  (settings.messengerTelegramAppId || settings.messengerTelegramBotId) && (
+                  <BindButton
+                    label="Войти через Telegram"
+                    targetPlatform="telegram"
+                    tenantId={settings.tenantId}
+                    customerId={customer?.id}
+                    phone={customer?.phone ?? phone}
+                    borderRadius={settings.borderRadius}
+                    buildUrl={(appId, token) =>
+                      `https://t.me/${appId}?startapp=${encodeURIComponent(token)}`
+                    }
+                  />
+                )}
+                {showVk &&
+                  !customer?.vkUserId &&
+                  settings.messengerVkAppId && (
+                  <BindButton
+                    label="Войти через VK"
+                    targetPlatform="vk"
+                    tenantId={settings.tenantId}
+                    customerId={customer?.id}
+                    phone={customer?.phone ?? phone}
+                    borderRadius={settings.borderRadius}
+                    buildUrl={(appId, token) =>
+                      `https://vk.com/app${appId}#${encodeURIComponent(token)}`
+                    }
+                  />
                 )}
                 {showMax &&
                   !customer?.maxUserId &&
                   (settings.messengerMaxAppId || settings.messengerMaxBotId) && (
-                  <button
-                    type="button"
-                    className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted/60 transition-colors"
-                    style={{ borderRadius: settings.borderRadius }}
-                    onClick={async () => {
-                      if (!settings.tenantId) return;
-                      try {
-                        const res = await fetch("/api/public/customer/max-bind-token", {
-                          method: "POST",
-                          headers: { "Content-Type": "application/json" },
-                          body: JSON.stringify({
-                            tenantId: settings.tenantId,
-                            customerId: customer?.id,
-                            phone: customer?.phone ?? phone,
-                          }),
-                        });
-                        if (!res.ok) return;
-                        const data = (await res.json()) as { token: string; maxBotId: string };
-                        const bot = data.maxBotId;
-                        const payload = encodeURIComponent(data.token);
-                        const url = `https://max.ru/${bot}?startapp=${payload}`;
-                        if (typeof window !== "undefined") {
-                          window.open(url, "_blank");
-                        }
-                      } catch {
-                        // noop
-                      }
-                    }}
-                  >
-                    Войти через MAX
-                  </button>
+                  <BindButton
+                    label="Войти через MAX"
+                    targetPlatform="max"
+                    tenantId={settings.tenantId}
+                    customerId={customer?.id}
+                    phone={customer?.phone ?? phone}
+                    borderRadius={settings.borderRadius}
+                    buildUrl={(appId, token) =>
+                      `https://max.ru/${appId}?startapp=${encodeURIComponent(token)}`
+                    }
+                  />
                 )}
               </div>
             </div>
@@ -740,6 +734,52 @@ function MyDataModal({
           </div>
         </form>
     </BottomSheet>
+  );
+}
+
+function BindButton({
+  label,
+  targetPlatform,
+  tenantId,
+  customerId,
+  phone,
+  borderRadius,
+  buildUrl,
+}: {
+  label: string;
+  targetPlatform: "telegram" | "vk" | "max";
+  tenantId: string;
+  customerId?: string;
+  phone?: string;
+  borderRadius: number;
+  buildUrl: (appId: string, token: string) => string;
+}) {
+  async function handleClick() {
+    if (!tenantId) return;
+    try {
+      const res = await fetch("/api/public/customer/bind-token", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tenantId, targetPlatform, customerId, phone }),
+      });
+      if (!res.ok) return;
+      const data = (await res.json()) as { token: string; appId: string };
+      const url = buildUrl(data.appId, data.token);
+      if (typeof window !== "undefined") window.open(url, "_blank");
+    } catch {
+      /* noop */
+    }
+  }
+
+  return (
+    <button
+      type="button"
+      className="px-3 py-2 rounded-lg border text-xs font-medium hover:bg-muted/60 transition-colors"
+      style={{ borderRadius }}
+      onClick={handleClick}
+    >
+      {label}
+    </button>
   );
 }
 

@@ -14,7 +14,9 @@ const SETTINGS_KEYS = [
   "loyaltyType", "loyaltyStampGoal", "loyaltyCashbackPct",
   "loyaltyInteraction",
   "messengerTelegram", "messengerVk", "messengerMax",
-  "messengerTelegramBotId", "messengerMaxBotId", "messengerMaxAppId", "messengerVkGroupToken",
+  "messengerTelegramBotId", "messengerTelegramAppId",
+  "messengerMaxBotId", "messengerMaxAppId",
+  "messengerVkGroupToken", "messengerVkAppId",
   "loyaltyCardGradientColors", "loyaltyCardGradientOpacity", "loyaltyCardGradientType",
   "infoAddress", "infoHours", "infoPhone", "infoTermsUrl", "infoFaqUrl",
   "infoPartnerUrl", "infoCaloriesUrl", "infoContactText",
@@ -59,9 +61,11 @@ type SettingsInput = Partial<{
   messengerVk: boolean;
   messengerMax: boolean;
   messengerTelegramBotId: string;
+  messengerTelegramAppId: string;
   messengerMaxBotId: string;
   messengerMaxAppId: string;
   messengerVkGroupToken: string;
+  messengerVkAppId: string;
   loyaltyCardGradientColors: string;
   loyaltyCardGradientOpacity: number;
   loyaltyCardGradientType: string;

@@ -134,8 +134,10 @@ export default async function ClientAppPage({
     inviteText: s.inviteText,
     inviteLink: s.inviteLink,
     messengerTelegramBotId: s.messengerTelegramBotId,
+    messengerTelegramAppId: s.messengerTelegramAppId,
     messengerMaxBotId: s.messengerMaxBotId,
     messengerMaxAppId: s.messengerMaxAppId,
+    messengerVkAppId: s.messengerVkAppId,
   };
 
   const adminTheme = (s.theme === "auto" ? "auto" : s.theme) as "light" | "dark" | "auto";

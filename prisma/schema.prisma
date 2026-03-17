@@ -31,7 +31,7 @@ model Tenant {
   reviews        Review[]
   stories        Story[]
   forYouProducts ForYouProduct[]
-  maxBindTokens  MaxBindToken[]
+  bindTokens  BindToken[]
 }
 
 model TenantSettings {
@@ -72,10 +72,11 @@ model TenantSettings {
   messengerVk       Boolean @default(true)
   messengerMax      Boolean @default(true)
   messengerTelegramBotId String?
+  messengerTelegramAppId String?
   messengerMaxBotId      String?
-  // ID ссылки на мини‑приложение MAX (никнейм, например id526214415000_bot)
   messengerMaxAppId      String?
   messengerVkGroupToken  String?
+  messengerVkAppId       String?
 
   // Бонусная карта: градиент (цвета через запятую, opacity 0-100, тип linear/radial)
   loyaltyCardGradientColors  String?  // "#hex1,#hex2,..."
@@ -316,24 +317,25 @@ model Customer {
   invitedByCustomer   Customer? @relation("CustomerInvitedBy", fields: [invitedByCustomerId], references: [id])
   invitedCustomers    Customer[] @relation("CustomerInvitedBy")
 
-  maxBindTokens MaxBindToken[]
+  bindTokens BindToken[]
 
   createdAt DateTime @default(now())
 
   @@unique([tenantId, phone])
 }
 
-// Временные токены привязки аккаунта MAX к существующему профилю
-model MaxBindToken {
+// Универсальные токены привязки аккаунта из любого мессенджера
+model BindToken {
   id         String   @id @default(uuid())
   tenantId   String
   tenant     Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
   customerId String
   customer   Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
-  token     String   @unique
-  expiresAt DateTime
-  usedAt    DateTime?
+  targetPlatform String
+  token          String   @unique
+  expiresAt      DateTime
+  usedAt         DateTime?
 
   createdAt DateTime @default(now())
 }
