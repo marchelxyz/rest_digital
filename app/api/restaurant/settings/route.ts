@@ -44,15 +44,16 @@ export async function PATCH(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const body = (await req.json()) as SettingsPatch;
-  const data: Record<string, unknown> = {};
+  const data: Record<string, string> = {};
   for (const k of ALLOWED_KEYS) {
     const v = body[k];
     if (v === undefined) continue;
-    data[k] = typeof v === "string" ? v.trim() : v;
+    data[k] = v.trim();
   }
+  const createData = { tenantId: emp.tenantId, ...data };
   const settings = await prisma.tenantSettings.upsert({
     where: { tenantId: emp.tenantId },
-    create: { tenantId: emp.tenantId, ...(data as never) },
+    create: createData as never,
     update: data as never,
   });
   const out: Record<string, unknown> = {};
