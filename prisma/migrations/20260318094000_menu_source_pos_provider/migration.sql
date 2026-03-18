@@ -1,0 +1,4 @@
+ALTER TABLE "TenantSettings"
+  ADD COLUMN IF NOT EXISTS "menuSource" TEXT NOT NULL DEFAULT 'pos',
+  ADD COLUMN IF NOT EXISTS "posProvider" TEXT NOT NULL DEFAULT 'none';
+
