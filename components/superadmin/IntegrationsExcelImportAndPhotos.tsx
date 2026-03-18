@@ -34,6 +34,11 @@ export function IntegrationsExcelImportAndPhotos({
   const [photosError, setPhotosError] = useState<string | null>(null);
   const [photos, setPhotos] = useState<MenuPhoto[]>([]);
   const [selectedPhotoId, setSelectedPhotoId] = useState<string | null>(null);
+  const [photoUploading, setPhotoUploading] = useState(false);
+  const [photoUploadProgress, setPhotoUploadProgress] = useState<{
+    percent: number;
+    etaSec: number | null;
+  } | null>(null);
 
   const [assignments, setAssignments] = useState<Record<string, string>>({});
   const [assigning, setAssigning] = useState(false);
@@ -94,19 +99,39 @@ export function IntegrationsExcelImportAndPhotos({
     if (!files.length) return;
 
     setPhotosError(null);
+    setPhotoUploading(true);
+    setPhotoUploadProgress({ percent: 0, etaSec: null });
     try {
       const fd = new FormData();
       for (const f of files) fd.append("files", f);
-      const res = await fetch(`/api/superadmin/tenants/${tenantId}/menu-photos/upload`, {
-        method: "POST",
-        body: fd,
+
+      const totalBytes = files.reduce((sum, f) => sum + (f.size || 0), 0);
+      const url = `/api/superadmin/tenants/${tenantId}/menu-photos/upload`;
+      const startTs = performance.now();
+
+      const d = await postFormDataWithUploadProgress<{
+        photos?: MenuPhoto[];
+      }>({
+        url,
+        formData: fd,
+        totalBytes,
+        onProgress: (loadedBytes) => {
+          const elapsedMs = Math.max(1, performance.now() - startTs);
+          const speed = loadedBytes / elapsedMs; // bytes per ms
+          const remainingMs = speed > 0 ? (totalBytes - loadedBytes) / speed : null;
+          const etaSec = remainingMs != null && remainingMs > 0 ? Math.ceil(remainingMs / 1000) : 0;
+          const percent = totalBytes > 0 ? Math.min(100, Math.round((loadedBytes / totalBytes) * 100)) : 0;
+          setPhotoUploadProgress({ percent, etaSec: etaSec ?? null });
+        },
       });
-      const d = await res.json();
-      if (!res.ok) throw new Error(d.error ?? "Ошибка загрузки фото");
+
       const newPhotos = (d.photos ?? []) as MenuPhoto[];
       setPhotos((prev) => [...newPhotos, ...prev]);
     } catch (err) {
       setPhotosError(err instanceof Error ? err.message : String(err));
+    } finally {
+      setPhotoUploading(false);
+      setPhotoUploadProgress(null);
     }
   }
 
@@ -149,6 +174,29 @@ export function IntegrationsExcelImportAndPhotos({
     } finally {
       setAssigning(false);
     }
+  }
+
+  function renderPhotoUploadProgress() {
+    if (!photoUploading || !photoUploadProgress) return null;
+    return (
+      <div className="mt-3 space-y-2">
+        <div className="flex items-center justify-between text-xs text-muted-foreground">
+          <span>Загрузка библиотеки фото...</span>
+          <span className="tabular-nums">{photoUploadProgress.percent}%</span>
+        </div>
+        <div className="h-2 w-full bg-muted rounded overflow-hidden">
+          <div
+            className="h-full bg-primary transition-[width] duration-150"
+            style={{ width: `${photoUploadProgress.percent}%` }}
+          />
+        </div>
+        {photoUploadProgress.etaSec != null && (
+          <div className="text-xs text-muted-foreground">
+            Примерно осталось: ~{photoUploadProgress.etaSec} сек
+          </div>
+        )}
+      </div>
+    );
   }
 
   if (!enabled) {
@@ -290,9 +338,10 @@ export function IntegrationsExcelImportAndPhotos({
             accept="image/png,image/jpeg"
             multiple
             onChange={handlePhotosUpload}
-            disabled={photosLoading}
+            disabled={photosLoading || photoUploading}
           />
           {photosError && <p className="text-sm text-destructive">{photosError}</p>}
+          {renderPhotoUploadProgress()}
         </div>
 
         <div className="mt-4">
@@ -326,5 +375,48 @@ export function IntegrationsExcelImportAndPhotos({
       </div>
     </div>
   );
+}
+
+async function postFormDataWithUploadProgress<T>(args: {
+  url: string;
+  formData: FormData;
+  totalBytes: number;
+  onProgress: (loadedBytes: number) => void;
+}): Promise<T> {
+  const { url, formData, totalBytes, onProgress } = args;
+
+  return new Promise<T>((resolve, reject) => {
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", url);
+    xhr.withCredentials = true;
+
+    xhr.upload.onprogress = (ev) => {
+      const loaded = ev.loaded ?? 0;
+      const safeLoaded = Math.max(0, loaded);
+      onProgress(safeLoaded);
+    };
+
+    xhr.onerror = () => reject(new Error("Ошибка загрузки фото"));
+    xhr.onload = () => {
+      const statusOk = xhr.status >= 200 && xhr.status < 300;
+      if (!statusOk) {
+        try {
+          const d = JSON.parse(xhr.responseText) as { error?: string };
+          return reject(new Error(d.error ?? "Ошибка загрузки фото"));
+        } catch {
+          return reject(new Error("Ошибка загрузки фото"));
+        }
+      }
+
+      try {
+        const parsed = xhr.responseText ? (JSON.parse(xhr.responseText) as T) : ({} as T);
+        return resolve(parsed);
+      } catch {
+        return reject(new Error("Не удалось распарсить ответ загрузки"));
+      }
+    };
+
+    xhr.send(formData);
+  });
 }
 
