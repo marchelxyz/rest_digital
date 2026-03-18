@@ -1,0 +1,4 @@
+ALTER TABLE "Customer"
+  ADD COLUMN IF NOT EXISTS "iikoCustomerId" TEXT,
+  ADD COLUMN IF NOT EXISTS "iikoCardNumber" TEXT;
+
