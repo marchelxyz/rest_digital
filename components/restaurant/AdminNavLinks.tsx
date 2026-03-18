@@ -7,7 +7,6 @@ import { ClipboardList, UtensilsCrossed, Images, Sparkles, BarChart3, Heart, Plu
 const LINKS = [
   { href: "/restaurant", icon: ClipboardList, label: "Заказы" },
   { href: "/restaurant/menu", icon: UtensilsCrossed, label: "Меню" },
-  { href: "/restaurant/integrations", icon: Plug, label: "Интеграции" },
   { href: "/restaurant/loyalty/scanner", icon: QrCode, label: "Сканер QR" },
   { href: "/restaurant/stories", icon: Images, label: "Истории" },
   { href: "/restaurant/for-you", icon: Heart, label: "Для вас" },

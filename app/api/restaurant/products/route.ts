@@ -18,6 +18,9 @@ type ProductCreateBody = {
   composition?: string;
   allergens?: string;
   calories?: number;
+  protein?: number;
+  fat?: number;
+  carbohydrates?: number;
   cookingTime?: number;
   sku?: string;
   sortOrder?: number;
@@ -108,6 +111,9 @@ export async function POST(req: NextRequest) {
       composition: body.composition?.trim() ?? null,
       allergens: body.allergens?.trim() ?? null,
       calories: body.calories ?? null,
+      protein: body.protein != null ? new Decimal(body.protein) : null,
+      fat: body.fat != null ? new Decimal(body.fat) : null,
+      carbohydrates: body.carbohydrates != null ? new Decimal(body.carbohydrates) : null,
       cookingTime: body.cookingTime ?? null,
       sku: body.sku?.trim() ?? null,
       sortOrder: body.sortOrder ?? 0,
