@@ -341,6 +341,10 @@ model Customer {
   invitedByCustomer   Customer? @relation("CustomerInvitedBy", fields: [invitedByCustomerId], references: [id])
   invitedCustomers    Customer[] @relation("CustomerInvitedBy")
 
+  // POS loyalty bindings (iikoCard/iikoCard5, r_keeper)
+  iikoCustomerId  String? // ID гостя в iikoCard/iikoCard5
+  iikoCardNumber  String? // Номер карты/идентификатор для сканера POS (будет заполняться при интеграции)
+
   bindTokens BindToken[]
 
   cartJson String? // JSON-сериализованная корзина для кросс-платформенной синхронизации
