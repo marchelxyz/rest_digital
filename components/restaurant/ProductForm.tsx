@@ -23,6 +23,12 @@ type ModifierOption = {
   isDefault: boolean;
   isActive: boolean;
   sortOrder: number;
+  calories?: number | null;
+  protein?: number | null;
+  fat?: number | null;
+  carbohydrates?: number | null;
+  cookingTime?: number | null;
+  composition?: string | null;
 };
 type ModifierGroup = {
   id: string;
@@ -141,6 +147,12 @@ export function ProductForm({
   const [newGroupName, setNewGroupName] = useState("");
   const [newOptionName, setNewOptionName] = useState<Record<string, string>>({});
   const [newOptionPrice, setNewOptionPrice] = useState<Record<string, string>>({});
+  const [newOptionCalories, setNewOptionCalories] = useState<Record<string, string>>({});
+  const [newOptionProtein, setNewOptionProtein] = useState<Record<string, string>>({});
+  const [newOptionFat, setNewOptionFat] = useState<Record<string, string>>({});
+  const [newOptionCarbohydrates, setNewOptionCarbohydrates] = useState<Record<string, string>>({});
+  const [newOptionCookingTime, setNewOptionCookingTime] = useState<Record<string, string>>({});
+  const [newOptionComposition, setNewOptionComposition] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (product) {
@@ -325,12 +337,24 @@ export function ProductForm({
   async function addOption(groupId: string) {
     const name = newOptionName[groupId]?.trim();
     if (!name) return;
+    const calories = newOptionCalories[groupId]?.trim();
+    const protein = newOptionProtein[groupId]?.trim();
+    const fat = newOptionFat[groupId]?.trim();
+    const carbohydrates = newOptionCarbohydrates[groupId]?.trim();
+    const cookingTime = newOptionCookingTime[groupId]?.trim();
+    const composition = newOptionComposition[groupId]?.trim();
     const res = await fetch(`/api/restaurant/modifier-groups/${groupId}/options`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         name,
         priceDelta: Number(newOptionPrice[groupId] || 0),
+        calories: calories ? Number(calories) : undefined,
+        protein: protein ? Number(protein) : undefined,
+        fat: fat ? Number(fat) : undefined,
+        carbohydrates: carbohydrates ? Number(carbohydrates) : undefined,
+        cookingTime: cookingTime ? Number(cookingTime) : undefined,
+        composition: composition || undefined,
       }),
     });
     const data = await res.json();
@@ -342,6 +366,12 @@ export function ProductForm({
       );
       setNewOptionName((p) => ({ ...p, [groupId]: "" }));
       setNewOptionPrice((p) => ({ ...p, [groupId]: "" }));
+      setNewOptionCalories((p) => ({ ...p, [groupId]: "" }));
+      setNewOptionProtein((p) => ({ ...p, [groupId]: "" }));
+      setNewOptionFat((p) => ({ ...p, [groupId]: "" }));
+      setNewOptionCarbohydrates((p) => ({ ...p, [groupId]: "" }));
+      setNewOptionCookingTime((p) => ({ ...p, [groupId]: "" }));
+      setNewOptionComposition((p) => ({ ...p, [groupId]: "" }));
     } else {
       setError(data.error ?? "Ошибка");
     }
@@ -775,6 +805,68 @@ export function ProductForm({
                             >
                               Добавить
                             </Button>
+                          </div>
+                          <div className="grid grid-cols-4 gap-2">
+                            <Input
+                              type="number"
+                              value={newOptionCalories[g.id] ?? ""}
+                              onChange={(e) =>
+                                setNewOptionCalories((p) => ({ ...p, [g.id]: e.target.value }))
+                              }
+                              placeholder="Ккал"
+                            />
+                            <Input
+                              type="number"
+                              value={newOptionProtein[g.id] ?? ""}
+                              onChange={(e) =>
+                                setNewOptionProtein((p) => ({ ...p, [g.id]: e.target.value }))
+                              }
+                              placeholder="Б (г)"
+                            />
+                            <Input
+                              type="number"
+                              value={newOptionFat[g.id] ?? ""}
+                              onChange={(e) =>
+                                setNewOptionFat((p) => ({ ...p, [g.id]: e.target.value }))
+                              }
+                              placeholder="Ж (г)"
+                            />
+                            <Input
+                              type="number"
+                              value={newOptionCarbohydrates[g.id] ?? ""}
+                              onChange={(e) =>
+                                setNewOptionCarbohydrates((p) => ({
+                                  ...p,
+                                  [g.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="У (г)"
+                            />
+                          </div>
+                          <div className="flex gap-2">
+                            <Input
+                              type="number"
+                              value={newOptionCookingTime[g.id] ?? ""}
+                              onChange={(e) =>
+                                setNewOptionCookingTime((p) => ({
+                                  ...p,
+                                  [g.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Время (мин)"
+                              className="w-28"
+                            />
+                            <Input
+                              value={newOptionComposition[g.id] ?? ""}
+                              onChange={(e) =>
+                                setNewOptionComposition((p) => ({
+                                  ...p,
+                                  [g.id]: e.target.value,
+                                }))
+                              }
+                              placeholder="Состав"
+                              className="flex-1"
+                            />
                           </div>
                         </div>
                       )}

@@ -18,6 +18,12 @@ export async function PATCH(
   const body = (await req.json()) as {
     name?: string;
     priceDelta?: number;
+    calories?: number;
+    protein?: number;
+    fat?: number;
+    carbohydrates?: number;
+    cookingTime?: number;
+    composition?: string;
     isDefault?: boolean;
     isActive?: boolean;
     sortOrder?: number;
@@ -31,6 +37,12 @@ export async function PATCH(
   const data: Record<string, unknown> = {};
   if (body.name != null) data.name = body.name.trim();
   if (body.priceDelta != null) data.priceDelta = new Decimal(body.priceDelta);
+  if (body.calories != null) data.calories = body.calories;
+  if (body.protein != null) data.protein = new Decimal(body.protein);
+  if (body.fat != null) data.fat = new Decimal(body.fat);
+  if (body.carbohydrates != null) data.carbohydrates = new Decimal(body.carbohydrates);
+  if (body.cookingTime != null) data.cookingTime = body.cookingTime;
+  if (body.composition != null) data.composition = body.composition.trim();
   if (body.isDefault != null) data.isDefault = body.isDefault;
   if (body.isActive != null) data.isActive = body.isActive;
   if (body.sortOrder != null) data.sortOrder = body.sortOrder;
