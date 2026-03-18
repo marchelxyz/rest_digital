@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ImageUploadField } from "@/components/superadmin/ImageUploadField";
+import { IntegrationsExcelImportAndPhotos } from "@/components/superadmin/IntegrationsExcelImportAndPhotos";
 import {
   Home,
   User,
@@ -50,6 +51,8 @@ type Settings = {
   loyaltyStampGoal: number;
   loyaltyCashbackPct: number;
   loyaltyInteraction: string;
+  menuSource?: string;
+  posProvider?: string;
   infoAddress?: string;
   infoHours?: string;
   infoPhone?: string;
@@ -71,6 +74,7 @@ type Settings = {
   messengerMaxAppId?: string;
   messengerVkGroupToken?: string;
   messengerVkAppId?: string;
+  rkeeperApiKey?: string;
   iikoApiLogin?: string;
   iikoOrganizationId?: string;
   iikoTerminalGroupId?: string;
@@ -120,6 +124,8 @@ const DEFAULT: Settings = {
   loyaltyStampGoal: 6,
   loyaltyCashbackPct: 5,
   loyaltyInteraction: "app_only",
+  posProvider: "none",
+  menuSource: "excel",
   messengerTelegram: true,
   messengerVk: true,
   messengerMax: true,
@@ -191,6 +197,7 @@ export default function BuilderPage() {
               <TabsTrigger value="branding">Брендинг</TabsTrigger>
               <TabsTrigger value="colors">Цвета</TabsTrigger>
               <TabsTrigger value="layout">Экран</TabsTrigger>
+              <TabsTrigger value="integrations">Интеграции</TabsTrigger>
               <TabsTrigger value="info">Информация</TabsTrigger>
             </TabsList>
             <TabsContent value="branding" className="space-y-4 pt-4">
@@ -408,89 +415,6 @@ export default function BuilderPage() {
 
               <div className="border-t pt-4 mt-4">
                 <div className="mb-4">
-                  <Label className="text-base font-medium">Интеграция iiko</Label>
-                  <p className="text-xs text-muted-foreground mt-1">
-                    Синхронизация меню, приём заказов и статусы. Документация:{" "}
-                    <a href="https://ru.iiko.help" target="_blank" rel="noreferrer" className="underline">
-                      ru.iiko.help
-                    </a>
-                  </p>
-                  <div className="grid gap-2 mt-2">
-                    <Input
-                      placeholder="API-ключ (из Настройки Cloud API в iikoWeb)"
-                      value={settings.iikoApiLogin ?? ""}
-                      onChange={(e) => update("iikoApiLogin", e.target.value)}
-                      className="text-sm"
-                      type="password"
-                    />
-                    <Input
-                      placeholder="ID организации (UUID)"
-                      value={settings.iikoOrganizationId ?? ""}
-                      onChange={(e) => update("iikoOrganizationId", e.target.value)}
-                      className="text-sm"
-                    />
-                    <Input
-                      placeholder="ID терминальной группы (UUID)"
-                      value={settings.iikoTerminalGroupId ?? ""}
-                      onChange={(e) => update("iikoTerminalGroupId", e.target.value)}
-                      className="text-sm"
-                    />
-                    <Input
-                      placeholder="ID типа заказа (UUID) — fallback (если не заполнены отдельные поля ниже)"
-                      value={settings.iikoOrderTypeId ?? ""}
-                      onChange={(e) => update("iikoOrderTypeId", e.target.value)}
-                      className="text-sm"
-                    />
-                    <Input
-                      placeholder="ID типа заказа DELIVERY (UUID)"
-                      value={settings.iikoOrderTypeIdDelivery ?? ""}
-                      onChange={(e) => update("iikoOrderTypeIdDelivery", e.target.value)}
-                      className="text-sm"
-                    />
-                    <Input
-                      placeholder="ID типа заказа PICKUP (UUID)"
-                      value={settings.iikoOrderTypeIdPickup ?? ""}
-                      onChange={(e) => update("iikoOrderTypeIdPickup", e.target.value)}
-                      className="text-sm"
-                    />
-                    <Input
-                      placeholder="ID типа заказа DINE_IN (UUID)"
-                      value={settings.iikoOrderTypeIdDineIn ?? ""}
-                      onChange={(e) => update("iikoOrderTypeIdDineIn", e.target.value)}
-                      className="text-sm"
-                    />
-                    <Input
-                      placeholder="ID способа оплаты (UUID)"
-                      value={settings.iikoPaymentTypeId ?? ""}
-                      onChange={(e) => update("iikoPaymentTypeId", e.target.value)}
-                      className="text-sm"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="w-fit"
-                      onClick={async () => {
-                        try {
-                          const r = await fetch(`/api/superadmin/tenants/${tenantId}/iiko/sync-menu`, {
-                            method: "POST",
-                          });
-                          const d = await r.json();
-                          if (r.ok) alert(`Синхронизировано: создано ${d.created}, обновлено ${d.updated}`);
-                          else alert(d.error ?? "Ошибка");
-                        } catch (e) {
-                          alert(String(e));
-                        }
-                      }}
-                    >
-                      Синхронизировать меню из iiko
-                    </Button>
-                  </div>
-                </div>
-              </div>
-
-              <div className="border-t pt-4 mt-4">
-                <div className="mb-4">
                   <Label className="text-base font-medium">Мессенджеры</Label>
                   <p className="text-xs text-muted-foreground mt-1">
                     Включите только те платформы, которые используются для определения пользователя
@@ -576,11 +500,52 @@ export default function BuilderPage() {
                     </div>
                   </div>
                 </div>
-                <div>
+              </div>
+            </TabsContent>
+            <TabsContent value="integrations" className="space-y-4 pt-4">
+              <div className="border rounded-lg p-4 space-y-4">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <Label className="text-base font-medium">Интеграции: POS/меню и лояльность</Label>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Настройте, откуда брать меню и где выполнять начисление/списание бонусов.
+                    </p>
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label>POS-провайдер</Label>
+                  <Select
+                    value={settings.posProvider ?? "none"}
+                    onValueChange={(v) => {
+                      const nextPos = v ?? "none";
+                      if (nextPos === "none") {
+                        update("posProvider", "none");
+                        update("menuSource", "excel");
+                        update("loyaltyInteraction", "app_only");
+                      } else {
+                        update("posProvider", nextPos);
+                        update("menuSource", "pos");
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="none">Нет POS (Excel + наш QR)</SelectItem>
+                      <SelectItem value="iiko">iiko</SelectItem>
+                      <SelectItem value="rkeeper">rkeeper</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="space-y-2">
                   <Label>Взаимодействие с бонусной картой</Label>
                   <Select
                     value={settings.loyaltyInteraction}
                     onValueChange={(v) => update("loyaltyInteraction", v ?? "app_only")}
+                    disabled={(settings.posProvider ?? "none") === "none"}
                   >
                     <SelectTrigger>
                       <SelectValue />
@@ -597,6 +562,107 @@ export default function BuilderPage() {
                     Как заведение будет начислять и списывать бонусы: в приложении, через iiko или rkeeper
                   </p>
                 </div>
+
+                {(settings.posProvider ?? "none") === "none" && (
+                  <div className="space-y-3">
+                    <IntegrationsExcelImportAndPhotos tenantId={tenantId} enabled={true} />
+                  </div>
+                )}
+
+                {(settings.posProvider ?? "none") !== "none" && (
+                  <div className="space-y-3">
+                    {(settings.posProvider ?? "none") === "iiko" && (
+                      <div className="border rounded-lg p-4 space-y-3">
+                        <div>
+                          <Label className="text-base font-medium">Технические настройки iiko</Label>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Синхронизация меню и приём заказов в iiko.
+                          </p>
+                        </div>
+                        <div className="grid gap-2">
+                          <Input
+                            placeholder="API-ключ (из Настройки Cloud API в iikoWeb)"
+                            value={settings.iikoApiLogin ?? ""}
+                            onChange={(e) => update("iikoApiLogin", e.target.value)}
+                            className="text-sm"
+                            type="password"
+                          />
+                          <Input
+                            placeholder="ID организации (UUID)"
+                            value={settings.iikoOrganizationId ?? ""}
+                            onChange={(e) => update("iikoOrganizationId", e.target.value)}
+                            className="text-sm"
+                          />
+                          <Input
+                            placeholder="ID терминальной группы (UUID)"
+                            value={settings.iikoTerminalGroupId ?? ""}
+                            onChange={(e) => update("iikoTerminalGroupId", e.target.value)}
+                            className="text-sm"
+                          />
+                          <Input
+                            placeholder="ID типа заказа (UUID) — fallback"
+                            value={settings.iikoOrderTypeId ?? ""}
+                            onChange={(e) => update("iikoOrderTypeId", e.target.value)}
+                            className="text-sm"
+                          />
+                          <Input
+                            placeholder="ID типа заказа DELIVERY (UUID)"
+                            value={settings.iikoOrderTypeIdDelivery ?? ""}
+                            onChange={(e) => update("iikoOrderTypeIdDelivery", e.target.value)}
+                            className="text-sm"
+                          />
+                          <Input
+                            placeholder="ID типа заказа PICKUP (UUID)"
+                            value={settings.iikoOrderTypeIdPickup ?? ""}
+                            onChange={(e) => update("iikoOrderTypeIdPickup", e.target.value)}
+                            className="text-sm"
+                          />
+                          <Input
+                            placeholder="ID типа заказа DINE_IN (UUID)"
+                            value={settings.iikoOrderTypeIdDineIn ?? ""}
+                            onChange={(e) => update("iikoOrderTypeIdDineIn", e.target.value)}
+                            className="text-sm"
+                          />
+                          <Input
+                            placeholder="ID способа оплаты (UUID)"
+                            value={settings.iikoPaymentTypeId ?? ""}
+                            onChange={(e) => update("iikoPaymentTypeId", e.target.value)}
+                            className="text-sm"
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-fit"
+                            onClick={async () => {
+                              try {
+                                const r = await fetch(`/api/superadmin/tenants/${tenantId}/iiko/sync-menu`, {
+                                  method: "POST",
+                                });
+                                const d = await r.json();
+                                if (r.ok) {
+                                  alert(`Синхронизировано: создано ${d.created}, обновлено ${d.updated}`);
+                                } else {
+                                  alert(d.error ?? "Ошибка");
+                                }
+                              } catch (e) {
+                                alert(String(e));
+                              }
+                            }}
+                          >
+                            Синхронизировать меню из iiko
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {(settings.posProvider ?? "none") === "rkeeper" && (
+                      <div className="border rounded-lg p-4 text-sm text-muted-foreground">
+                        Настройки rkeeper пока не реализованы в интерфейсе интеграций. Ожидаем спецификацию API.
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
             </TabsContent>
             <TabsContent value="info" className="space-y-4 pt-4">

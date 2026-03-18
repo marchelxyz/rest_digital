@@ -4,6 +4,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getEmployee } from "@/lib/auth";
+import { Decimal } from "@prisma/client/runtime/library";
 type ProductUpdateBody = {
   name?: string;
   description?: string;
@@ -16,6 +17,9 @@ type ProductUpdateBody = {
   composition?: string;
   allergens?: string;
   calories?: number;
+  protein?: number;
+  fat?: number;
+  carbohydrates?: number;
   cookingTime?: number;
   sku?: string;
   sortOrder?: number;
@@ -86,6 +90,9 @@ export async function PATCH(
   if (body.composition != null) data.composition = body.composition.trim();
   if (body.allergens != null) data.allergens = body.allergens.trim();
   if (body.calories != null) data.calories = body.calories;
+  if (body.protein != null) data.protein = new Decimal(body.protein);
+  if (body.fat != null) data.fat = new Decimal(body.fat);
+  if (body.carbohydrates != null) data.carbohydrates = new Decimal(body.carbohydrates);
   if (body.cookingTime != null) data.cookingTime = body.cookingTime;
   if (body.sku != null) data.sku = body.sku.trim();
   if (body.sortOrder != null) data.sortOrder = body.sortOrder;

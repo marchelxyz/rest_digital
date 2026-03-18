@@ -50,6 +50,9 @@ type Product = {
   composition?: string | null;
   allergens?: string | null;
   calories?: number | null;
+  protein?: number | null;
+  fat?: number | null;
+  carbohydrates?: number | null;
   cookingTime?: number | null;
   isActive: boolean;
   isAvailable: boolean;
@@ -115,6 +118,9 @@ export function ProductForm({
     composition: "",
     allergens: "",
     calories: "",
+    protein: "",
+    fat: "",
+    carbohydrates: "",
     cookingTime: "",
     isActive: true,
     isAvailable: true,
@@ -150,6 +156,9 @@ export function ProductForm({
         composition: product.composition ?? "",
         allergens: product.allergens ?? "",
         calories: product.calories != null ? String(product.calories) : "",
+        protein: product.protein != null ? String(product.protein) : "",
+        fat: product.fat != null ? String(product.fat) : "",
+        carbohydrates: product.carbohydrates != null ? String(product.carbohydrates) : "",
         cookingTime: product.cookingTime != null ? String(product.cookingTime) : "",
         isActive: product.isActive,
         isAvailable: product.isAvailable,
@@ -202,6 +211,9 @@ export function ProductForm({
         composition: form.composition.trim() || undefined,
         allergens: form.allergens.trim() || undefined,
         calories: form.calories ? Number(form.calories) : undefined,
+        protein: form.protein ? Number(form.protein) : undefined,
+        fat: form.fat ? Number(form.fat) : undefined,
+        carbohydrates: form.carbohydrates ? Number(form.carbohydrates) : undefined,
         cookingTime: form.cookingTime ? Number(form.cookingTime) : undefined,
         isActive: form.isActive,
         isAvailable: form.isAvailable,
@@ -555,6 +567,38 @@ export function ProductForm({
                   min={0}
                   value={form.calories}
                   onChange={(e) => setForm((f) => ({ ...f, calories: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="protein">Белки (г)</Label>
+                <Input
+                  id="protein"
+                  type="number"
+                  min={0}
+                  value={form.protein}
+                  onChange={(e) => setForm((f) => ({ ...f, protein: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="fat">Жиры (г)</Label>
+                <Input
+                  id="fat"
+                  type="number"
+                  min={0}
+                  value={form.fat}
+                  onChange={(e) => setForm((f) => ({ ...f, fat: e.target.value }))}
+                />
+              </div>
+              <div>
+                <Label htmlFor="carbohydrates">Углеводы (г)</Label>
+                <Input
+                  id="carbohydrates"
+                  type="number"
+                  min={0}
+                  value={form.carbohydrates}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, carbohydrates: e.target.value }))
+                  }
                 />
               </div>
             </CardContent>

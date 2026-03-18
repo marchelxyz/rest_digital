@@ -30,6 +30,7 @@ model Tenant {
   orders         Order[]
   reviews        Review[]
   stories        Story[]
+  menuPhotos    MenuPhoto[]
   forYouProducts ForYouProduct[]
   bindTokens  BindToken[]
 }
@@ -226,6 +227,9 @@ model Product {
   composition  String?
   allergens    String?
   calories     Int?
+  protein      Decimal? @db.Decimal(10, 2) // г (Б)
+  fat           Decimal? @db.Decimal(10, 2) // г (Ж)
+  carbohydrates Decimal? @db.Decimal(10, 2) // г (У)
   cookingTime  Int?     // минуты
   sku          String?
 
@@ -252,6 +256,17 @@ model Product {
 
   // Связь с iiko при синхронизации меню
   iikoProductId String?  @unique
+}
+
+model MenuPhoto {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  url       String
+  fileName  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
 }
 
 model ProductBadgeItem {
