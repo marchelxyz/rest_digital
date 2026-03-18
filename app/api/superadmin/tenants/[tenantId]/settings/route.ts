@@ -12,7 +12,9 @@ const SETTINGS_KEYS = [
   "showStories", "showLoyalty", "showPopular", "menuLayout",
   "borderRadius", "iikoApiKey", "rkeeperApiKey", "yandexMetricaId",
   "iikoApiLogin", "iikoOrganizationId", "iikoTerminalGroupId",
-  "iikoOrderTypeId", "iikoPaymentTypeId", "iikoWebhookSecret",
+  "iikoOrderTypeId",
+  "iikoOrderTypeIdDelivery", "iikoOrderTypeIdPickup", "iikoOrderTypeIdDineIn",
+  "iikoPaymentTypeId", "iikoWebhookSecret",
   "loyaltyType", "loyaltyStampGoal", "loyaltyCashbackPct",
   "loyaltyInteraction",
   "messengerTelegram", "messengerVk", "messengerMax",
@@ -45,6 +47,9 @@ type SettingsInput = Partial<{
   iikoOrganizationId: string;
   iikoTerminalGroupId: string;
   iikoOrderTypeId: string;
+  iikoOrderTypeIdDelivery: string;
+  iikoOrderTypeIdPickup: string;
+  iikoOrderTypeIdDineIn: string;
   iikoPaymentTypeId: string;
   iikoWebhookSecret: string;
   rkeeperApiKey: string;

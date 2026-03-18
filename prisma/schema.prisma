@@ -71,7 +71,10 @@ model TenantSettings {
   iikoApiLogin         String?  // API-ключ из «Настройки Cloud API» в iikoWeb
   iikoOrganizationId   String?  // UUID организации
   iikoTerminalGroupId  String?  // UUID терминальной группы
-  iikoOrderTypeId      String?  // UUID типа заказа (самовывоз/доставка)
+  iikoOrderTypeId      String?  // UUID типа заказа (legacy; используем как fallback)
+  iikoOrderTypeIdDelivery String? // UUID типа заказа для DELIVERY
+  iikoOrderTypeIdPickup   String? // UUID типа заказа для PICKUP
+  iikoOrderTypeIdDineIn   String? // UUID типа заказа для DINE_IN
   iikoPaymentTypeId    String?  // UUID способа оплаты
   iikoWebhookSecret    String?  // Секрет для проверки вебхуков (опционально)
 
