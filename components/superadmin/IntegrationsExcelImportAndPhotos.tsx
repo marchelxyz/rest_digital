@@ -200,7 +200,7 @@ export function IntegrationsExcelImportAndPhotos({
             </table>
           </div>
           <p className="text-xs text-muted-foreground mt-2">
-            Колонки с ссылкой на фото в таблице отсутствуют — фото назначаются из библиотеки после импорта.
+            Колонок со ссылками на фото в Excel нет — фото назначаются из библиотеки после импорта.
           </p>
         </div>
 
