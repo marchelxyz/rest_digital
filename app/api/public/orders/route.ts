@@ -7,6 +7,21 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getAccessToken, createOrder } from "@/lib/iiko/client";
 
+function getIikoOrderTypeIdByOrderType(args: {
+  orderType: "DELIVERY" | "PICKUP" | "DINE_IN";
+  settings: {
+    iikoOrderTypeId?: string | null;
+    iikoOrderTypeIdDelivery?: string | null;
+    iikoOrderTypeIdPickup?: string | null;
+    iikoOrderTypeIdDineIn?: string | null;
+  };
+}): string | null {
+  const { orderType, settings } = args;
+  if (orderType === "DELIVERY") return settings.iikoOrderTypeIdDelivery?.trim() || settings.iikoOrderTypeId?.trim() || null;
+  if (orderType === "PICKUP") return settings.iikoOrderTypeIdPickup?.trim() || settings.iikoOrderTypeId?.trim() || null;
+  return settings.iikoOrderTypeIdDineIn?.trim() || settings.iikoOrderTypeId?.trim() || null;
+}
+
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
     tenantId?: string;
@@ -128,11 +143,14 @@ export async function POST(req: NextRequest) {
   const settings = await prisma.tenantSettings.findUnique({
     where: { tenantId },
   });
+  const resolvedIikoOrderTypeId = settings
+    ? getIikoOrderTypeIdByOrderType({ orderType, settings })
+    : null;
   const iikoConfig =
     settings?.iikoApiLogin &&
     settings?.iikoOrganizationId &&
     settings?.iikoTerminalGroupId &&
-    settings?.iikoOrderTypeId &&
+    resolvedIikoOrderTypeId &&
     settings?.iikoPaymentTypeId;
   if (iikoConfig && settings) {
     try {
@@ -141,7 +159,7 @@ export async function POST(req: NextRequest) {
       const iikoItems = orderItems.map((item) => {
         const p = productMap.get(item.productId);
         const iikoProductId = p?.iikoProductId ?? item.productId;
-        let modifiers: { productId: string; productGroupId: string; amount: number }[] = [];
+        const modifiers: { productId: string; productGroupId: string; amount: number }[] = [];
         if (item.modifiers && p) {
           try {
             const mods = JSON.parse(item.modifiers) as { optionId: string; quantity?: number }[];
@@ -171,7 +189,7 @@ export async function POST(req: NextRequest) {
       const result = await createOrder(token, {
         organizationId: settings.iikoOrganizationId!,
         terminalGroupId: settings.iikoTerminalGroupId!,
-        orderTypeId: settings.iikoOrderTypeId!,
+        orderTypeId: resolvedIikoOrderTypeId!,
         paymentTypeId: settings.iikoPaymentTypeId!,
         phone,
         customerName: customer.name ?? undefined,

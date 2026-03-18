@@ -75,6 +75,9 @@ type Settings = {
   iikoOrganizationId?: string;
   iikoTerminalGroupId?: string;
   iikoOrderTypeId?: string;
+  iikoOrderTypeIdDelivery?: string;
+  iikoOrderTypeIdPickup?: string;
+  iikoOrderTypeIdDineIn?: string;
   iikoPaymentTypeId?: string;
   loyaltyCardGradientColors?: string;
   loyaltyCardGradientOpacity: number;
@@ -433,9 +436,27 @@ export default function BuilderPage() {
                       className="text-sm"
                     />
                     <Input
-                      placeholder="ID типа заказа (UUID, самовывоз/доставка)"
+                      placeholder="ID типа заказа (UUID) — fallback (если не заполнены отдельные поля ниже)"
                       value={settings.iikoOrderTypeId ?? ""}
                       onChange={(e) => update("iikoOrderTypeId", e.target.value)}
+                      className="text-sm"
+                    />
+                    <Input
+                      placeholder="ID типа заказа DELIVERY (UUID)"
+                      value={settings.iikoOrderTypeIdDelivery ?? ""}
+                      onChange={(e) => update("iikoOrderTypeIdDelivery", e.target.value)}
+                      className="text-sm"
+                    />
+                    <Input
+                      placeholder="ID типа заказа PICKUP (UUID)"
+                      value={settings.iikoOrderTypeIdPickup ?? ""}
+                      onChange={(e) => update("iikoOrderTypeIdPickup", e.target.value)}
+                      className="text-sm"
+                    />
+                    <Input
+                      placeholder="ID типа заказа DINE_IN (UUID)"
+                      value={settings.iikoOrderTypeIdDineIn ?? ""}
+                      onChange={(e) => update("iikoOrderTypeIdDineIn", e.target.value)}
                       className="text-sm"
                     />
                     <Input
