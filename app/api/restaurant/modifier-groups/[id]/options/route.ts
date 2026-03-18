@@ -9,6 +9,12 @@ import { Decimal } from "@prisma/client/runtime/library";
 type Body = {
   name?: string;
   priceDelta?: number;
+  calories?: number;
+  protein?: number;
+  fat?: number;
+  carbohydrates?: number;
+  cookingTime?: number;
+  composition?: string;
   isDefault?: boolean;
   isActive?: boolean;
   sortOrder?: number;
@@ -38,6 +44,12 @@ export async function POST(
       tenantId: emp.tenantId,
       name,
       priceDelta: new Decimal(body.priceDelta ?? 0),
+      calories: body.calories ?? null,
+      protein: body.protein != null ? new Decimal(body.protein) : null,
+      fat: body.fat != null ? new Decimal(body.fat) : null,
+      carbohydrates: body.carbohydrates != null ? new Decimal(body.carbohydrates) : null,
+      cookingTime: body.cookingTime ?? null,
+      composition: body.composition?.trim() ?? null,
       isDefault: body.isDefault ?? false,
       isActive: body.isActive ?? true,
       sortOrder: body.sortOrder ?? 0,

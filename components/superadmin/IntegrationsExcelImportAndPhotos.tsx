@@ -223,31 +223,57 @@ export function IntegrationsExcelImportAndPhotos({
         </div>
 
         <div className="border rounded-lg p-3 mt-3">
-          <div className="text-sm font-medium mb-2">Шаблон таблицы (колонки)</div>
-          <div className="overflow-auto">
-            <table className="text-xs w-full" aria-label="Шаблон колонок Excel">
-              <thead>
-                <tr className="text-left border-b">
-                  <th className="py-1 pr-2">Колонка</th>
-                  <th className="py-1">Описание</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr><td className="py-1 pr-2 font-medium">category</td><td className="py-1 text-muted-foreground">Категория блюда (создаётся автоматически)</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">name</td><td className="py-1 text-muted-foreground">Название блюда</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">price</td><td className="py-1 text-muted-foreground">Цена</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">description</td><td className="py-1 text-muted-foreground">Описание (опционально)</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">dops</td><td className="py-1 text-muted-foreground">JSON-массив допов/модификаторов (опционально)</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">calories</td><td className="py-1 text-muted-foreground">Ккал</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">protein</td><td className="py-1 text-muted-foreground">Белки (г)</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">fat</td><td className="py-1 text-muted-foreground">Жиры (г)</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">carbohydrates</td><td className="py-1 text-muted-foreground">Углеводы (г)</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">cookingTime</td><td className="py-1 text-muted-foreground">Время приготовления (мин)</td></tr>
-                <tr><td className="py-1 pr-2 font-medium">composition</td><td className="py-1 text-muted-foreground">Состав</td></tr>
-              </tbody>
-            </table>
+          <div className="text-sm font-medium mb-2">Шаблон Excel (2 листа)</div>
+          <div className="space-y-4">
+            <div className="overflow-auto">
+              <div className="text-xs font-medium text-muted-foreground mb-2">Лист `menu` (блюда)</div>
+              <table className="text-xs w-full" aria-label="Колонки menu">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="py-1 pr-2">Колонка</th>
+                    <th className="py-1">Описание</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td className="py-1 pr-2 font-medium">sku</td><td className="py-1 text-muted-foreground">Идентификатор блюда (желательно, используется для допов)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">category</td><td className="py-1 text-muted-foreground">Категория (создаётся автоматически)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">name</td><td className="py-1 text-muted-foreground">Название блюда</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">price</td><td className="py-1 text-muted-foreground">Цена</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">description</td><td className="py-1 text-muted-foreground">Описание (опционально)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">calories/protein/fat/carbohydrates</td><td className="py-1 text-muted-foreground">KBJU (опционально)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">cookingTime</td><td className="py-1 text-muted-foreground">Время приготовления (мин)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">composition</td><td className="py-1 text-muted-foreground">Состав</td></tr>
+                </tbody>
+              </table>
+            </div>
+
+            <div className="overflow-auto">
+              <div className="text-xs font-medium text-muted-foreground mb-2">Лист `modifier_groups` (допы/размеры)</div>
+              <table className="text-xs w-full" aria-label="Колонки modifier_groups">
+                <thead>
+                  <tr className="text-left border-b">
+                    <th className="py-1 pr-2">Колонка</th>
+                    <th className="py-1">Описание</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr><td className="py-1 pr-2 font-medium">sku</td><td className="py-1 text-muted-foreground">Ссылка на блюдо из листа `menu`</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">productName</td><td className="py-1 text-muted-foreground">Альтернатива `sku` (если не заполнен)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">category</td><td className="py-1 text-muted-foreground">Нужна для точного совпадения с productName (опционально)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">groupName</td><td className="py-1 text-muted-foreground">Название группы (например Размер)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">groupType</td><td className="py-1 text-muted-foreground">single/multiple/quantity</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">isRequired/minSelect/maxSelect</td><td className="py-1 text-muted-foreground">Параметры обязательности и выбора</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">optionName</td><td className="py-1 text-muted-foreground">Вариант внутри группы (например Маленькое/Среднее/Большое)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">priceDelta</td><td className="py-1 text-muted-foreground">Прибавка к цене для выбранного варианта</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">calories/protein/fat/carbohydrates</td><td className="py-1 text-muted-foreground">KBJU для варианта (опционально)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">cookingTime</td><td className="py-1 text-muted-foreground">Время для варианта (опционально)</td></tr>
+                  <tr><td className="py-1 pr-2 font-medium">composition</td><td className="py-1 text-muted-foreground">Состав для варианта (опционально)</td></tr>
+                </tbody>
+              </table>
+            </div>
           </div>
-          <p className="text-xs text-muted-foreground mt-2">
+
+          <p className="text-xs text-muted-foreground mt-3">
             Колонок со ссылками на фото в Excel нет — фото назначаются из библиотеки после импорта.
           </p>
         </div>
