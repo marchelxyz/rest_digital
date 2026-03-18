@@ -67,6 +67,10 @@ model TenantSettings {
   rkeeperApiKey   String?
   yandexMetricaId String?
 
+  // Источники данных / режимы интеграций
+  menuSource   String @default("pos") // "pos" | "excel"
+  posProvider  String @default("none") // "none" | "iiko" | "rkeeper"
+
   // iiko Cloud API (официальная интеграция: https://ru.iiko.help)
   iikoApiLogin         String?  // API-ключ из «Настройки Cloud API» в iikoWeb
   iikoOrganizationId   String?  // UUID организации

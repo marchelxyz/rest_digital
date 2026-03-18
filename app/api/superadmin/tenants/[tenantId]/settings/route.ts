@@ -11,6 +11,7 @@ const SETTINGS_KEYS = [
   "primaryColor", "secondaryColor", "theme", "fontFamily",
   "showStories", "showLoyalty", "showPopular", "menuLayout",
   "borderRadius", "iikoApiKey", "rkeeperApiKey", "yandexMetricaId",
+  "menuSource", "posProvider",
   "iikoApiLogin", "iikoOrganizationId", "iikoTerminalGroupId",
   "iikoOrderTypeId",
   "iikoOrderTypeIdDelivery", "iikoOrderTypeIdPickup", "iikoOrderTypeIdDineIn",
@@ -43,6 +44,8 @@ type SettingsInput = Partial<{
   menuLayout: string;
   borderRadius: number;
   iikoApiKey: string;
+  menuSource: string;
+  posProvider: string;
   iikoApiLogin: string;
   iikoOrganizationId: string;
   iikoTerminalGroupId: string;
