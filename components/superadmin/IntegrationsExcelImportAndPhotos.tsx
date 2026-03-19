@@ -223,7 +223,7 @@ export function IntegrationsExcelImportAndPhotos({
         </div>
 
         <div className="border rounded-lg p-3 mt-3">
-          <div className="text-sm font-medium mb-2">Шаблон Excel (2 листа)</div>
+          <div className="text-sm font-medium mb-2">Шаблон Excel (4 листа)</div>
           <div className="space-y-4">
             <div className="overflow-auto">
               <div className="text-xs font-medium text-muted-foreground mb-2">Лист `menu` (блюда)</div>
@@ -275,6 +275,10 @@ export function IntegrationsExcelImportAndPhotos({
 
           <p className="text-xs text-muted-foreground mt-3">
             Колонок со ссылками на фото в Excel нет — фото назначаются из библиотеки после импорта.
+          </p>
+
+          <p className="text-xs text-muted-foreground mt-1">
+            В файле есть также листы-примеры: `menu_example` и `modifier_groups_example` (они уже заполнены на русском).
           </p>
         </div>
 
