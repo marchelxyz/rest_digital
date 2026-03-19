@@ -33,6 +33,7 @@ model Tenant {
   menuPhotos    MenuPhoto[]
   forYouProducts ForYouProduct[]
   bindTokens  BindToken[]
+  mailings    Mailing[]
 }
 
 model TenantSettings {
@@ -449,6 +450,105 @@ model OrderItem {
   quantity Int
   price    Decimal @db.Decimal(10, 2) // Фиксация цены на момент заказа
   modifiers String? // JSON: выбранные модификаторы
+}
+
+// ==========================================
+// LEVEL 2: MAILINGS (Рассылки через мессенджеры)
+// ==========================================
+
+model Mailing {
+  id        String   @id @default(uuid())
+  tenantId  String
+  tenant    Tenant   @relation(fields: [tenantId], references: [id], onDelete: Cascade)
+
+  name      String   @db.VarChar(200) // Название рассылки (для админки)
+  channel   MailingChannel
+  status    MailingStatus @default(DRAFT)
+
+  // Контент рассылки (Telegram/VK/MAX Markdown)
+  bodyHtml  String   @db.Text
+  bodyPlain String?  @db.Text // Чистый текст (fallback)
+
+  // Медиа-вложения (JSON массив объектов {type, url, caption?})
+  mediaJson String?  @db.Text
+
+  // Кнопки (JSON массив {label, url, type: "banner"|"section"})
+  buttonsJson String? @db.Text
+
+  // Сегментация (ссылка на сегмент)
+  segmentId String?
+  segment   MailingSegment? @relation(fields: [segmentId], references: [id])
+
+  // Лимиты
+  rateLimit     Int @default(50)  // Сообщений в час
+  sentCount     Int @default(0)
+  failedCount   Int @default(0)
+
+  scheduledAt   DateTime? // Запланированная отправка
+  startedAt     DateTime?
+  completedAt   DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  logs MailingLog[]
+}
+
+enum MailingChannel {
+  TELEGRAM
+  VK
+  MAX
+}
+
+enum MailingStatus {
+  DRAFT
+  SCHEDULED
+  SENDING
+  PAUSED
+  COMPLETED
+  FAILED
+}
+
+model MailingSegment {
+  id        String   @id @default(uuid())
+  tenantId  String
+
+  name        String @db.VarChar(200) // Название сегмента
+  description String?
+
+  // Фильтры сегментации
+  ageFrom      Int? // Минимальный возраст
+  ageTo        Int? // Максимальный возраст
+  platforms    String? // JSON массив: ["telegram", "vk", "max"]
+  avgCheckFrom Decimal? @db.Decimal(10, 2) // Средний чек от
+  avgCheckTo   Decimal? @db.Decimal(10, 2) // Средний чек до
+  categoryIds  String? // JSON массив ID категорий (что чаще заказывают)
+
+  // Лимит
+  maxMessagesPerHour Int @default(50)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  mailings Mailing[]
+}
+
+model MailingLog {
+  id        String   @id @default(uuid())
+  mailingId String
+  mailing   Mailing  @relation(fields: [mailingId], references: [id], onDelete: Cascade)
+
+  customerId   String
+  channel      MailingChannel
+  status       MailingLogStatus @default(PENDING)
+  errorMessage String?
+  sentAt       DateTime?
+  createdAt    DateTime @default(now())
+}
+
+enum MailingLogStatus {
+  PENDING
+  SENT
+  FAILED
 }
 
 // ==========================================
