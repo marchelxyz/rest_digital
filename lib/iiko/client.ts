@@ -6,6 +6,14 @@
 const BASE_URL = "https://api-ru.iiko.services";
 const DEFAULT_TIMEOUT_MS = 15000;
 
+function _log(method: string, url: string, body?: unknown, response?: unknown, error?: unknown): void {
+  const ts = new Date().toISOString();
+  console.log(`[iiko ${ts}] ${method} ${url}`);
+  if (body) console.log(`[iiko ${ts}]   → body:`, JSON.stringify(body, null, 2));
+  if (response) console.log(`[iiko ${ts}]   ← response:`, JSON.stringify(response, null, 2));
+  if (error) console.error(`[iiko ${ts}]   ✗ error:`, error);
+}
+
 export type IikoError = {
   correlationId: string;
   errorDescription: string;
@@ -97,7 +105,10 @@ export type IikoTerminalGroup = {
 
 /** Получить access token по API ключу. */
 export async function getAccessToken(apiLogin: string): Promise<string> {
-  const res = await fetch(`${BASE_URL}/api/1/access_token`, {
+  const url = `${BASE_URL}/api/1/access_token`;
+  const reqBody = { apiLogin: apiLogin.slice(0, 4) + "****" };
+  _log("POST", url, reqBody);
+  const res = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json; charset=UTF-8" },
     body: JSON.stringify({ apiLogin }),
@@ -105,8 +116,10 @@ export async function getAccessToken(apiLogin: string): Promise<string> {
   });
   const data = (await res.json()) as { token?: string; errorDescription?: string };
   if (!res.ok || !data.token) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
+  _log("POST", url, undefined, { token: data.token.slice(0, 8) + "...", status: res.status });
   return data.token;
 }
 
@@ -115,16 +128,19 @@ export async function getOrganizations(
   token: string,
   options?: { organizationIds?: string[]; returnAdditionalInfo?: boolean }
 ): Promise<IikoOrganization[]> {
-  const res = await fetch(`${BASE_URL}/api/1/organizations`, {
+  const url = `${BASE_URL}/api/1/organizations`;
+  const reqBody = {
+    organizationIds: options?.organizationIds ?? undefined,
+    returnAdditionalInfo: options?.returnAdditionalInfo ?? true,
+  };
+  _log("POST", url, reqBody);
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      organizationIds: options?.organizationIds ?? undefined,
-      returnAdditionalInfo: options?.returnAdditionalInfo ?? true,
-    }),
+    body: JSON.stringify(reqBody),
     signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
   });
   const data = (await res.json()) as {
@@ -132,8 +148,10 @@ export async function getOrganizations(
     errorDescription?: string;
   };
   if (!res.ok || !data.organizations) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
+  _log("POST", url, undefined, { count: data.organizations.length, organizations: data.organizations });
   return data.organizations;
 }
 
@@ -143,22 +161,29 @@ export async function getNomenclature(
   organizationId: string,
   startRevision = 0
 ): Promise<IikoNomenclature> {
-  const res = await fetch(`${BASE_URL}/api/1/nomenclature`, {
+  const url = `${BASE_URL}/api/1/nomenclature`;
+  const reqBody = { organizationId, startRevision };
+  _log("POST", url, reqBody);
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      organizationId,
-      startRevision,
-    }),
+    body: JSON.stringify(reqBody),
     signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
   });
   const data = (await res.json()) as IikoNomenclature & { errorDescription?: string };
   if (!res.ok) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
+  _log("POST", url, undefined, {
+    groups: data.groups?.length ?? 0,
+    products: data.products?.length ?? 0,
+    productCategories: data.productCategories?.length ?? 0,
+    revision: data.revision,
+  });
   return data;
 }
 
@@ -167,7 +192,9 @@ export async function getOrderTypes(
   token: string,
   organizationIds: string[]
 ): Promise<{ organizationId: string; items: IikoOrderType[] }[]> {
-  const res = await fetch(`${BASE_URL}/api/1/deliveries/order_types`, {
+  const url = `${BASE_URL}/api/1/deliveries/order_types`;
+  _log("POST", url, { organizationIds });
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
@@ -181,9 +208,10 @@ export async function getOrderTypes(
     errorDescription?: string;
   };
   if (!res.ok || !data.orderTypes) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
-  return data.orderTypes.map((ot) => ({
+  const result = data.orderTypes.map((ot) => ({
     organizationId: ot.organizationId,
     items: ot.items.map((i) => ({
       id: i.id,
@@ -191,6 +219,8 @@ export async function getOrderTypes(
       orderServiceType: i.orderServiceType as IikoOrderType["orderServiceType"],
     })),
   }));
+  _log("POST", url, undefined, result);
+  return result;
 }
 
 /** Способы оплаты. */
@@ -198,7 +228,9 @@ export async function getPaymentTypes(
   token: string,
   organizationIds: string[]
 ): Promise<IikoPaymentType[]> {
-  const res = await fetch(`${BASE_URL}/api/1/payment_types`, {
+  const url = `${BASE_URL}/api/1/payment_types`;
+  _log("POST", url, { organizationIds });
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
@@ -212,13 +244,16 @@ export async function getPaymentTypes(
     errorDescription?: string;
   };
   if (!res.ok || !data.paymentTypes) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
-  return data.paymentTypes.map((p) => ({
+  const result = data.paymentTypes.map((p) => ({
     id: p.id,
     name: p.name,
     paymentTypeKind: p.paymentTypeKind,
   }));
+  _log("POST", url, undefined, result);
+  return result;
 }
 
 /** Терминальные группы. */
@@ -227,16 +262,16 @@ export async function getTerminalGroups(
   organizationIds: string[],
   includeDisabled?: boolean
 ): Promise<{ organizationId: string; items: IikoTerminalGroup[] }[]> {
-  const res = await fetch(`${BASE_URL}/api/1/terminal_groups`, {
+  const url = `${BASE_URL}/api/1/terminal_groups`;
+  const reqBody = { organizationIds, includeDisabled: includeDisabled ?? false };
+  _log("POST", url, reqBody);
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      organizationIds,
-      includeDisabled: includeDisabled ?? false,
-    }),
+    body: JSON.stringify(reqBody),
     signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
   });
   const data = (await res.json()) as {
@@ -244,12 +279,15 @@ export async function getTerminalGroups(
     errorDescription?: string;
   };
   if (!res.ok || !data.terminalGroups) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
-  return data.terminalGroups.map((tg) => ({
+  const result = data.terminalGroups.map((tg) => ({
     organizationId: tg.organizationId,
     items: tg.items.map((i) => ({ id: i.id, name: i.name })),
   }));
+  _log("POST", url, undefined, result);
+  return result;
 }
 
 /** Стоп-лист (товары, которых нет в наличии). */
@@ -257,7 +295,9 @@ export async function getStopLists(
   token: string,
   organizationIds: string[]
 ): Promise<Set<string>> {
-  const res = await fetch(`${BASE_URL}/api/1/stop_lists`, {
+  const url = `${BASE_URL}/api/1/stop_lists`;
+  _log("POST", url, { organizationIds });
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
@@ -271,6 +311,7 @@ export async function getStopLists(
     errorDescription?: string;
   };
   if (!res.ok) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
   const ids = new Set<string>();
@@ -279,6 +320,7 @@ export async function getStopLists(
       ids.add(it.productId);
     }
   }
+  _log("POST", url, undefined, { stopListProductCount: ids.size });
   return ids;
 }
 
@@ -352,18 +394,22 @@ export async function createOrder(
     comment: params.comment ?? undefined,
   };
 
-  const res = await fetch(`${BASE_URL}/api/1/order/create`, {
+  const url = `${BASE_URL}/api/1/order/create`;
+  const fullBody = {
+    organizationId: params.organizationId,
+    terminalGroupId: params.terminalGroupId,
+    order,
+    createOrderSettings: { transportToFrontTimeout: 8 },
+  };
+  _log("POST", url, fullBody);
+
+  const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json; charset=UTF-8",
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({
-      organizationId: params.organizationId,
-      terminalGroupId: params.terminalGroupId,
-      order,
-      createOrderSettings: { transportToFrontTimeout: 8 },
-    }),
+    body: JSON.stringify(fullBody),
     signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
   });
 
@@ -378,13 +424,22 @@ export async function createOrder(
   };
 
   if (!res.ok) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
 
   const info = data.orderInfo;
   if (!info) {
+    _log("POST", url, undefined, undefined, "orderInfo missing in response");
     throw new Error("iiko: orderInfo missing")
   }
+
+  _log("POST", url, undefined, {
+    orderId: info.id,
+    externalNumber: info.externalNumber,
+    creationStatus: info.creationStatus,
+    errorInfo: info.errorInfo,
+  });
 
   return {
     orderId: info.id,

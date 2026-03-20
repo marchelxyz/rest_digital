@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { RefreshCw, Check, AlertCircle } from "lucide-react";
 
 type PosProvider = "none" | "iiko" | "rkeeper";
 type MenuSource = "pos" | "excel";
@@ -24,6 +25,18 @@ type Settings = {
   rkeeperApiKey?: string | null;
 };
 
+type IikoOrg = { id: string; name: string };
+type IikoTerminal = { id: string; name: string };
+type IikoOrderType = { id: string; name: string; orderServiceType: string };
+type IikoPaymentType = { id: string; name: string; paymentTypeKind: string };
+
+type IikoConfig = {
+  organizations: IikoOrg[];
+  terminalGroupsByOrg: Record<string, IikoTerminal[]>;
+  orderTypesByOrg: Record<string, IikoOrderType[]>;
+  paymentTypes: IikoPaymentType[];
+};
+
 const DEFAULT: Settings = {
   menuSource: "pos",
   posProvider: "none",
@@ -39,10 +52,18 @@ const DEFAULT: Settings = {
   rkeeperApiKey: "",
 };
 
+/**
+ * Компонент настроек интеграций с POS-системами.
+ * Поддерживает автоматическую загрузку конфигурации из iiko.
+ */
 export function IntegrationsSettings() {
   const [settings, setSettings] = useState<Settings>(DEFAULT);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+
+  const [iikoConfig, setIikoConfig] = useState<IikoConfig | null>(null);
+  const [loadingConfig, setLoadingConfig] = useState(false);
+  const [configError, setConfigError] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/restaurant/settings")
@@ -78,6 +99,24 @@ export function IntegrationsSettings() {
     }
   }
 
+  async function fetchIikoConfig() {
+    setLoadingConfig(true);
+    setConfigError(null);
+    try {
+      const res = await fetch("/api/restaurant/iiko-config");
+      const data = await res.json();
+      if (!res.ok) {
+        setConfigError(data.error ?? "Ошибка загрузки");
+        return;
+      }
+      setIikoConfig(data);
+    } catch {
+      setConfigError("Не удалось подключиться к iiko API");
+    } finally {
+      setLoadingConfig(false);
+    }
+  }
+
   async function importExcel(file: File) {
     const fd = new FormData();
     fd.append("file", file);
@@ -89,6 +128,9 @@ export function IntegrationsSettings() {
     }
     alert(`Импорт: категорий +${data.createdCategories}, блюд +${data.createdProducts}, обновлено ${data.updatedProducts}`);
   }
+
+  const terminals = _getTerminals(iikoConfig, settings.iikoOrganizationId);
+  const orderTypes = _getOrderTypes(iikoConfig, settings.iikoOrganizationId);
 
   if (loading) return <div className="text-sm text-neutral-500">Загрузка...</div>;
 
@@ -166,50 +208,146 @@ export function IntegrationsSettings() {
       </div>
 
       {settings.posProvider === "iiko" && (
-        <div className="rounded-xl border border-neutral-200 p-4 space-y-3">
-          <div className="text-base font-semibold">iiko (технические настройки)</div>
-          <div className="grid gap-2">
-            <Input
-              placeholder="API-ключ iiko (Cloud API login)"
-              type="password"
-              value={settings.iikoApiLogin ?? ""}
-              onChange={(e) => update("iikoApiLogin", e.target.value)}
-            />
-            <Input
-              placeholder="OrganizationId (UUID)"
-              value={settings.iikoOrganizationId ?? ""}
-              onChange={(e) => update("iikoOrganizationId", e.target.value)}
-            />
-            <Input
-              placeholder="TerminalGroupId (UUID)"
-              value={settings.iikoTerminalGroupId ?? ""}
-              onChange={(e) => update("iikoTerminalGroupId", e.target.value)}
-            />
-            <Input
-              placeholder="PaymentTypeId (UUID)"
-              value={settings.iikoPaymentTypeId ?? ""}
-              onChange={(e) => update("iikoPaymentTypeId", e.target.value)}
-            />
-            <Input
-              placeholder="OrderTypeId fallback (UUID)"
-              value={settings.iikoOrderTypeId ?? ""}
-              onChange={(e) => update("iikoOrderTypeId", e.target.value)}
-            />
-            <Input
-              placeholder="OrderTypeId DELIVERY (UUID)"
-              value={settings.iikoOrderTypeIdDelivery ?? ""}
-              onChange={(e) => update("iikoOrderTypeIdDelivery", e.target.value)}
-            />
-            <Input
-              placeholder="OrderTypeId PICKUP (UUID)"
-              value={settings.iikoOrderTypeIdPickup ?? ""}
-              onChange={(e) => update("iikoOrderTypeIdPickup", e.target.value)}
-            />
-            <Input
-              placeholder="OrderTypeId DINE_IN (UUID)"
-              value={settings.iikoOrderTypeIdDineIn ?? ""}
-              onChange={(e) => update("iikoOrderTypeIdDineIn", e.target.value)}
-            />
+        <div className="rounded-xl border border-neutral-200 p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <div className="text-base font-semibold">iiko Cloud API</div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={fetchIikoConfig}
+              disabled={loadingConfig || !settings.iikoApiLogin?.trim()}
+            >
+              <RefreshCw size={14} className={`mr-1 ${loadingConfig ? "animate-spin" : ""}`} />
+              {loadingConfig ? "Загрузка..." : "Загрузить из iiko"}
+            </Button>
+          </div>
+
+          {configError && (
+            <div className="flex items-center gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
+              <AlertCircle size={16} />
+              {configError}
+            </div>
+          )}
+
+          {iikoConfig && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <Check size={16} />
+              Конфигурация загружена: {iikoConfig.organizations.length} орг., {iikoConfig.paymentTypes.length} способов оплаты
+            </div>
+          )}
+
+          <div className="grid gap-3">
+            <div className="space-y-1">
+              <Label>API-ключ iiko (Cloud API login)</Label>
+              <Input
+                type="password"
+                value={settings.iikoApiLogin ?? ""}
+                onChange={(e) => update("iikoApiLogin", e.target.value)}
+                placeholder="Скопируйте из iikoWeb → Настройки Cloud API"
+              />
+              <p className="text-xs text-muted-foreground">
+                После ввода ключа нажмите «Сохранить», затем «Загрузить из iiko»
+              </p>
+            </div>
+
+            <div className="space-y-1">
+              <Label>Организация</Label>
+              {iikoConfig ? (
+                <select
+                  className="border rounded-md px-3 py-2 text-sm w-full"
+                  value={settings.iikoOrganizationId ?? ""}
+                  onChange={(e) => update("iikoOrganizationId", e.target.value)}
+                >
+                  <option value="">— Выберите —</option>
+                  {iikoConfig.organizations.map((o) => (
+                    <option key={o.id} value={o.id}>{o.name} ({o.id.slice(0, 8)}...)</option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  placeholder="OrganizationId (UUID)"
+                  value={settings.iikoOrganizationId ?? ""}
+                  onChange={(e) => update("iikoOrganizationId", e.target.value)}
+                />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label>Терминальная группа</Label>
+              {terminals.length > 0 ? (
+                <select
+                  className="border rounded-md px-3 py-2 text-sm w-full"
+                  value={settings.iikoTerminalGroupId ?? ""}
+                  onChange={(e) => update("iikoTerminalGroupId", e.target.value)}
+                >
+                  <option value="">— Выберите —</option>
+                  {terminals.map((t) => (
+                    <option key={t.id} value={t.id}>{t.name} ({t.id.slice(0, 8)}...)</option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  placeholder="TerminalGroupId (UUID)"
+                  value={settings.iikoTerminalGroupId ?? ""}
+                  onChange={(e) => update("iikoTerminalGroupId", e.target.value)}
+                />
+              )}
+            </div>
+
+            <div className="space-y-1">
+              <Label>Способ оплаты</Label>
+              {iikoConfig ? (
+                <select
+                  className="border rounded-md px-3 py-2 text-sm w-full"
+                  value={settings.iikoPaymentTypeId ?? ""}
+                  onChange={(e) => update("iikoPaymentTypeId", e.target.value)}
+                >
+                  <option value="">— Выберите —</option>
+                  {iikoConfig.paymentTypes.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name} ({p.paymentTypeKind})</option>
+                  ))}
+                </select>
+              ) : (
+                <Input
+                  placeholder="PaymentTypeId (UUID)"
+                  value={settings.iikoPaymentTypeId ?? ""}
+                  onChange={(e) => update("iikoPaymentTypeId", e.target.value)}
+                />
+              )}
+            </div>
+
+            <div className="border-t pt-3 space-y-3">
+              <div className="text-sm font-medium text-neutral-600">Типы заказов</div>
+
+              <OrderTypeSelect
+                label="DELIVERY (доставка)"
+                value={settings.iikoOrderTypeIdDelivery}
+                orderTypes={orderTypes}
+                filter="DeliveryByCourier"
+                onChange={(v) => update("iikoOrderTypeIdDelivery", v)}
+              />
+              <OrderTypeSelect
+                label="PICKUP (самовывоз)"
+                value={settings.iikoOrderTypeIdPickup}
+                orderTypes={orderTypes}
+                filter="DeliveryPickUp"
+                onChange={(v) => update("iikoOrderTypeIdPickup", v)}
+              />
+              <OrderTypeSelect
+                label="DINE_IN (зал)"
+                value={settings.iikoOrderTypeIdDineIn}
+                orderTypes={orderTypes}
+                filter="Common"
+                onChange={(v) => update("iikoOrderTypeIdDineIn", v)}
+              />
+              <OrderTypeSelect
+                label="Fallback (общий)"
+                value={settings.iikoOrderTypeId}
+                orderTypes={orderTypes}
+                onChange={(v) => update("iikoOrderTypeId", v)}
+              />
+            </div>
+
             <Button variant="outline" onClick={save} disabled={saving}>
               {saving ? "Сохранение..." : "Сохранить iiko настройки"}
             </Button>
@@ -253,3 +391,54 @@ export function IntegrationsSettings() {
   );
 }
 
+function OrderTypeSelect({
+  label,
+  value,
+  orderTypes,
+  filter,
+  onChange,
+}: {
+  label: string;
+  value: string | null | undefined;
+  orderTypes: IikoOrderType[];
+  filter?: string;
+  onChange: (v: string) => void;
+}) {
+  const filtered = filter ? orderTypes.filter((t) => t.orderServiceType === filter) : orderTypes;
+
+  return (
+    <div className="space-y-1">
+      <Label className="text-xs">{label}</Label>
+      {filtered.length > 0 ? (
+        <select
+          className="border rounded-md px-3 py-2 text-sm w-full"
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+        >
+          <option value="">— Выберите —</option>
+          {filtered.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.name} ({t.orderServiceType})
+            </option>
+          ))}
+        </select>
+      ) : (
+        <Input
+          placeholder={`OrderTypeId ${label} (UUID)`}
+          value={value ?? ""}
+          onChange={(e) => onChange(e.target.value)}
+        />
+      )}
+    </div>
+  );
+}
+
+function _getTerminals(config: IikoConfig | null, orgId: string | null | undefined): IikoTerminal[] {
+  if (!config || !orgId) return [];
+  return config.terminalGroupsByOrg[orgId] ?? [];
+}
+
+function _getOrderTypes(config: IikoConfig | null, orgId: string | null | undefined): IikoOrderType[] {
+  if (!config || !orgId) return [];
+  return config.orderTypesByOrg[orgId] ?? [];
+}
