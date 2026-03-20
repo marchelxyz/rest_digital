@@ -47,7 +47,7 @@ export async function PATCH(req: NextRequest) {
   const data: Record<string, string> = {};
   for (const k of ALLOWED_KEYS) {
     const v = body[k];
-    if (v === undefined) continue;
+    if (v === undefined || v === null) continue;
     data[k] = v.trim();
   }
   const createData = { tenantId: emp.tenantId, ...data };
