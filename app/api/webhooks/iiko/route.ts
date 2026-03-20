@@ -29,24 +29,26 @@ export async function POST(req: NextRequest) {
       status?: string;
       deliveryStatus?: string;
     };
+    console.log("[iiko webhook] Received:", JSON.stringify(body, null, 2));
+
     const orderId = body.orderId;
     const status = body.status ?? body.deliveryStatus;
     if (!orderId || !status) {
+      console.log("[iiko webhook] Skipped: missing orderId or status");
       return NextResponse.json({ received: true }, { status: 200 });
     }
     const ourStatus = STATUS_MAP[status];
     if (!ourStatus) {
+      console.log("[iiko webhook] Unknown iiko status:", status);
       return NextResponse.json({ received: true }, { status: 200 });
     }
     const updated = await prisma.order.updateMany({
       where: { iikoOrderId: orderId },
       data: { status: ourStatus },
     });
-    if (updated.count > 0) {
-      console.log("[iiko webhook] order", orderId, "->", ourStatus);
-    }
-  } catch {
-    // ignore
+    console.log(`[iiko webhook] order ${orderId} -> ${ourStatus} (matched: ${updated.count})`);
+  } catch (e) {
+    console.error("[iiko webhook] Error:", e);
   }
   return NextResponse.json({ received: true }, { status: 200 });
 }
