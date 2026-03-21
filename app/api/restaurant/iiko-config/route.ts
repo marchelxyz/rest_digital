@@ -12,6 +12,7 @@ import {
   getTerminalGroups,
   getOrderTypes,
   getPaymentTypes,
+  getExternalMenus,
 } from "@/lib/iiko/client";
 
 export async function GET() {
@@ -36,10 +37,11 @@ export async function GET() {
     const orgs = await getOrganizations(token);
     const orgIds = orgs.map((o) => o.id);
 
-    const [termGroups, orderTypes, paymentTypes] = await Promise.all([
-      getTerminalGroups(token, orgIds),
+    const [termGroups, orderTypes, paymentTypes, externalMenus] = await Promise.all([
+      getTerminalGroups(token, orgIds, true),
       getOrderTypes(token, orgIds),
       getPaymentTypes(token, orgIds),
+      getExternalMenus(token, orgIds).catch(() => []),
     ]);
 
     const result = {
@@ -51,6 +53,7 @@ export async function GET() {
         orderTypes.map((ot) => [ot.organizationId, ot.items])
       ),
       paymentTypes,
+      externalMenus,
     };
 
     console.log("[iiko-config] Success:", JSON.stringify(result, null, 2));

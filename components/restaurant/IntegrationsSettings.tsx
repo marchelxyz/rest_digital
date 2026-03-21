@@ -22,6 +22,8 @@ type Settings = {
   iikoOrderTypeIdPickup?: string | null;
   iikoOrderTypeIdDineIn?: string | null;
   iikoPaymentTypeId?: string | null;
+  iikoExternalMenuId?: string | null;
+  iikoExternalMenuPriceCategoryId?: string | null;
   rkeeperApiKey?: string | null;
 };
 
@@ -30,11 +32,14 @@ type IikoTerminal = { id: string; name: string };
 type IikoOrderType = { id: string; name: string; orderServiceType: string };
 type IikoPaymentType = { id: string; name: string; paymentTypeKind: string };
 
+type IikoExternalMenu = { id: string; name: string; priceCategoryIds?: string[] };
+
 type IikoConfig = {
   organizations: IikoOrg[];
   terminalGroupsByOrg: Record<string, IikoTerminal[]>;
   orderTypesByOrg: Record<string, IikoOrderType[]>;
   paymentTypes: IikoPaymentType[];
+  externalMenus?: IikoExternalMenu[];
 };
 
 const DEFAULT: Settings = {
@@ -49,6 +54,8 @@ const DEFAULT: Settings = {
   iikoOrderTypeIdPickup: "",
   iikoOrderTypeIdDineIn: "",
   iikoPaymentTypeId: "",
+  iikoExternalMenuId: "",
+  iikoExternalMenuPriceCategoryId: "",
   rkeeperApiKey: "",
 };
 
@@ -64,6 +71,8 @@ export function IntegrationsSettings() {
   const [iikoConfig, setIikoConfig] = useState<IikoConfig | null>(null);
   const [loadingConfig, setLoadingConfig] = useState(false);
   const [configError, setConfigError] = useState<string | null>(null);
+  const [syncingMenu, setSyncingMenu] = useState(false);
+  const [syncMenuResult, setSyncMenuResult] = useState<string | null>(null);
 
   useEffect(() => {
     fetch("/api/restaurant/settings")
@@ -102,6 +111,7 @@ export function IntegrationsSettings() {
   async function fetchIikoConfig() {
     setLoadingConfig(true);
     setConfigError(null);
+    setSyncMenuResult(null);
     try {
       const res = await fetch("/api/restaurant/iiko-config");
       const data = await res.json();
@@ -114,6 +124,27 @@ export function IntegrationsSettings() {
       setConfigError("Не удалось подключиться к iiko API");
     } finally {
       setLoadingConfig(false);
+    }
+  }
+
+  async function syncMenu() {
+    setSyncingMenu(true);
+    setSyncMenuResult(null);
+    setConfigError(null);
+    try {
+      const res = await fetch("/api/restaurant/iiko/sync-menu", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        setConfigError(data.error ?? "Ошибка синхронизации");
+        return;
+      }
+      setSyncMenuResult(
+        `Меню синхронизировано (${data.source}): создано ${data.created}, обновлено ${data.updated}`
+      );
+    } catch {
+      setConfigError("Не удалось синхронизировать меню");
+    } finally {
+      setSyncingMenu(false);
     }
   }
 
@@ -209,17 +240,32 @@ export function IntegrationsSettings() {
 
       {settings.posProvider === "iiko" && (
         <div className="rounded-xl border border-neutral-200 p-4 space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between flex-wrap gap-2">
             <div className="text-base font-semibold">iiko Cloud API</div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={fetchIikoConfig}
-              disabled={loadingConfig || !settings.iikoApiLogin?.trim()}
-            >
-              <RefreshCw size={14} className={`mr-1 ${loadingConfig ? "animate-spin" : ""}`} />
-              {loadingConfig ? "Загрузка..." : "Загрузить из iiko"}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={fetchIikoConfig}
+                disabled={loadingConfig || !settings.iikoApiLogin?.trim()}
+              >
+                <RefreshCw size={14} className={`mr-1 ${loadingConfig ? "animate-spin" : ""}`} />
+                {loadingConfig ? "Загрузка..." : "Загрузить из iiko"}
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={syncMenu}
+                disabled={
+                  syncingMenu ||
+                  !settings.iikoApiLogin?.trim() ||
+                  !settings.iikoOrganizationId?.trim()
+                }
+              >
+                <RefreshCw size={14} className={`mr-1 ${syncingMenu ? "animate-spin" : ""}`} />
+                {syncingMenu ? "Синхронизация..." : "Синхронизировать меню"}
+              </Button>
+            </div>
           </div>
 
           {configError && (
@@ -233,6 +279,13 @@ export function IntegrationsSettings() {
             <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
               <Check size={16} />
               Конфигурация загружена: {iikoConfig.organizations.length} орг., {iikoConfig.paymentTypes.length} способов оплаты
+            </div>
+          )}
+
+          {syncMenuResult && (
+            <div className="flex items-center gap-2 text-sm text-green-700 bg-green-50 border border-green-200 rounded-lg px-3 py-2">
+              <Check size={16} />
+              {syncMenuResult}
             </div>
           )}
 
@@ -315,6 +368,52 @@ export function IntegrationsSettings() {
                 />
               )}
             </div>
+
+            {(iikoConfig?.externalMenus?.length ?? 0) > 0 && (
+              <div className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/50 p-3">
+                <div className="text-sm font-medium text-neutral-700">External Menu (если номенклатура пуста)</div>
+                <div className="space-y-1">
+                  <Label className="text-xs">Внешнее меню</Label>
+                  <select
+                    className="border rounded-md px-3 py-2 text-sm w-full"
+                    value={settings.iikoExternalMenuId ?? ""}
+                    onChange={(e) => update("iikoExternalMenuId", e.target.value)}
+                  >
+                    <option value="">— Не использовать / авто —</option>
+                    {iikoConfig.externalMenus!.map((m) => (
+                      <option key={m.id} value={m.id}>{m.name} ({m.id.slice(0, 8)}...)</option>
+                    ))}
+                  </select>
+                </div>
+                {(settings.iikoExternalMenuId
+                  ? iikoConfig.externalMenus!.find((m) => m.id === settings.iikoExternalMenuId)
+                      ?.priceCategoryIds?.length ?? 0
+                  : 0) > 0 && (
+                  <div className="space-y-1">
+                    <Label className="text-xs">Категория цен</Label>
+                    <select
+                      className="border rounded-md px-3 py-2 text-sm w-full"
+                      value={settings.iikoExternalMenuPriceCategoryId ?? ""}
+                      onChange={(e) =>
+                        update("iikoExternalMenuPriceCategoryId", e.target.value)
+                      }
+                    >
+                      <option value="">— Не указана —</option>
+                      {iikoConfig.externalMenus!
+                        .find((m) => m.id === settings.iikoExternalMenuId)!
+                        .priceCategoryIds!.map((pcId) => (
+                          <option key={pcId} value={pcId}>
+                            {pcId.slice(0, 8)}...
+                          </option>
+                        ))}
+                    </select>
+                  </div>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Используется, когда номенклатура iiko пуста. Сохраните настройки перед синхронизацией.
+                </p>
+              </div>
+            )}
 
             <div className="border-t pt-3 space-y-3">
               <div className="text-sm font-medium text-neutral-600">Типы заказов</div>

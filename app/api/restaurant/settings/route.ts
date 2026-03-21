@@ -18,6 +18,8 @@ const ALLOWED_KEYS = [
   "iikoOrderTypeIdPickup",
   "iikoOrderTypeIdDineIn",
   "iikoPaymentTypeId",
+  "iikoExternalMenuId",
+  "iikoExternalMenuPriceCategoryId",
   "rkeeperApiKey",
 ] as const;
 

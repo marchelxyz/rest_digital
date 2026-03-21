@@ -11,6 +11,7 @@ import {
   getTerminalGroups,
   getOrderTypes,
   getPaymentTypes,
+  getExternalMenus,
 } from "@/lib/iiko/client";
 
 export async function GET(
@@ -37,10 +38,11 @@ export async function GET(
     const token = await getAccessToken(settings.iikoApiLogin.trim());
     const orgs = await getOrganizations(token);
     const orgIds = orgs.map((o) => o.id);
-    const [termGroups, orderTypes, paymentTypes] = await Promise.all([
-      getTerminalGroups(token, orgIds),
+    const [termGroups, orderTypes, paymentTypes, externalMenus] = await Promise.all([
+      getTerminalGroups(token, orgIds, true),
       getOrderTypes(token, orgIds),
       getPaymentTypes(token, orgIds),
+      getExternalMenus(token, orgIds).catch(() => []),
     ]);
 
     const orgList = orgs.map((o) => ({ id: o.id, name: o.name }));
@@ -58,6 +60,7 @@ export async function GET(
       terminalGroupsByOrg: Object.fromEntries(tgByOrg),
       orderTypesByOrg: Object.fromEntries(otByOrg),
       paymentTypes,
+      externalMenus,
     });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
