@@ -290,6 +290,102 @@ export async function getTerminalGroups(
   return result;
 }
 
+export type IikoExternalMenuInfo = {
+  id: string;
+  name: string;
+  priceCategoryIds?: string[];
+};
+
+/** Список внешних меню и категорий цен. */
+export async function getExternalMenus(
+  token: string,
+  organizationIds: string[]
+): Promise<IikoExternalMenuInfo[]> {
+  const url = `${BASE_URL}/api/2/menu`;
+  _log("POST", url, { organizationIds });
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json; charset=UTF-8",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ organizationIds }),
+    signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+  });
+  const data = (await res.json()) as {
+    menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
+    errorDescription?: string;
+  };
+  if (!res.ok) {
+    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
+    throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
+  }
+  const menus = (data.menus ?? []).map((m) => ({
+    id: m.id,
+    name: m.name ?? "",
+    priceCategoryIds: m.priceCategoryIds ?? [],
+  }));
+  _log("POST", url, undefined, { count: menus.length, menus });
+  return menus;
+}
+
+export type IikoExternalMenuItem = {
+  id: string;
+  name: string;
+  description?: string;
+  price?: number;
+  imageLinks?: string[];
+  groupId?: string;
+  groupName?: string;
+  itemModifierGroups?: {
+    id: string;
+    name?: string;
+    minQuantity?: number;
+    maxQuantity?: number;
+    childModifiers?: { id: string; defaultAmount?: number; minAmount?: number; maxAmount?: number }[];
+  }[];
+};
+
+export type IikoExternalMenuData = {
+  categories?: { id: string; name: string }[];
+  products?: IikoExternalMenuItem[];
+};
+
+/** Внешнее меню по ID. */
+export async function getExternalMenuById(
+  token: string,
+  params: {
+    organizationId: string;
+    externalMenuId: string;
+    priceCategoryId?: string;
+  }
+): Promise<IikoExternalMenuData> {
+  const url = `${BASE_URL}/api/2/menu/by_id`;
+  const body = {
+    organizationId: params.organizationId,
+    externalMenuId: params.externalMenuId,
+    ...(params.priceCategoryId && { priceCategoryId: params.priceCategoryId }),
+  };
+  _log("POST", url, body);
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json; charset=UTF-8",
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(body),
+    signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+  });
+  const data = (await res.json()) as IikoExternalMenuData & { errorDescription?: string };
+  if (!res.ok) {
+    _log("POST", url, undefined, undefined, (data as { errorDescription?: string }).errorDescription ?? `HTTP ${res.status}`);
+    throw new Error((data as { errorDescription?: string }).errorDescription ?? `iiko API error: ${res.status}`);
+  }
+  const count = (data.categories?.length ?? 0) + (data.products?.length ?? 0);
+  _log("POST", url, undefined, { categories: data.categories?.length ?? 0, products: data.products?.length ?? 0 });
+  return data;
+}
+
 /** Стоп-лист (товары, которых нет в наличии). */
 export async function getStopLists(
   token: string,
