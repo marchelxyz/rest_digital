@@ -380,13 +380,13 @@ export function IntegrationsSettings() {
                     onChange={(e) => update("iikoExternalMenuId", e.target.value)}
                   >
                     <option value="">— Не использовать / авто —</option>
-                    {iikoConfig.externalMenus!.map((m) => (
+                    {(iikoConfig?.externalMenus ?? []).map((m) => (
                       <option key={m.id} value={m.id}>{m.name} ({m.id.slice(0, 8)}...)</option>
                     ))}
                   </select>
                 </div>
                 {(settings.iikoExternalMenuId
-                  ? iikoConfig.externalMenus!.find((m) => m.id === settings.iikoExternalMenuId)
+                  ? (iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
                       ?.priceCategoryIds?.length ?? 0
                   : 0) > 0 && (
                   <div className="space-y-1">
@@ -399,9 +399,8 @@ export function IntegrationsSettings() {
                       }
                     >
                       <option value="">— Не указана —</option>
-                      {iikoConfig.externalMenus!
-                        .find((m) => m.id === settings.iikoExternalMenuId)!
-                        .priceCategoryIds!.map((pcId) => (
+                      {((iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
+                        ?.priceCategoryIds ?? []).map((pcId) => (
                           <option key={pcId} value={pcId}>
                             {pcId.slice(0, 8)}...
                           </option>
