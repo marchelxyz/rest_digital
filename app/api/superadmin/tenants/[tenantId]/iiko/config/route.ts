@@ -6,13 +6,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSuperadmin } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import {
-  getAccessToken,
   getOrganizations,
   getTerminalGroups,
   getOrderTypes,
   getPaymentTypes,
   getExternalMenus,
 } from "@/lib/iiko/client";
+import { getCachedAccessToken } from "@/lib/iiko/token-cache";
 
 export async function GET(
   _req: NextRequest,
@@ -35,7 +35,7 @@ export async function GET(
   }
 
   try {
-    const token = await getAccessToken(settings.iikoApiLogin.trim());
+    const token = await getCachedAccessToken(settings.iikoApiLogin.trim());
     const orgs = await getOrganizations(token);
     const orgIds = orgs.map((o) => o.id);
     const [termGroups, orderTypes, paymentTypes, externalMenus] = await Promise.all([

@@ -20,6 +20,10 @@
 # production
 /build
 
+# local reference clones (do not commit)
+_mariko_ref/
+_compare_mariko_vld/
+
 # misc
 .DS_Store
 nul
