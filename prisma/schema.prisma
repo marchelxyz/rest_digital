@@ -422,6 +422,13 @@ model Order {
 
   assignedCourierId String?
   iikoOrderId       String?   // ID заказа в iiko при интеграции
+
+  // Асинхронная доставка в iiko (как в mariko: очередь + retry)
+  iikoProviderStatus   String?   // pending | sent | error
+  iikoProviderError    String?
+  iikoProviderSyncedAt DateTime?
+  iikoDispatchAttempts Int       @default(0)
+
   createdAt         DateTime @default(now())
   updatedAt         DateTime @updatedAt
 

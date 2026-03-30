@@ -7,13 +7,13 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { getEmployee } from "@/lib/auth";
 import {
-  getAccessToken,
   getOrganizations,
   getTerminalGroups,
   getOrderTypes,
   getPaymentTypes,
   getExternalMenus,
 } from "@/lib/iiko/client";
+import { getCachedAccessToken } from "@/lib/iiko/token-cache";
 
 export async function GET() {
   const emp = await getEmployee();
@@ -33,7 +33,7 @@ export async function GET() {
 
   try {
     console.log("[iiko-config] Fetching config for tenant", emp.tenantId);
-    const token = await getAccessToken(settings.iikoApiLogin.trim());
+    const token = await getCachedAccessToken(settings.iikoApiLogin.trim());
     const orgs = await getOrganizations(token);
     const orgIds = orgs.map((o) => o.id);
 

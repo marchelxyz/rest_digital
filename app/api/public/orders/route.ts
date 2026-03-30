@@ -5,22 +5,7 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { getAccessToken, createOrder } from "@/lib/iiko/client";
-
-function getIikoOrderTypeIdByOrderType(args: {
-  orderType: "DELIVERY" | "PICKUP" | "DINE_IN";
-  settings: {
-    iikoOrderTypeId?: string | null;
-    iikoOrderTypeIdDelivery?: string | null;
-    iikoOrderTypeIdPickup?: string | null;
-    iikoOrderTypeIdDineIn?: string | null;
-  };
-}): string | null {
-  const { orderType, settings } = args;
-  if (orderType === "DELIVERY") return settings.iikoOrderTypeIdDelivery?.trim() || settings.iikoOrderTypeId?.trim() || null;
-  if (orderType === "PICKUP") return settings.iikoOrderTypeIdPickup?.trim() || settings.iikoOrderTypeId?.trim() || null;
-  return settings.iikoOrderTypeIdDineIn?.trim() || settings.iikoOrderTypeId?.trim() || null;
-}
+import { enqueueIikoOrderDispatch, isTenantIikoOrderReady } from "@/lib/iiko/order-dispatch";
 
 export async function POST(req: NextRequest) {
   const body = (await req.json()) as {
@@ -139,76 +124,12 @@ export async function POST(req: NextRequest) {
     include: { items: { include: { product: true } }, customer: true },
   });
 
-  // Отправка в iiko при настроенной интеграции
+  // Отправка в iiko: асинхронная очередь (механика как в mariko enqueueIikoOrder)
   const settings = await prisma.tenantSettings.findUnique({
     where: { tenantId },
   });
-  const resolvedIikoOrderTypeId = settings
-    ? getIikoOrderTypeIdByOrderType({ orderType, settings })
-    : null;
-  const iikoConfig =
-    settings?.iikoApiLogin &&
-    settings?.iikoOrganizationId &&
-    settings?.iikoTerminalGroupId &&
-    resolvedIikoOrderTypeId &&
-    settings?.iikoPaymentTypeId;
-  if (iikoConfig && settings) {
-    try {
-      const token = await getAccessToken(settings.iikoApiLogin!);
-      const productMap = new Map(products.map((p) => [p.id, p]));
-      const iikoItems = orderItems.map((item) => {
-        const p = productMap.get(item.productId);
-        const iikoProductId = p?.iikoProductId ?? item.productId;
-        const modifiers: { productId: string; productGroupId: string; amount: number }[] = [];
-        if (item.modifiers && p) {
-          try {
-            const mods = JSON.parse(item.modifiers) as { optionId: string; quantity?: number }[];
-            for (const m of mods) {
-              for (const mg of p.modifierGroups) {
-                const opt = mg.options.find((o) => o.id === m.optionId);
-                if (opt?.iikoProductId && opt?.iikoProductGroupId) {
-                  modifiers.push({
-                    productId: opt.iikoProductId,
-                    productGroupId: opt.iikoProductGroupId,
-                    amount: m.quantity ?? 1,
-                  });
-                }
-              }
-            }
-          } catch {
-            // ignore
-          }
-        }
-        return {
-          productId: iikoProductId,
-          quantity: item.quantity,
-          price: Number(item.price),
-          modifiers,
-        };
-      });
-      const result = await createOrder(token, {
-        organizationId: settings.iikoOrganizationId!,
-        terminalGroupId: settings.iikoTerminalGroupId!,
-        orderTypeId: resolvedIikoOrderTypeId!,
-        paymentTypeId: settings.iikoPaymentTypeId!,
-        phone,
-        customerName: customer.name ?? undefined,
-        items: iikoItems,
-        totalAmount: Number(totalAmount),
-        address: orderType === "DELIVERY" ? body.address ?? undefined : undefined,
-        comment: body.comment ?? undefined,
-        sourceKey: "rest_digital",
-      });
-      if (result.creationStatus === "Success" && result.orderId) {
-        await prisma.order.update({
-          where: { id: order.id },
-          data: { iikoOrderId: result.orderId },
-        });
-      }
-    } catch (e) {
-      console.error("[iiko] order create failed:", e);
-      // Заказ в нашей БД уже создан, iiko-ошибка не отменяет его
-    }
+  if (settings && isTenantIikoOrderReady(settings, orderType)) {
+    enqueueIikoOrderDispatch(order.id);
   }
 
   // Бонусы начисляются только после подтверждения заказа (см. PATCH /api/restaurant/orders/[id]/status)

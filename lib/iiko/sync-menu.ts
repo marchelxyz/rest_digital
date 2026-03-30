@@ -4,7 +4,6 @@
  */
 import { prisma } from "@/lib/db";
 import {
-  getAccessToken,
   getNomenclature,
   getStopLists,
   getExternalMenus,
@@ -12,6 +11,7 @@ import {
   type IikoProduct,
   type IikoGroup,
 } from "@/lib/iiko/client";
+import { getCachedAccessToken } from "@/lib/iiko/token-cache";
 
 export type SyncMenuResult = {
   ok: boolean;
@@ -36,7 +36,7 @@ export async function syncIikoMenuForTenant(
   }
 
   const orgId = settings.iikoOrganizationId.trim();
-  const token = await getAccessToken(settings.iikoApiLogin.trim());
+  const token = await getCachedAccessToken(settings.iikoApiLogin.trim());
   const nom = await getNomenclature(token, orgId);
   const stopProductIds = await getStopLists(token, [orgId]);
 
