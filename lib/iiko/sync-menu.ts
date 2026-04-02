@@ -23,7 +23,11 @@ export type SyncMenuResult = {
 
 /**
  * Синхронизирует меню из iiko для указанного tenant.
- * Сначала пробует nomenclature, при пустом результате — external menu.
+ *
+ * Основной источник — внешнее меню iiko (External Menu): отдельная витрина на организацию
+ * в iikoWeb, из которой забираются категории и позиции через API 2 (`/api/2/menu/by_id`).
+ * Номенклатура (`/api/1/nomenclature`) используется только как запасной вариант, если
+ * внешнее меню не выбрано/недоступно и при автоподборе первого меню оно пустое.
  */
 export async function syncIikoMenuForTenant(
   tenantId: string
@@ -37,27 +41,36 @@ export async function syncIikoMenuForTenant(
 
   const orgId = settings.iikoOrganizationId.trim();
   const token = await getCachedAccessToken(settings.iikoApiLogin.trim());
-  const nom = await getNomenclature(token, orgId);
   const stopProductIds = await getStopLists(token, [orgId]);
 
-  if (
-    (nom.products ?? []).length === 0 &&
-    (nom.productCategories ?? []).length === 0
-  ) {
-    const externalMenuId =
-      settings.iikoExternalMenuId?.trim() ??
-      (await _getFirstExternalMenuId(token, orgId));
-    if (externalMenuId) {
+  const explicitMenuId = settings.iikoExternalMenuId?.trim() ?? "";
+  const autoMenuId = explicitMenuId
+    ? ""
+    : ((await _getFirstExternalMenuId(token, orgId)) ?? "");
+  const externalMenuId = explicitMenuId || autoMenuId;
+
+  if (externalMenuId) {
+    try {
       const ext = await getExternalMenuById(token, {
         organizationId: orgId,
         externalMenuId,
         priceCategoryId:
           settings.iikoExternalMenuPriceCategoryId?.trim() || undefined,
       });
-      return _syncFromExternalMenu(tenantId, ext, stopProductIds);
+      if (_externalMenuHasContent(ext)) {
+        return _syncFromExternalMenu(tenantId, ext, stopProductIds);
+      }
+      if (explicitMenuId) {
+        return _emptyExternalMenuSyncResult();
+      }
+    } catch (err) {
+      if (explicitMenuId) {
+        throw err instanceof Error ? err : new Error(String(err));
+      }
     }
   }
 
+  const nom = await getNomenclature(token, orgId);
   return _syncFromNomenclature(tenantId, nom, stopProductIds);
 }
 
@@ -67,6 +80,27 @@ async function _getFirstExternalMenuId(
 ): Promise<string | null> {
   const menus = await getExternalMenus(token, [orgId]);
   return menus[0]?.id ?? null;
+}
+
+function _externalMenuHasContent(ext: unknown): boolean {
+  const raw = ext as {
+    productCategories?: unknown[];
+    categories?: unknown[];
+    products?: unknown[];
+    items?: unknown[];
+  };
+  const prods = raw.products ?? raw.items ?? [];
+  const cats = raw.productCategories ?? raw.categories ?? [];
+  return prods.length > 0 || cats.length > 0;
+}
+
+function _emptyExternalMenuSyncResult(): SyncMenuResult {
+  return {
+    ok: true,
+    source: "external_menu",
+    created: 0,
+    updated: 0,
+  };
 }
 
 async function _syncFromNomenclature(

@@ -371,7 +371,7 @@ export function IntegrationsSettings() {
 
             {(iikoConfig?.externalMenus?.length ?? 0) > 0 && (
               <div className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/50 p-3">
-                <div className="text-sm font-medium text-neutral-700">External Menu (если номенклатура пуста)</div>
+                <div className="text-sm font-medium text-neutral-700">Внешнее меню iiko</div>
                 <div className="space-y-1">
                   <Label className="text-xs">Внешнее меню</Label>
                   <select
@@ -379,7 +379,7 @@ export function IntegrationsSettings() {
                     value={settings.iikoExternalMenuId ?? ""}
                     onChange={(e) => update("iikoExternalMenuId", e.target.value)}
                   >
-                    <option value="">— Не использовать / авто —</option>
+                    <option value="">— Авто: первое меню из списка —</option>
                     {(iikoConfig?.externalMenus ?? []).map((m) => (
                       <option key={m.id} value={m.id}>{m.name} ({m.id.slice(0, 8)}...)</option>
                     ))}
@@ -409,7 +409,10 @@ export function IntegrationsSettings() {
                   </div>
                 )}
                 <p className="text-xs text-muted-foreground">
-                  Используется, когда номенклатура iiko пуста. Сохраните настройки перед синхронизацией.
+                  Синхронизация берёт позиции из внешнего меню (в iikoWeb: внешние заказы → внешнее меню).
+                  Для каждого ресторана создайте своё меню и выберите его здесь; при «авто» используется
+                  первое доступное. Номенклатура подключается только если внешнее меню не удалось загрузить
+                  или оно пустое (и не выбрано явно). Сохраните настройки перед синхронизацией.
                 </p>
               </div>
             )}

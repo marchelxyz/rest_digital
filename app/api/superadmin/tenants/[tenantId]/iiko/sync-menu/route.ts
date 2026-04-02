@@ -1,6 +1,6 @@
 /**
  * POST /api/superadmin/tenants/[tenantId]/iiko/sync-menu
- * Синхронизация меню из iiko: сначала nomenclature, если пусто — external menu.
+ * Синхронизация меню из iiko: внешнее меню (External Menu), иначе номенклатура.
  */
 import { NextRequest, NextResponse } from "next/server";
 import { getSuperadmin } from "@/lib/auth";

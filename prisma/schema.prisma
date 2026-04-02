@@ -83,7 +83,7 @@ model TenantSettings {
   iikoOrderTypeIdDineIn   String? // UUID типа заказа для DINE_IN
   iikoPaymentTypeId    String?  // UUID способа оплаты
   iikoWebhookSecret    String?  // Секрет для проверки вебхуков (опционально)
-  iikoExternalMenuId   String?  // UUID внешнего меню (если номенклатура пуста)
+  iikoExternalMenuId   String?  // UUID внешнего меню iiko (основной источник синхронизации меню)
   iikoExternalMenuPriceCategoryId String?  // UUID категории цен (опционально)
 
   // Мессенджеры (включённые платформы для определения пользователя)
