@@ -28,8 +28,8 @@ export type SyncMenuResult = {
  * Синхронизирует меню из iiko для указанного tenant.
  *
  * Достаточно API-ключа Cloud API и организации. Сначала пробуем внешнее меню (если iiko
- * отдаёт список в POST /api/2/menu или задан валидный UUID в настройках), иначе — номенклатура
- * (/api/1/nomenclature). Значения вроде артикула в поле внешнего меню игнорируются.
+ * отдаёт список в POST /api/2/menu или задан id меню в настройках), иначе — номенклатура
+ * (/api/1/nomenclature). Пустое или заведомо некорректное значение в поле id меню игнорируется.
  */
 export async function syncIikoMenuForTenant(
   tenantId: string
@@ -46,9 +46,7 @@ export async function syncIikoMenuForTenant(
   const stopProductIds = await getStopLists(token, [orgId]);
 
   const rawExternal = settings.iikoExternalMenuId?.trim() ?? "";
-  const explicitMenuId = _isValidIikoExternalMenuUuid(rawExternal)
-    ? rawExternal
-    : "";
+  const explicitMenuId = _isValidExternalMenuId(rawExternal) ? rawExternal : "";
   const autoMenuId = explicitMenuId
     ? ""
     : ((await _getFirstExternalMenuId(token, orgId)) ?? "");
@@ -79,11 +77,10 @@ export async function syncIikoMenuForTenant(
   return _syncFromNomenclature(tenantId, nom, stopProductIds);
 }
 
-/** UUID внешнего меню для Cloud API; не артикул и не внутренний числовой id из iikoWeb. */
-function _isValidIikoExternalMenuUuid(value: string): boolean {
-  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
-    value.trim()
-  );
+/** Непустой id внешнего меню (UUID или числовая строка из Cloud API / iiko). */
+function _isValidExternalMenuId(value: string): boolean {
+  const t = value.trim();
+  return t.length > 0 && t.length <= 128;
 }
 
 async function _getFirstExternalMenuId(
@@ -156,6 +153,7 @@ function _externalMenuHasContent(ext: unknown): boolean {
   const menuKeys = [
     "productCategories",
     "categories",
+    "itemCategories",
     "products",
     "items",
     "productItems",
@@ -368,6 +366,7 @@ async function _syncFromExternalMenu(
   const raw = ext as {
     productCategories?: { id: string; name: string }[];
     categories?: { id: string; name: string }[];
+    itemCategories?: { id: string; name: string }[];
     products?: {
       id: string;
       name: string;
@@ -387,7 +386,8 @@ async function _syncFromExternalMenu(
       itemModifierGroups?: unknown[];
     }[];
   };
-  const cats = raw.productCategories ?? raw.categories ?? [];
+  const cats =
+    raw.productCategories ?? raw.categories ?? raw.itemCategories ?? [];
   const prods = raw.products ?? raw.items ?? [];
 
   const categoryByIikoId = new Map<string, string>();

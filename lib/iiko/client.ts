@@ -335,7 +335,9 @@ export async function getExternalMenus(
   organizationIds: string[]
 ): Promise<IikoExternalMenuInfo[]> {
   const url = `${BASE_URL}/api/2/menu`;
-  const bodies: { organizationIds: string[]; includeDisabled?: boolean }[] = [
+  /** Как в mariko_vld: iiko часто кладёт пункты в `externalMenus`, а `menus` оставляет пустым. */
+  const bodies: Record<string, unknown>[] = [
+    {},
     { organizationIds, includeDisabled: true },
     { organizationIds },
   ];
@@ -351,31 +353,93 @@ export async function getExternalMenus(
       body: JSON.stringify(reqBody),
       signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
     });
-    const data = (await res.json()) as {
-      menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
-      Menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
+    const data = (await res.json()) as Record<string, unknown> & {
       errorDescription?: string;
     };
-    if (res.ok) {
-      const rawList = data.menus ?? data.Menus ?? [];
+    if (!res.ok) {
+      lastErr = data.errorDescription ?? `HTTP ${res.status}`;
+      _log("POST", url, undefined, undefined, lastErr);
+      continue;
+    }
+    const rawList = _extractExternalMenuRowsFromListPayload(data);
+    if (rawList.length > 0) {
       return _mapExternalMenuList(rawList);
     }
-    lastErr = data.errorDescription ?? `HTTP ${res.status}`;
-    _log("POST", url, undefined, undefined, lastErr);
   }
-  throw new Error(lastErr ?? `iiko API error`);
+  if (lastErr) {
+    throw new Error(lastErr);
+  }
+  _log("POST", `${BASE_URL}/api/2/menu`, undefined, { count: 0, menus: [] });
+  return [];
+}
+
+/**
+ * Объединяет `menus` и `externalMenus` (camelCase / PascalCase), без дубликатов по id.
+ * ID приводятся к строке (в API встречаются числовые id, не только UUID).
+ */
+function _extractExternalMenuRowsFromListPayload(
+  data: Record<string, unknown>
+): {
+  id: string;
+  name?: string;
+  priceCategoryIds?: string[];
+  organizationId?: string;
+}[] {
+  const keys = ["menus", "Menus", "externalMenus", "ExternalMenus"] as const;
+  const rows: {
+    id: string;
+    name?: string;
+    priceCategoryIds?: string[];
+    organizationId?: string;
+  }[] = [];
+  const seen = new Set<string>();
+  for (const key of keys) {
+    const arr = data[key];
+    if (!Array.isArray(arr)) {
+      continue;
+    }
+    for (const entry of arr) {
+      if (!entry || typeof entry !== "object") {
+        continue;
+      }
+      const e = entry as Record<string, unknown>;
+      const idRaw = e.id ?? e.Id;
+      const id = idRaw != null ? String(idRaw).trim() : "";
+      if (!id || seen.has(id)) {
+        continue;
+      }
+      seen.add(id);
+      const name = (e.name ?? e.Name) as string | undefined;
+      const priceCategoryIds =
+        (e.priceCategoryIds as string[] | undefined) ??
+        (e.PriceCategoryIds as string[] | undefined);
+      const organizationId =
+        (e.organizationId as string | undefined) ??
+        (e.OrganizationId as string | undefined);
+      rows.push({
+        id,
+        name,
+        priceCategoryIds,
+        organizationId,
+      });
+    }
+  }
+  return rows;
 }
 
 function _mapExternalMenuList(
-  rawList: { id: string; name?: string; priceCategoryIds?: string[] }[]
+  rawList: {
+    id: string;
+    name?: string;
+    priceCategoryIds?: string[];
+    organizationId?: string;
+  }[]
 ): IikoExternalMenuInfo[] {
   const menus = rawList.map((m) => ({
     id: m.id,
     name: m.name ?? "",
-    priceCategoryIds: m.priceCategoryIds ?? (m as { PriceCategoryIds?: string[] }).PriceCategoryIds ?? [],
-    organizationId:
-      (m as { organizationId?: string }).organizationId ??
-      (m as { OrganizationId?: string }).OrganizationId,
+    priceCategoryIds: m.priceCategoryIds ?? [],
+    organizationId: m.organizationId,
   }));
   _log("POST", `${BASE_URL}/api/2/menu`, undefined, { count: menus.length, menus });
   return menus;
@@ -412,7 +476,9 @@ function _normalizeExternalMenuPayload(raw: unknown): IikoExternalMenuData {
   const categories = (o.categories ??
     o.Categories ??
     o.productCategories ??
-    o.ProductCategories) as { id: string; name: string }[] | undefined;
+    o.ProductCategories ??
+    o.itemCategories ??
+    o.ItemCategories) as { id: string; name: string }[] | undefined;
   const products = (o.products ??
     o.Products ??
     o.items ??
@@ -434,9 +500,12 @@ export async function getExternalMenuById(
 ): Promise<IikoExternalMenuData> {
   const url = `${BASE_URL}/api/2/menu/by_id`;
   /** iiko Cloud API требует `organizationIds` (массив), иначе 400: Required property 'organizationIds' not found. */
+  /** Без `language` / `version` сервер иногда отвечает 500 (как в mariko_vld / TROUBLESHOOTING). */
   const body: Record<string, unknown> = {
     organizationIds: [params.organizationId],
     externalMenuId: params.externalMenuId,
+    language: "ru",
+    version: 2,
   };
   if (params.priceCategoryId) {
     body.priceCategoryId = params.priceCategoryId;
