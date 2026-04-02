@@ -395,7 +395,7 @@ export function IntegrationsSettings() {
                     <option value="">— Авто: первое меню из списка —</option>
                     {(iikoConfig?.externalMenus ?? []).map((m) => (
                       <option key={m.id} value={m.id}>
-                        {m.name} ({m.id.slice(0, 8)}...)
+                        {m.name} ({m.id.length > 24 ? `${m.id.slice(0, 24)}…` : m.id})
                       </option>
                     ))}
                   </select>

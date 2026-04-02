@@ -11,6 +11,7 @@ import {
   type IikoProduct,
   type IikoGroup,
   type IikoExternalMenuData,
+  type IikoExternalMenuInfo,
 } from "@/lib/iiko/client";
 import { getCachedAccessToken } from "@/lib/iiko/token-cache";
 
@@ -45,12 +46,17 @@ export async function syncIikoMenuForTenant(
   const token = await getCachedAccessToken(settings.iikoApiLogin.trim());
   const stopProductIds = await getStopLists(token, [orgId]);
 
+  const menus = await getExternalMenusForTenant(token, orgId).catch(() => []);
   const rawExternal = settings.iikoExternalMenuId?.trim() ?? "";
-  const explicitMenuId = _isValidExternalMenuId(rawExternal) ? rawExternal : "";
-  const autoMenuId = explicitMenuId
+  const explicitRaw = _isValidExternalMenuId(rawExternal) ? rawExternal : "";
+  /** iiko отдаёт составной id (`76108#2`); в настройках мог остаться только префикс — by_id требует полный id. */
+  const explicitResolved = explicitRaw
+    ? _resolveCanonicalExternalMenuId(menus, explicitRaw)
+    : "";
+  const autoResolved = explicitResolved
     ? ""
-    : ((await _getFirstExternalMenuId(token, orgId)) ?? "");
-  const externalMenuId = explicitMenuId || autoMenuId;
+    : _pickFirstExternalMenuIdFromList(menus, orgId) ?? "";
+  const externalMenuId = explicitResolved || autoResolved;
 
   if (externalMenuId) {
     try {
@@ -58,16 +64,17 @@ export async function syncIikoMenuForTenant(
         token,
         orgId,
         externalMenuId,
-        settings.iikoExternalMenuPriceCategoryId?.trim() || undefined
+        settings.iikoExternalMenuPriceCategoryId?.trim() || undefined,
+        menus
       );
       if (ext && _externalMenuHasContent(ext)) {
         return _syncFromExternalMenu(tenantId, ext, stopProductIds);
       }
-      if (explicitMenuId) {
+      if (explicitRaw) {
         return _emptyExternalMenuSyncResult();
       }
     } catch (err) {
-      if (explicitMenuId) {
+      if (explicitRaw) {
         throw err instanceof Error ? err : new Error(String(err));
       }
     }
@@ -83,11 +90,35 @@ function _isValidExternalMenuId(value: string): boolean {
   return t.length > 0 && t.length <= 128;
 }
 
-async function _getFirstExternalMenuId(
-  token: string,
+/**
+ * Приводит id из настроек к тому виду, что в каталоге POST /api/2/menu (например `76108` → `76108#2`).
+ * Иначе by_id отвечает: External menu id does not belong to your ApiLogin.
+ */
+function _resolveCanonicalExternalMenuId(
+  menus: IikoExternalMenuInfo[],
+  requested: string
+): string {
+  const t = requested.trim();
+  if (!t) {
+    return t;
+  }
+  if (menus.some((m) => m.id === t)) {
+    return t;
+  }
+  const composite = menus.filter((m) => {
+    const id = m.id;
+    return id.startsWith(`${t}#`) || id.startsWith(`${t}:`);
+  });
+  if (composite.length === 1) {
+    return composite[0].id;
+  }
+  return t;
+}
+
+function _pickFirstExternalMenuIdFromList(
+  menus: IikoExternalMenuInfo[],
   orgId: string
-): Promise<string | null> {
-  const menus = await getExternalMenusForTenant(token, orgId);
+): string | null {
   if (menus.length === 0) {
     return null;
   }
@@ -104,11 +135,12 @@ async function _loadExternalMenuPayload(
   token: string,
   organizationId: string,
   externalMenuId: string,
-  savedPriceCategoryId: string | undefined
+  savedPriceCategoryId: string | undefined,
+  menusCache?: IikoExternalMenuInfo[]
 ): Promise<IikoExternalMenuData | null> {
-  const menus = await getExternalMenusForTenant(token, organizationId).catch(
-    () => []
-  );
+  const menus =
+    menusCache ??
+    (await getExternalMenusForTenant(token, organizationId).catch(() => []));
   const meta = menus.find((m) => m.id === externalMenuId);
 
   const order: (string | undefined)[] = [];
