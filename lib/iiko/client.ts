@@ -294,7 +294,40 @@ export type IikoExternalMenuInfo = {
   id: string;
   name: string;
   priceCategoryIds?: string[];
+  /** Если iiko отдаёт привязку меню к организации. */
+  organizationId?: string;
 };
+
+/**
+ * ID всех организаций, доступных API-ключу (для запросов, где нужен полный список).
+ */
+export async function resolveOrganizationIdsForCloudApi(
+  token: string,
+  fallbackOrganizationId: string
+): Promise<string[]> {
+  try {
+    const orgs = await getOrganizations(token);
+    const ids = orgs.map((o) => o.id);
+    if (ids.length > 0) {
+      return ids;
+    }
+  } catch {
+    // оставляем fallback
+  }
+  return [fallbackOrganizationId];
+}
+
+/**
+ * Внешние меню для кабинета: запрашиваем по всем организациям ключа, не только по одной.
+ * Иначе iiko часто отдаёт пустой `menus`, если меню привязано иначе.
+ */
+export async function getExternalMenusForTenant(
+  token: string,
+  tenantOrganizationId: string
+): Promise<IikoExternalMenuInfo[]> {
+  const orgIds = await resolveOrganizationIdsForCloudApi(token, tenantOrganizationId);
+  return getExternalMenus(token, orgIds);
+}
 
 /** Список внешних меню и категорий цен. */
 export async function getExternalMenus(
@@ -326,6 +359,9 @@ export async function getExternalMenus(
     id: m.id,
     name: m.name ?? "",
     priceCategoryIds: m.priceCategoryIds ?? (m as { PriceCategoryIds?: string[] }).PriceCategoryIds ?? [],
+    organizationId:
+      (m as { organizationId?: string }).organizationId ??
+      (m as { OrganizationId?: string }).OrganizationId,
   }));
   _log("POST", url, undefined, { count: menus.length, menus });
   return menus;
