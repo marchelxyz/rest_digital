@@ -314,16 +314,18 @@ export async function getExternalMenus(
   });
   const data = (await res.json()) as {
     menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
+    Menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
     errorDescription?: string;
   };
   if (!res.ok) {
     _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
     throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
   }
-  const menus = (data.menus ?? []).map((m) => ({
+  const rawList = data.menus ?? data.Menus ?? [];
+  const menus = rawList.map((m) => ({
     id: m.id,
     name: m.name ?? "",
-    priceCategoryIds: m.priceCategoryIds ?? [],
+    priceCategoryIds: m.priceCategoryIds ?? (m as { PriceCategoryIds?: string[] }).PriceCategoryIds ?? [],
   }));
   _log("POST", url, undefined, { count: menus.length, menus });
   return menus;
@@ -350,6 +352,26 @@ export type IikoExternalMenuData = {
   categories?: { id: string; name: string }[];
   products?: IikoExternalMenuItem[];
 };
+
+/** Приводит ответ iiko (camelCase / PascalCase) к одному виду для синхронизации. */
+function _normalizeExternalMenuPayload(raw: unknown): IikoExternalMenuData {
+  if (!raw || typeof raw !== "object") {
+    return {};
+  }
+  const o = raw as Record<string, unknown>;
+  const categories = (o.categories ??
+    o.Categories ??
+    o.productCategories ??
+    o.ProductCategories) as { id: string; name: string }[] | undefined;
+  const products = (o.products ??
+    o.Products ??
+    o.items ??
+    o.Items) as IikoExternalMenuItem[] | undefined;
+  return {
+    categories: Array.isArray(categories) ? categories : undefined,
+    products: Array.isArray(products) ? products : undefined,
+  };
+}
 
 /** Внешнее меню по ID. */
 export async function getExternalMenuById(
@@ -381,9 +403,15 @@ export async function getExternalMenuById(
     _log("POST", url, undefined, undefined, (data as { errorDescription?: string }).errorDescription ?? `HTTP ${res.status}`);
     throw new Error((data as { errorDescription?: string }).errorDescription ?? `iiko API error: ${res.status}`);
   }
-  const count = (data.categories?.length ?? 0) + (data.products?.length ?? 0);
-  _log("POST", url, undefined, { categories: data.categories?.length ?? 0, products: data.products?.length ?? 0 });
-  return data;
+  const normalized = _normalizeExternalMenuPayload(data);
+  const count =
+    (normalized.categories?.length ?? 0) + (normalized.products?.length ?? 0);
+  _log("POST", url, undefined, {
+    categories: normalized.categories?.length ?? 0,
+    products: normalized.products?.length ?? 0,
+    count,
+  });
+  return normalized;
 }
 
 /** Стоп-лист (товары, которых нет в наличии). */
