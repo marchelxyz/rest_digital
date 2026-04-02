@@ -129,6 +129,25 @@ function _pickFirstExternalMenuIdFromList(
 }
 
 /**
+ * Составной id из POST /api/2/menu (`76108#2` = базовое меню + категория цен).
+ * В by_id нельзя передавать строку целиком: иначе «Price category id is not correct».
+ */
+function _splitCompositeExternalMenuId(
+  id: string
+): { base: string; suffix: string } | null {
+  const hash = id.indexOf("#");
+  if (hash <= 0 || hash >= id.length - 1) {
+    return null;
+  }
+  const base = id.slice(0, hash).trim();
+  const suffix = id.slice(hash + 1).trim();
+  if (!base || !suffix) {
+    return null;
+  }
+  return { base, suffix };
+}
+
+/**
  * Загружает состав внешнего меню, перебирая категории цен: без них iiko часто отдаёт пустой ответ.
  */
 async function _loadExternalMenuPayload(
@@ -143,35 +162,47 @@ async function _loadExternalMenuPayload(
     (await getExternalMenusForTenant(token, organizationId).catch(() => []));
   const meta = menus.find((m) => m.id === externalMenuId);
 
-  const order: (string | undefined)[] = [];
+  const composite = _splitCompositeExternalMenuId(externalMenuId);
+  /** С saved/meta категориями цен сочетать базовый id, а не `76108#2`. */
+  const idForListedPriceCategories = composite?.base ?? externalMenuId;
+
+  const attempts: { externalMenuId: string; priceCategoryId?: string }[] = [];
   const seen = new Set<string>();
-  const pushPc = (pc?: string) => {
-    const key = pc ?? "__none__";
+  const pushAttempt = (eid: string, pc?: string) => {
+    const key = `${eid}\0${pc ?? ""}`;
     if (seen.has(key)) {
       return;
     }
     seen.add(key);
-    order.push(pc);
+    attempts.push({ externalMenuId: eid, priceCategoryId: pc });
   };
 
   if (savedPriceCategoryId) {
-    pushPc(savedPriceCategoryId);
+    pushAttempt(idForListedPriceCategories, savedPriceCategoryId);
   }
   for (const pc of meta?.priceCategoryIds ?? []) {
     if (pc) {
-      pushPc(pc);
+      pushAttempt(idForListedPriceCategories, pc);
     }
   }
-  pushPc(undefined);
+  if (composite) {
+    pushAttempt(composite.base, composite.suffix);
+    pushAttempt(composite.base, undefined);
+  }
+  pushAttempt(externalMenuId, undefined);
 
-  for (const pc of order) {
-    const ext = await getExternalMenuById(token, {
-      organizationId,
-      externalMenuId,
-      priceCategoryId: pc,
-    });
-    if (_externalMenuHasContent(ext)) {
-      return ext;
+  for (const a of attempts) {
+    try {
+      const ext = await getExternalMenuById(token, {
+        organizationId,
+        externalMenuId: a.externalMenuId,
+        priceCategoryId: a.priceCategoryId,
+      });
+      if (_externalMenuHasContent(ext)) {
+        return ext;
+      }
+    } catch {
+      // пробуем следующий вариант (неверная пара id/категория и т.п.)
     }
   }
   return null;
