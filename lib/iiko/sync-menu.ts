@@ -6,10 +6,11 @@ import { prisma } from "@/lib/db";
 import {
   getNomenclature,
   getStopLists,
-  getExternalMenus,
+  getExternalMenusForTenant,
   getExternalMenuById,
   type IikoProduct,
   type IikoGroup,
+  type IikoExternalMenuData,
 } from "@/lib/iiko/client";
 import { getCachedAccessToken } from "@/lib/iiko/token-cache";
 
@@ -53,13 +54,13 @@ export async function syncIikoMenuForTenant(
 
   if (externalMenuId) {
     try {
-      const ext = await getExternalMenuById(token, {
-        organizationId: orgId,
+      const ext = await _loadExternalMenuPayload(
+        token,
+        orgId,
         externalMenuId,
-        priceCategoryId:
-          settings.iikoExternalMenuPriceCategoryId?.trim() || undefined,
-      });
-      if (_externalMenuHasContent(ext)) {
+        settings.iikoExternalMenuPriceCategoryId?.trim() || undefined
+      );
+      if (ext && _externalMenuHasContent(ext)) {
         return _syncFromExternalMenu(tenantId, ext, stopProductIds);
       }
       if (explicitMenuId) {
@@ -80,8 +81,62 @@ async function _getFirstExternalMenuId(
   token: string,
   orgId: string
 ): Promise<string | null> {
-  const menus = await getExternalMenus(token, [orgId]);
-  return menus[0]?.id ?? null;
+  const menus = await getExternalMenusForTenant(token, orgId);
+  if (menus.length === 0) {
+    return null;
+  }
+  const forOrg = menus.filter(
+    (m) => !m.organizationId || m.organizationId === orgId
+  );
+  return (forOrg.length > 0 ? forOrg : menus)[0]?.id ?? null;
+}
+
+/**
+ * Загружает состав внешнего меню, перебирая категории цен: без них iiko часто отдаёт пустой ответ.
+ */
+async function _loadExternalMenuPayload(
+  token: string,
+  organizationId: string,
+  externalMenuId: string,
+  savedPriceCategoryId: string | undefined
+): Promise<IikoExternalMenuData | null> {
+  const menus = await getExternalMenusForTenant(token, organizationId).catch(
+    () => []
+  );
+  const meta = menus.find((m) => m.id === externalMenuId);
+
+  const order: (string | undefined)[] = [];
+  const seen = new Set<string>();
+  const pushPc = (pc?: string) => {
+    const key = pc ?? "__none__";
+    if (seen.has(key)) {
+      return;
+    }
+    seen.add(key);
+    order.push(pc);
+  };
+
+  if (savedPriceCategoryId) {
+    pushPc(savedPriceCategoryId);
+  }
+  for (const pc of meta?.priceCategoryIds ?? []) {
+    if (pc) {
+      pushPc(pc);
+    }
+  }
+  pushPc(undefined);
+
+  for (const pc of order) {
+    const ext = await getExternalMenuById(token, {
+      organizationId,
+      externalMenuId,
+      priceCategoryId: pc,
+    });
+    if (_externalMenuHasContent(ext)) {
+      return ext;
+    }
+  }
+  return null;
 }
 
 function _externalMenuHasContent(ext: unknown): boolean {

@@ -375,11 +375,19 @@ export function IntegrationsSettings() {
               )}
             </div>
 
-            {(iikoConfig?.externalMenus?.length ?? 0) > 0 && (
-              <div className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/50 p-3">
-                <div className="text-sm font-medium text-neutral-700">Внешнее меню iiko</div>
-                <div className="space-y-1">
-                  <Label className="text-xs">Внешнее меню</Label>
+            <div className="space-y-3 rounded-lg border border-amber-100 bg-amber-50/50 p-3">
+              <div className="text-sm font-medium text-neutral-700">Внешнее меню iiko</div>
+              {(iikoConfig?.externalMenus?.length ?? 0) === 0 && iikoConfig && (
+                <div className="text-xs text-amber-900 bg-amber-100/90 rounded px-2 py-1.5 border border-amber-200/80">
+                  iiko вернул пустой список меню (POST /api/2/menu). Если в iikoWeb у организации уже есть
+                  внешнее меню с блюдами, укажите его UUID вручную ниже (часто в карточке меню или в URL в
+                  iikoWeb) и при необходимости категорию цен. Иначе проверьте в поддержке iiko, что меню
+                  привязано к Cloud API и к выбранной организации.
+                </div>
+              )}
+              <div className="space-y-1">
+                <Label className="text-xs">Внешнее меню</Label>
+                {(iikoConfig?.externalMenus?.length ?? 0) > 0 ? (
                   <select
                     className="border rounded-md px-3 py-2 text-sm w-full"
                     value={settings.iikoExternalMenuId ?? ""}
@@ -387,16 +395,30 @@ export function IntegrationsSettings() {
                   >
                     <option value="">— Авто: первое меню из списка —</option>
                     {(iikoConfig?.externalMenus ?? []).map((m) => (
-                      <option key={m.id} value={m.id}>{m.name} ({m.id.slice(0, 8)}...)</option>
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.id.slice(0, 8)}...)
+                      </option>
                     ))}
                   </select>
-                </div>
-                {(settings.iikoExternalMenuId
-                  ? (iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
-                      ?.priceCategoryIds?.length ?? 0
-                  : 0) > 0 && (
-                  <div className="space-y-1">
-                    <Label className="text-xs">Категория цен</Label>
+                ) : (
+                  <Input
+                    className="font-mono text-xs"
+                    placeholder="UUID внешнего меню (если список от iiko пуст)"
+                    value={settings.iikoExternalMenuId ?? ""}
+                    onChange={(e) => update("iikoExternalMenuId", e.target.value)}
+                  />
+                )}
+              </div>
+              {((settings.iikoExternalMenuId
+                ? (iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
+                    ?.priceCategoryIds?.length ?? 0
+                : 0) > 0 ||
+                ((iikoConfig?.externalMenus?.length ?? 0) === 0 &&
+                  Boolean(settings.iikoExternalMenuId?.trim()))) && (
+                <div className="space-y-1">
+                  <Label className="text-xs">Категория цен</Label>
+                  {(iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
+                    ?.priceCategoryIds?.length ? (
                     <select
                       className="border rounded-md px-3 py-2 text-sm w-full"
                       value={settings.iikoExternalMenuPriceCategoryId ?? ""}
@@ -405,23 +427,35 @@ export function IntegrationsSettings() {
                       }
                     >
                       <option value="">— Не указана —</option>
-                      {((iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
-                        ?.priceCategoryIds ?? []).map((pcId) => (
-                          <option key={pcId} value={pcId}>
-                            {pcId.slice(0, 8)}...
-                          </option>
-                        ))}
+                      {(
+                        (iikoConfig?.externalMenus ?? []).find(
+                          (m) => m.id === settings.iikoExternalMenuId
+                        )?.priceCategoryIds ?? []
+                      ).map((pcId) => (
+                        <option key={pcId} value={pcId}>
+                          {pcId.slice(0, 8)}...
+                        </option>
+                      ))}
                     </select>
-                  </div>
-                )}
-                <p className="text-xs text-muted-foreground">
-                  Синхронизация берёт позиции из внешнего меню (в iikoWeb: внешние заказы → внешнее меню).
-                  Для каждого ресторана создайте своё меню и выберите его здесь; при «авто» используется
-                  первое доступное. Номенклатура подключается только если внешнее меню не удалось загрузить
-                  или оно пустое (и не выбрано явно). Сохраните настройки перед синхронизацией.
-                </p>
-              </div>
-            )}
+                  ) : (
+                    <Input
+                      className="font-mono text-xs"
+                      placeholder="UUID категории цен (если нужно для меню)"
+                      value={settings.iikoExternalMenuPriceCategoryId ?? ""}
+                      onChange={(e) =>
+                        update("iikoExternalMenuPriceCategoryId", e.target.value)
+                      }
+                    />
+                  )}
+                </div>
+              )}
+              <p className="text-xs text-muted-foreground">
+                Синхронизация берёт позиции из внешнего меню (в iikoWeb: внешние заказы → внешнее меню).
+                Если список от API пуст, вставьте UUID вручную и сохраните настройки перед синхронизацией.
+                Номенклатура используется только если внешнее меню не удалось загрузить (и не задан явный
+                UUID).
+              </p>
+            </div>
 
             <div className="border-t pt-3 space-y-3">
               <div className="text-sm font-medium text-neutral-600">Типы заказов</div>
