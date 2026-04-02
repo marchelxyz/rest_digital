@@ -58,6 +58,9 @@ export async function syncIikoMenuForTenant(
     : _pickFirstExternalMenuIdFromList(menus, orgId) ?? "";
   const externalMenuId = explicitResolved || autoResolved;
 
+  /** Если внешнее меню пустое/ошибка — всегда пробуем номенклатуру (как fallback в mariko_vld getMenuCatalog). */
+  let externalMenuPrefixHint: string | undefined;
+
   if (externalMenuId) {
     try {
       const ext = await _loadExternalMenuPayload(
@@ -70,18 +73,18 @@ export async function syncIikoMenuForTenant(
       if (ext && _externalMenuHasContent(ext)) {
         return _syncFromExternalMenu(tenantId, ext, stopProductIds);
       }
-      if (explicitRaw) {
-        return _emptyExternalMenuSyncResult();
-      }
+      externalMenuPrefixHint =
+        "Внешнее меню (POST /api/2/menu/by_id) без позиций — при источнике цен «базовый прайс-лист» в iikoWeb API часто не отдаёт priceCategoryIds; ниже пробуем номенклатуру Cloud API. ";
     } catch (err) {
-      if (explicitRaw) {
-        throw err instanceof Error ? err : new Error(String(err));
-      }
+      const msg = err instanceof Error ? err.message : String(err);
+      externalMenuPrefixHint = `Внешнее меню: ${msg}. Пробуем номенклатуру. `;
     }
   }
 
   const nom = await getNomenclature(token, orgId);
-  return _syncFromNomenclature(tenantId, nom, stopProductIds);
+  return _syncFromNomenclature(tenantId, nom, stopProductIds, {
+    externalMenuPrefixHint,
+  });
 }
 
 /** Непустой id внешнего меню (UUID или числовая строка из Cloud API / iiko). */
@@ -342,21 +345,11 @@ function _externalMenuHasContent(ext: unknown): boolean {
   return false;
 }
 
-function _emptyExternalMenuSyncResult(): SyncMenuResult {
-  return {
-    ok: true,
-    source: "external_menu",
-    created: 0,
-    updated: 0,
-    hint:
-      "Внешнее меню в iiko пустое или не подошла категория цен для Cloud API. Укажите UUID категории цен в поле ниже (из iikoOffice / номенклатуры) или проверьте меню в iikoWeb.",
-  };
-}
-
 async function _syncFromNomenclature(
   tenantId: string,
   nom: Awaited<ReturnType<typeof getNomenclature>>,
-  stopProductIds: Set<string>
+  stopProductIds: Set<string>,
+  options?: { externalMenuPrefixHint?: string }
 ): Promise<SyncMenuResult> {
   const productMap = new Map<string, IikoProduct>();
   for (const p of nom.products ?? []) {
@@ -505,9 +498,10 @@ async function _syncFromNomenclature(
     }
   }
 
+  const triedExternal = Boolean(options?.externalMenuPrefixHint?.trim());
   const hint =
     created === 0 && updated === 0
-      ? "Использована номенклатура: внешнее меню не загружено (нет меню для организации, пустой ответ API или ошибка при автоподборе). Создайте внешнее меню в iiko и выберите его в настройках ниже."
+      ? _nomenclatureEmptyHint(nom, triedExternal)
       : undefined;
 
   return {
@@ -516,8 +510,41 @@ async function _syncFromNomenclature(
     created,
     updated,
     revision: nom.revision,
-    hint,
+    hint: _mergeHintStrings(options?.externalMenuPrefixHint, hint),
   };
+}
+
+function _mergeHintStrings(prefix: string | undefined, rest: string | undefined): string | undefined {
+  const a = prefix?.trim();
+  const b = rest?.trim();
+  if (!a && !b) {
+    return undefined;
+  }
+  if (!a) {
+    return b;
+  }
+  if (!b) {
+    return a;
+  }
+  return `${a} ${b}`;
+}
+
+function _nomenclatureEmptyHint(
+  nom: Awaited<ReturnType<typeof getNomenclature>>,
+  triedExternalMenuFirst: boolean
+): string {
+  if (triedExternalMenuFirst) {
+    const nProd = nom.products?.length ?? 0;
+    const nPc = nom.productCategories?.length ?? 0;
+    return (
+      `Номенклатура Cloud API: products=${nProd}, productCategories=${nPc}. ` +
+      "Если products=0 — проверьте выгрузку в облако и права ключа. " +
+      "Для внешнего меню с «базовым прайс-листом» укажите UUID категории цен в настройках (iikoOffice: скидки и цены → категории цен) или переключите источник цен на категорию в карточке внешнего меню в iikoWeb."
+    );
+  }
+  return (
+    "Использована номенклатура: внешнее меню не загружено (нет меню для организации, пустой ответ API или ошибка при автоподборе). Создайте внешнее меню в iiko и выберите его в настройках ниже."
+  );
 }
 
 async function _syncFromExternalMenu(
