@@ -77,12 +77,20 @@ export type IikoProduct = {
   isDeleted?: boolean;
 };
 
+/** Категории цен организации (часто нужны для POST /api/2/menu/by_id). */
+export type IikoPriceCategory = {
+  id: string;
+  name?: string;
+};
+
 export type IikoNomenclature = {
   groups: IikoGroup[];
   productCategories: IikoProductCategory[];
   products: IikoProduct[];
   sizes: IikoSize[];
   revision: number;
+  /** Приходит в ответе `/api/1/nomenclature` для сопоставления с внешним меню. */
+  priceCategories?: IikoPriceCategory[];
 };
 
 export type IikoOrderType = {
@@ -173,15 +181,25 @@ export async function getNomenclature(
     body: JSON.stringify(reqBody),
     signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
   });
-  const data = (await res.json()) as IikoNomenclature & { errorDescription?: string };
+  const raw = (await res.json()) as IikoNomenclature & {
+    errorDescription?: string;
+    PriceCategories?: IikoPriceCategory[];
+  };
   if (!res.ok) {
-    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
-    throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
+    _log("POST", url, undefined, undefined, raw.errorDescription ?? `HTTP ${res.status}`);
+    throw new Error(raw.errorDescription ?? `iiko API error: ${res.status}`);
   }
+  const priceCategories = (raw.priceCategories ??
+    raw.PriceCategories) as IikoPriceCategory[] | undefined;
+  const data: IikoNomenclature = {
+    ...raw,
+    priceCategories: Array.isArray(priceCategories) ? priceCategories : undefined,
+  };
   _log("POST", url, undefined, {
     groups: data.groups?.length ?? 0,
     products: data.products?.length ?? 0,
     productCategories: data.productCategories?.length ?? 0,
+    priceCategories: data.priceCategories?.length ?? 0,
     revision: data.revision,
   });
   return data;

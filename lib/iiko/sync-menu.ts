@@ -129,8 +129,9 @@ function _pickFirstExternalMenuIdFromList(
 }
 
 /**
- * Составной id из POST /api/2/menu (`76108#2` = базовое меню + категория цен).
- * В by_id нельзя передавать строку целиком: иначе «Price category id is not correct».
+ * Составной id из POST /api/2/menu (`76108#2`: внешнее меню + номер/метка категории цен в названии).
+ * Для by_id с полным id без UUID категории цен iiko отвечает «Price category id is not correct»;
+ * суффикс после `#` не является валидным `priceCategoryId` — нужны UUID из номенклатуры.
  */
 function _splitCompositeExternalMenuId(
   id: string
@@ -145,6 +146,34 @@ function _splitCompositeExternalMenuId(
     return null;
   }
   return { base, suffix };
+}
+
+function _isUuidLike(value: string): boolean {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+    value.trim()
+  );
+}
+
+/**
+ * Ставит в начало категорию с индексом (suffix «2» → вторая в списке), если suffix числовой.
+ */
+function _prioritizePriceCategoriesByCompositeSuffix(
+  composite: { suffix: string } | null,
+  categories: { id: string; name?: string }[]
+): { id: string; name?: string }[] {
+  if (!composite || categories.length === 0) {
+    return categories;
+  }
+  const n = Number.parseInt(composite.suffix, 10);
+  if (!Number.isFinite(n) || n < 1 || n > categories.length) {
+    return categories;
+  }
+  const preferred = categories[n - 1];
+  if (!preferred) {
+    return categories;
+  }
+  const rest = categories.filter((c) => c.id !== preferred.id);
+  return [preferred, ...rest];
 }
 
 /**
@@ -163,8 +192,19 @@ async function _loadExternalMenuPayload(
   const meta = menus.find((m) => m.id === externalMenuId);
 
   const composite = _splitCompositeExternalMenuId(externalMenuId);
-  /** С saved/meta категориями цен сочетать базовый id, а не `76108#2`. */
   const idForListedPriceCategories = composite?.base ?? externalMenuId;
+
+  let nomPriceCategories: { id: string; name?: string }[] = [];
+  try {
+    const nom = await getNomenclature(token, organizationId, 0);
+    nomPriceCategories = nom.priceCategories ?? [];
+  } catch {
+    nomPriceCategories = [];
+  }
+  const prioritizedNom = _prioritizePriceCategoriesByCompositeSuffix(
+    composite,
+    nomPriceCategories
+  );
 
   const attempts: { externalMenuId: string; priceCategoryId?: string }[] = [];
   const seen = new Set<string>();
@@ -177,18 +217,29 @@ async function _loadExternalMenuPayload(
     attempts.push({ externalMenuId: eid, priceCategoryId: pc });
   };
 
-  if (savedPriceCategoryId) {
-    pushAttempt(idForListedPriceCategories, savedPriceCategoryId);
+  const saved = savedPriceCategoryId?.trim();
+  if (saved && _isUuidLike(saved)) {
+    pushAttempt(externalMenuId, saved);
+    pushAttempt(idForListedPriceCategories, saved);
+  } else if (saved && !composite) {
+    pushAttempt(idForListedPriceCategories, saved);
   }
+
   for (const pc of meta?.priceCategoryIds ?? []) {
     if (pc) {
+      pushAttempt(externalMenuId, pc);
       pushAttempt(idForListedPriceCategories, pc);
     }
   }
-  if (composite) {
-    pushAttempt(composite.base, composite.suffix);
-    pushAttempt(composite.base, undefined);
+
+  for (const cat of prioritizedNom) {
+    if (cat.id && _isUuidLike(cat.id)) {
+      pushAttempt(externalMenuId, cat.id);
+    }
   }
+
+  /** Не используем `76108` без `#2`: iiko отвечает «does not belong to your ApiLogin». */
+
   pushAttempt(externalMenuId, undefined);
 
   for (const a of attempts) {
@@ -250,7 +301,7 @@ function _emptyExternalMenuSyncResult(): SyncMenuResult {
     created: 0,
     updated: 0,
     hint:
-      "Внешнее меню в iiko пустое или для него не подошла категория цен. Проверьте меню в iikoWeb и поле «Категория цен» в настройках.",
+      "Внешнее меню в iiko пустое или не подошла категория цен для Cloud API. Укажите UUID категории цен в поле ниже (из iikoOffice / номенклатуры) или проверьте меню в iikoWeb.",
   };
 }
 
