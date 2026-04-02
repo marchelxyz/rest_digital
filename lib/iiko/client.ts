@@ -70,7 +70,15 @@ export type IikoProduct = {
   groupId: string;
   productCategoryId: string;
   type: string;
-  sizePrices?: { sizeId: string; price: { currentPrice: number } }[];
+  sizePrices?: {
+    sizeId: string;
+    price: {
+      currentPrice: number;
+      /** UUID категории цен (для by_id внешнего меню). */
+      priceCategoryId?: string;
+      PriceCategoryId?: string;
+    };
+  }[];
   modifiers?: IikoModifier[];
   groupModifiers?: IikoGroupModifier[];
   imageLinks?: string[];
