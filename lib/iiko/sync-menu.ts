@@ -19,6 +19,8 @@ export type SyncMenuResult = {
   created: number;
   updated: number;
   revision?: number;
+  /** Пояснение для UI: почему выбран источник или что проверить при 0 позиций. */
+  hint?: string;
 };
 
 /**
@@ -83,15 +85,37 @@ async function _getFirstExternalMenuId(
 }
 
 function _externalMenuHasContent(ext: unknown): boolean {
-  const raw = ext as {
-    productCategories?: unknown[];
-    categories?: unknown[];
-    products?: unknown[];
-    items?: unknown[];
-  };
-  const prods = raw.products ?? raw.items ?? [];
-  const cats = raw.productCategories ?? raw.categories ?? [];
-  return prods.length > 0 || cats.length > 0;
+  if (!ext || typeof ext !== "object") {
+    return false;
+  }
+  const raw = ext as Record<string, unknown>;
+  const menuKeys = [
+    "productCategories",
+    "categories",
+    "products",
+    "items",
+    "productItems",
+  ];
+  for (const key of menuKeys) {
+    const v = raw[key];
+    if (Array.isArray(v) && v.length > 0) {
+      return true;
+    }
+  }
+  const ignoreArrayKeys = new Set([
+    "terminalGroupIds",
+    "terminalGroupStopLists",
+    "warnings",
+  ]);
+  for (const [key, v] of Object.entries(raw)) {
+    if (ignoreArrayKeys.has(key)) {
+      continue;
+    }
+    if (Array.isArray(v) && v.length > 0) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function _emptyExternalMenuSyncResult(): SyncMenuResult {
@@ -100,6 +124,8 @@ function _emptyExternalMenuSyncResult(): SyncMenuResult {
     source: "external_menu",
     created: 0,
     updated: 0,
+    hint:
+      "Внешнее меню в iiko пустое или для него не подошла категория цен. Проверьте меню в iikoWeb и поле «Категория цен» в настройках.",
   };
 }
 
@@ -255,12 +281,18 @@ async function _syncFromNomenclature(
     }
   }
 
+  const hint =
+    created === 0 && updated === 0
+      ? "Использована номенклатура: внешнее меню не загружено (нет меню для организации, пустой ответ API или ошибка при автоподборе). Создайте внешнее меню в iiko и выберите его в настройках ниже."
+      : undefined;
+
   return {
     ok: true,
     source: "nomenclature",
     created,
     updated,
     revision: nom.revision,
+    hint,
   };
 }
 
