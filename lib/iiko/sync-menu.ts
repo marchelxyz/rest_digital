@@ -177,6 +177,56 @@ function _prioritizePriceCategoriesByCompositeSuffix(
 }
 
 /**
+ * В ответе номенклатуры массив `priceCategories` может быть пустым, тогда UUID берут из цен товаров.
+ */
+function _extractPriceCategoryIdsFromProducts(
+  products: IikoProduct[] | undefined
+): { id: string }[] {
+  if (!Array.isArray(products) || products.length === 0) {
+    return [];
+  }
+  const ids = new Set<string>();
+  for (const p of products) {
+    const rows = p.sizePrices;
+    if (!Array.isArray(rows)) {
+      continue;
+    }
+    for (const row of rows) {
+      const price = row?.price;
+      if (!price || typeof price !== "object") {
+        continue;
+      }
+      const pr = price as {
+        priceCategoryId?: string;
+        PriceCategoryId?: string;
+      };
+      const pcId = pr.priceCategoryId ?? pr.PriceCategoryId;
+      if (typeof pcId === "string" && _isUuidLike(pcId)) {
+        ids.add(pcId);
+      }
+    }
+  }
+  return [...ids].map((id) => ({ id }));
+}
+
+function _mergeNomPriceCategoryCandidates(
+  nom: Awaited<ReturnType<typeof getNomenclature>>,
+  composite: { suffix: string } | null
+): { id: string; name?: string }[] {
+  const fromList = nom.priceCategories ?? [];
+  const fromProducts = _extractPriceCategoryIdsFromProducts(nom.products);
+  const seen = new Set(fromList.map((c) => c.id));
+  const merged: { id: string; name?: string }[] = [...fromList];
+  for (const c of fromProducts) {
+    if (!seen.has(c.id)) {
+      seen.add(c.id);
+      merged.push(c);
+    }
+  }
+  return _prioritizePriceCategoriesByCompositeSuffix(composite, merged);
+}
+
+/**
  * Загружает состав внешнего меню, перебирая категории цен: без них iiko часто отдаёт пустой ответ.
  */
 async function _loadExternalMenuPayload(
@@ -194,17 +244,15 @@ async function _loadExternalMenuPayload(
   const composite = _splitCompositeExternalMenuId(externalMenuId);
   const idForListedPriceCategories = composite?.base ?? externalMenuId;
 
-  let nomPriceCategories: { id: string; name?: string }[] = [];
+  let nom: Awaited<ReturnType<typeof getNomenclature>> | null = null;
   try {
-    const nom = await getNomenclature(token, organizationId, 0);
-    nomPriceCategories = nom.priceCategories ?? [];
+    nom = await getNomenclature(token, organizationId, 0);
   } catch {
-    nomPriceCategories = [];
+    nom = null;
   }
-  const prioritizedNom = _prioritizePriceCategoriesByCompositeSuffix(
-    composite,
-    nomPriceCategories
-  );
+  const prioritizedNom = nom
+    ? _mergeNomPriceCategoryCandidates(nom, composite)
+    : [];
 
   const attempts: { externalMenuId: string; priceCategoryId?: string }[] = [];
   const seen = new Set<string>();

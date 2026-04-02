@@ -408,15 +408,12 @@ export function IntegrationsSettings() {
                   />
                 )}
               </div>
-              {((settings.iikoExternalMenuId
-                ? (iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
-                    ?.priceCategoryIds?.length ?? 0
-                : 0) > 0 ||
-                ((iikoConfig?.externalMenus?.length ?? 0) === 0 &&
-                  Boolean(settings.iikoExternalMenuId?.trim()))) && (
+              {(((iikoConfig?.externalMenus?.length ?? 0) > 0) ||
+                Boolean(settings.iikoExternalMenuId?.trim())) && (
                 <div className="space-y-1">
                   <Label className="text-xs">Категория цен</Label>
-                  {(iikoConfig?.externalMenus ?? []).find((m) => m.id === settings.iikoExternalMenuId)
+                  {(iikoConfig?.externalMenus ?? [])
+                    .find((m) => m.id === settings.iikoExternalMenuId)
                     ?.priceCategoryIds?.length ? (
                     <select
                       className="border rounded-md px-3 py-2 text-sm w-full"
@@ -439,7 +436,7 @@ export function IntegrationsSettings() {
                   ) : (
                     <Input
                       className="font-mono text-xs"
-                      placeholder="UUID категории цен (если нужно для меню)"
+                      placeholder="UUID категории цен (из iikoOffice / номенклатуры)"
                       value={settings.iikoExternalMenuPriceCategoryId ?? ""}
                       onChange={(e) =>
                         update("iikoExternalMenuPriceCategoryId", e.target.value)
@@ -450,8 +447,10 @@ export function IntegrationsSettings() {
               )}
               <p className="text-xs text-muted-foreground">
                 Достаточно API-ключа и организации: сначала пробуется внешнее меню из API iiko, если
-                список пуст — подтягивается номенклатура. Поле UUID не обязательно. Сохраните настройки
-                перед синхронизацией.
+                список пуст — подтягивается номенклатура. Для меню вида{" "}
+                <span className="font-mono">76108#2</span> Cloud API часто требует UUID категории
+                цен — поле выше; если API не прислал список категорий, укажите UUID вручную (iikoOffice:
+                скидки и цены → категории цен). Сохраните настройки перед синхронизацией.
               </p>
             </div>
 
