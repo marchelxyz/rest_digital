@@ -419,11 +419,14 @@ export async function getExternalMenuById(
   }
 ): Promise<IikoExternalMenuData> {
   const url = `${BASE_URL}/api/2/menu/by_id`;
-  const body = {
-    organizationId: params.organizationId,
+  /** iiko Cloud API требует `organizationIds` (массив), иначе 400: Required property 'organizationIds' not found. */
+  const body: Record<string, unknown> = {
+    organizationIds: [params.organizationId],
     externalMenuId: params.externalMenuId,
-    ...(params.priceCategoryId && { priceCategoryId: params.priceCategoryId }),
   };
+  if (params.priceCategoryId) {
+    body.priceCategoryId = params.priceCategoryId;
+  }
   _log("POST", url, body);
   const res = await fetch(url, {
     method: "POST",
