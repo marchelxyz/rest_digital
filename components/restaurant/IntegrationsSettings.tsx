@@ -379,10 +379,9 @@ export function IntegrationsSettings() {
               <div className="text-sm font-medium text-neutral-700">Внешнее меню iiko</div>
               {(iikoConfig?.externalMenus?.length ?? 0) === 0 && iikoConfig && (
                 <div className="text-xs text-amber-900 bg-amber-100/90 rounded px-2 py-1.5 border border-amber-200/80">
-                  iiko вернул пустой список меню (POST /api/2/menu). Укажите ниже UUID внешнего меню
-                  (формат xxxxxxxx-xxxx-…), а не артикул или внутренний номер из таблицы. UUID смотрите в
-                  карточке меню, в URL iikoWeb или в ответе поддержки iiko. При необходимости укажите
-                  категорию цен.
+                  iiko не отдал список внешних меню (POST /api/2/menu). Это нормально: синхронизация
+                  пойдёт по номенклатуре Cloud API (тот же API-ключ и организация). Поле ниже —
+                  опционально, только если поддержка iiko дал точный UUID меню (не артикул).
                 </div>
               )}
               <div className="space-y-1">
@@ -403,7 +402,7 @@ export function IntegrationsSettings() {
                 ) : (
                   <Input
                     className="font-mono text-xs"
-                    placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+                    placeholder="Опционально: UUID внешнего меню"
                     value={settings.iikoExternalMenuId ?? ""}
                     onChange={(e) => update("iikoExternalMenuId", e.target.value)}
                   />
@@ -450,9 +449,9 @@ export function IntegrationsSettings() {
                 </div>
               )}
               <p className="text-xs text-muted-foreground">
-                Синхронизация берёт позиции из внешнего меню (в iikoWeb: внешние заказы → внешнее меню).
-                В поле нужен UUID меню для Cloud API, не номер блюда и не артикул. Сохраните настройки
-                перед синхронизацией. Номенклатура — только если внешнее меню не удалось загрузить.
+                Достаточно API-ключа и организации: сначала пробуется внешнее меню из API iiko, если
+                список пуст — подтягивается номенклатура. Поле UUID не обязательно. Сохраните настройки
+                перед синхронизацией.
               </p>
             </div>
 

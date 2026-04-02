@@ -27,10 +27,9 @@ export type SyncMenuResult = {
 /**
  * Синхронизирует меню из iiko для указанного tenant.
  *
- * Основной источник — внешнее меню iiko (External Menu): отдельная витрина на организацию
- * в iikoWeb, из которой забираются категории и позиции через API 2 (`/api/2/menu/by_id`).
- * Номенклатура (`/api/1/nomenclature`) используется только как запасной вариант, если
- * внешнее меню не выбрано/недоступно и при автоподборе первого меню оно пустое.
+ * Достаточно API-ключа Cloud API и организации. Сначала пробуем внешнее меню (если iiko
+ * отдаёт список в POST /api/2/menu или задан валидный UUID в настройках), иначе — номенклатура
+ * (/api/1/nomenclature). Значения вроде артикула в поле внешнего меню игнорируются.
  */
 export async function syncIikoMenuForTenant(
   tenantId: string
@@ -46,7 +45,10 @@ export async function syncIikoMenuForTenant(
   const token = await getCachedAccessToken(settings.iikoApiLogin.trim());
   const stopProductIds = await getStopLists(token, [orgId]);
 
-  const explicitMenuId = settings.iikoExternalMenuId?.trim() ?? "";
+  const rawExternal = settings.iikoExternalMenuId?.trim() ?? "";
+  const explicitMenuId = _isValidIikoExternalMenuUuid(rawExternal)
+    ? rawExternal
+    : "";
   const autoMenuId = explicitMenuId
     ? ""
     : ((await _getFirstExternalMenuId(token, orgId)) ?? "");
@@ -75,6 +77,13 @@ export async function syncIikoMenuForTenant(
 
   const nom = await getNomenclature(token, orgId);
   return _syncFromNomenclature(tenantId, nom, stopProductIds);
+}
+
+/** UUID внешнего меню для Cloud API; не артикул и не внутренний числовой id из iikoWeb. */
+function _isValidIikoExternalMenuUuid(value: string): boolean {
+  return /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(
+    value.trim()
+  );
 }
 
 async function _getFirstExternalMenuId(

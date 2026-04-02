@@ -335,26 +335,40 @@ export async function getExternalMenus(
   organizationIds: string[]
 ): Promise<IikoExternalMenuInfo[]> {
   const url = `${BASE_URL}/api/2/menu`;
-  _log("POST", url, { organizationIds });
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json; charset=UTF-8",
-      Authorization: `Bearer ${token}`,
-    },
-    body: JSON.stringify({ organizationIds }),
-    signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
-  });
-  const data = (await res.json()) as {
-    menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
-    Menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
-    errorDescription?: string;
-  };
-  if (!res.ok) {
-    _log("POST", url, undefined, undefined, data.errorDescription ?? `HTTP ${res.status}`);
-    throw new Error(data.errorDescription ?? `iiko API error: ${res.status}`);
+  const bodies: { organizationIds: string[]; includeDisabled?: boolean }[] = [
+    { organizationIds, includeDisabled: true },
+    { organizationIds },
+  ];
+  let lastErr: string | undefined;
+  for (const reqBody of bodies) {
+    _log("POST", url, reqBody);
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json; charset=UTF-8",
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(reqBody),
+      signal: AbortSignal.timeout(DEFAULT_TIMEOUT_MS),
+    });
+    const data = (await res.json()) as {
+      menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
+      Menus?: { id: string; name?: string; priceCategoryIds?: string[] }[];
+      errorDescription?: string;
+    };
+    if (res.ok) {
+      const rawList = data.menus ?? data.Menus ?? [];
+      return _mapExternalMenuList(rawList);
+    }
+    lastErr = data.errorDescription ?? `HTTP ${res.status}`;
+    _log("POST", url, undefined, undefined, lastErr);
   }
-  const rawList = data.menus ?? data.Menus ?? [];
+  throw new Error(lastErr ?? `iiko API error`);
+}
+
+function _mapExternalMenuList(
+  rawList: { id: string; name?: string; priceCategoryIds?: string[] }[]
+): IikoExternalMenuInfo[] {
   const menus = rawList.map((m) => ({
     id: m.id,
     name: m.name ?? "",
@@ -363,7 +377,7 @@ export async function getExternalMenus(
       (m as { organizationId?: string }).organizationId ??
       (m as { OrganizationId?: string }).OrganizationId,
   }));
-  _log("POST", url, undefined, { count: menus.length, menus });
+  _log("POST", `${BASE_URL}/api/2/menu`, undefined, { count: menus.length, menus });
   return menus;
 }
 
