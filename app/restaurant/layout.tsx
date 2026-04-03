@@ -12,7 +12,7 @@ export default async function RestaurantLayout({
 
   return (
     <div
-      className={`${adminShellSans.variable} neu-admin-root flex min-h-screen font-[family-name:var(--font-geist-sans)] antialiased`}
+      className={`${adminShellSans.variable} neu-admin-root flex min-h-screen font-[family-name:var(--font-admin-neu)] antialiased`}
       style={
         {
           "--admin-yellow": "#facc15",

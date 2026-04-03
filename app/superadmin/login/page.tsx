@@ -40,7 +40,7 @@ export default function SuperadminLoginPage() {
 
   return (
     <div className="min-h-[calc(100vh-1px)] flex items-center justify-center p-4 text-[var(--neu-text)]">
-      <Card className="w-full max-w-md neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0 py-6">
+      <Card className="w-full max-w-md neu-card border-0 ring-0 rounded-3xl bg-[var(--neu-surface-raised)] py-6">
         <CardHeader>
           <CardTitle>Вход в админ-кабинет</CardTitle>
         </CardHeader>
