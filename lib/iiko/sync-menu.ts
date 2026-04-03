@@ -66,14 +66,23 @@ export async function syncIikoMenuForTenant(
   /** Если внешнее меню пустое/ошибка — всегда пробуем номенклатуру (как fallback в mariko_vld getMenuCatalog). */
   let externalMenuPrefixHint: string | undefined;
 
+  /** Один запрос /api/1/nomenclature на синк: и для категорий цен в by_id, и для fallback. */
+  let nom: Awaited<ReturnType<typeof getNomenclature>> | null = null;
+
   if (externalMenuId) {
+    try {
+      nom = await getNomenclature(token, orgId, 0);
+    } catch {
+      nom = null;
+    }
     try {
       const ext = await _loadExternalMenuPayload(
         token,
         orgId,
         externalMenuId,
         settings.iikoExternalMenuPriceCategoryId?.trim() || undefined,
-        menus
+        menus,
+        nom
       );
       if (ext && _externalMenuHasContent(ext)) {
         const extResult = await _syncFromExternalMenu(tenantId, ext, stopProductIds);
@@ -90,7 +99,9 @@ export async function syncIikoMenuForTenant(
     }
   }
 
-  const nom = await getNomenclature(token, orgId);
+  if (nom === null) {
+    nom = await getNomenclature(token, orgId, 0);
+  }
   return _syncFromNomenclature(tenantId, nom, stopProductIds, {
     externalMenuPrefixHint: _mergeHintStrings(
       organizationHint,
@@ -281,13 +292,16 @@ function _mergeNomPriceCategoryCandidates(
 
 /**
  * Загружает состав внешнего меню, перебирая категории цен: без них iiko часто отдаёт пустой ответ.
+ *
+ * @param nomPreloaded — результат одного вызова getNomenclature (или null при ошибке); не запрашиваем номенклатуру повторно.
  */
 async function _loadExternalMenuPayload(
   token: string,
   organizationId: string,
   externalMenuId: string,
   savedPriceCategoryId: string | undefined,
-  menusCache?: IikoExternalMenuInfo[]
+  menusCache: IikoExternalMenuInfo[] | undefined,
+  nomPreloaded: Awaited<ReturnType<typeof getNomenclature>> | null
 ): Promise<IikoExternalMenuData | null> {
   const menus =
     menusCache ??
@@ -297,14 +311,8 @@ async function _loadExternalMenuPayload(
   const composite = _splitCompositeExternalMenuId(externalMenuId);
   const idForListedPriceCategories = composite?.base ?? externalMenuId;
 
-  let nom: Awaited<ReturnType<typeof getNomenclature>> | null = null;
-  try {
-    nom = await getNomenclature(token, organizationId, 0);
-  } catch {
-    nom = null;
-  }
-  const prioritizedNom = nom
-    ? _mergeNomPriceCategoryCandidates(nom, composite)
+  const prioritizedNom = nomPreloaded
+    ? _mergeNomPriceCategoryCandidates(nomPreloaded, composite)
     : [];
 
   const attempts: { externalMenuId: string; priceCategoryId?: string }[] = [];
