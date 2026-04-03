@@ -1,7 +1,7 @@
 import { getEmployee } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
 import { AdminSidebar } from "@/components/restaurant/AdminSidebar";
-import { neuAdminMono } from "@/lib/fonts/neumorphism-admin-fonts";
+import { adminShellSans } from "@/lib/fonts/admin-shell-font";
 
 export default async function RestaurantLayout({
   children,
@@ -12,7 +12,7 @@ export default async function RestaurantLayout({
 
   return (
     <div
-      className={`${neuAdminMono.variable} neu-admin-root flex min-h-screen font-[family-name:var(--font-neu-mono)] antialiased`}
+      className={`${adminShellSans.variable} neu-admin-root flex min-h-screen font-[family-name:var(--font-geist-sans)] antialiased`}
       style={
         {
           "--admin-yellow": "#facc15",

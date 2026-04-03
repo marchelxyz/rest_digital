@@ -34,7 +34,7 @@ export default async function SuperadminPage() {
           </div>
         </div>
         <Link href="/superadmin/tenants/new">
-          <Button className="neu-focus shadow-[var(--neu-outset-sm)] border border-white/50 bg-[var(--neu-primary)] hover:bg-[#005252] text-white">
+          <Button className="neu-focus shadow-[var(--neu-outset-sm)] border border-amber-200/80 bg-[var(--neu-primary)] hover:bg-[var(--neu-primary-hover)] text-[var(--neu-primary-foreground)]">
             <Plus size={18} className="mr-2" />
             Добавить заведение
           </Button>
@@ -59,7 +59,7 @@ export default async function SuperadminPage() {
                 variant={t.isActive ? "default" : "secondary"}
                 className={
                   t.isActive
-                    ? "bg-[var(--neu-primary)] text-white hover:bg-[var(--neu-primary)]"
+                    ? "bg-[var(--neu-primary)] text-[var(--neu-primary-foreground)] hover:bg-[var(--neu-primary-hover)]"
                     : ""
                 }
               >

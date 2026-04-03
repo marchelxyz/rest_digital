@@ -1,6 +1,6 @@
 /**
  * Neumorphism shell для админки и партнёрского кабинета (skill: neumorphism).
- * Токены: surface #E7E5E4, text #1E2938, primary skill #006666; акцент админки — жёлтый.
+ * Токены: surface #E7E5E4, text #1E2938; акцент — янтарь (как в бренде), не бирюзовый skill.
  */
 
 @layer components {
@@ -10,7 +10,9 @@
     --neu-surface-sunk: #dddad7;
     --neu-text: #1e2938;
     --neu-text-muted: #475569;
-    --neu-primary: #006666;
+    --neu-primary: #eab308;
+    --neu-primary-hover: #ca8a04;
+    --neu-primary-foreground: #171717;
     --neu-accent: #facc15;
     --neu-accent-ink: #171717;
     --neu-shadow-d: rgba(30, 41, 56, 0.14);

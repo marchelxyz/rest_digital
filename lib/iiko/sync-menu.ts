@@ -16,6 +16,7 @@ import {
 } from "@/lib/iiko/client";
 import { getCachedAccessToken } from "@/lib/iiko/token-cache";
 import { getExternalMenuCatalogV1 } from "@/lib/iiko/external-menu-v1-catalog";
+import { extractExternalMenuProductFields } from "@/lib/iiko/external-menu-extract";
 
 export type SyncMenuResult = {
   ok: boolean;
@@ -707,7 +708,9 @@ async function _syncFromExternalMenu(
       defaultCatId;
     if (!catId) continue;
 
-    const price = typeof p.price === "number" ? p.price : 0;
+    const row = p as Record<string, unknown>;
+    const fields = extractExternalMenuProductFields(row);
+    const price = fields.priceRub;
     const isOnStopList = stopProductIds.has(p.id);
 
     const existing = await prisma.product.findFirst({
@@ -719,7 +722,16 @@ async function _syncFromExternalMenu(
       tenantId,
       categoryId: catId,
       name: p.name,
-      description: null,
+      description: fields.description,
+      allergens: fields.allergens,
+      composition: fields.composition,
+      calories: fields.calories,
+      protein: fields.protein,
+      fat: fields.fat,
+      carbohydrates: fields.carbohydrates,
+      cookingTime: fields.cookingTime,
+      weight: fields.weight,
+      volume: fields.volume,
       price,
       imageUrl: p.imageLinks?.[0] ?? null,
       iikoProductId: p.id,

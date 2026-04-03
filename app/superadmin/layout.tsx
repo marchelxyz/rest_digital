@@ -2,7 +2,7 @@ import { getSuperadmin } from "@/lib/auth";
 import Link from "next/link";
 import { LogoutButton } from "@/components/LogoutButton";
 import { LayoutDashboard, BarChart3 } from "lucide-react";
-import { neuAdminMono } from "@/lib/fonts/neumorphism-admin-fonts";
+import { adminShellSans } from "@/lib/fonts/admin-shell-font";
 
 export default async function SuperadminLayout({
   children,
@@ -13,7 +13,7 @@ export default async function SuperadminLayout({
 
   return (
     <div
-      className={`${neuAdminMono.variable} neu-admin-root min-h-screen font-[family-name:var(--font-neu-mono)] antialiased`}
+      className={`${adminShellSans.variable} neu-admin-root min-h-screen font-[family-name:var(--font-geist-sans)] antialiased`}
       style={
         {
           "--admin-yellow": "#facc15",

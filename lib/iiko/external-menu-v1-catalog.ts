@@ -3,6 +3,7 @@
  * Порядок как в mariko_vld (getExternalMenuCatalog → getMenuCatalog до номенклатуры).
  */
 import type { IikoExternalMenuData, IikoExternalMenuItem } from "@/lib/iiko/client";
+import { extractExternalMenuProductFields } from "@/lib/iiko/external-menu-extract";
 
 const IIKO_BASE = "https://api-ru.iiko.services";
 const TIMEOUT_MS = 20000;
@@ -163,30 +164,6 @@ function _normalizeId(raw: unknown): string {
   return "";
 }
 
-function _extractProductPrice(raw: Record<string, unknown>): number {
-  if (typeof raw.price === "number" && Number.isFinite(raw.price)) {
-    return Number(raw.price.toFixed(2));
-  }
-  const sp = raw.sizePrices;
-  if (Array.isArray(sp) && sp.length > 0) {
-    for (const candidate of sp) {
-      if (!candidate || typeof candidate !== "object") {
-        continue;
-      }
-      const c = candidate as Record<string, unknown>;
-      const direct = Number(c.price);
-      if (Number.isFinite(direct)) {
-        return Number(direct.toFixed(2));
-      }
-      const cur = Number((c.price as { currentPrice?: number } | undefined)?.currentPrice);
-      if (Number.isFinite(cur)) {
-        return cur >= 1000 ? Number((cur / 100).toFixed(2)) : Number(cur.toFixed(2));
-      }
-    }
-  }
-  return 0;
-}
-
 function _mapRawToExternalItem(raw: unknown): IikoExternalMenuItem | null {
   if (!raw || typeof raw !== "object") {
     return null;
@@ -197,7 +174,7 @@ function _mapRawToExternalItem(raw: unknown): IikoExternalMenuItem | null {
     return null;
   }
   const name = String(p.name ?? "").trim() || id;
-  const price = _extractProductPrice(p);
+  const fields = extractExternalMenuProductFields(p);
   const productCategoryId = _normalizeId(p.productCategoryId ?? p.categoryId);
   const groupId = _normalizeId(p.groupId);
   const imageLinks = Array.isArray(p.imageLinks)
@@ -206,7 +183,17 @@ function _mapRawToExternalItem(raw: unknown): IikoExternalMenuItem | null {
   return {
     id,
     name,
-    price,
+    price: fields.priceRub,
+    description: fields.description ?? undefined,
+    allergens: fields.allergens,
+    composition: fields.composition,
+    calories: fields.calories,
+    protein: fields.protein,
+    fat: fields.fat,
+    carbohydrates: fields.carbohydrates,
+    cookingTime: fields.cookingTime,
+    weight: fields.weight,
+    volume: fields.volume,
     productCategoryId: productCategoryId || undefined,
     groupId: groupId || undefined,
     imageLinks,
