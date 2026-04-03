@@ -477,6 +477,8 @@ export type IikoExternalMenuItem = {
   description?: string;
   price?: number;
   imageLinks?: string[];
+  /** Категория блюда (внешнее меню / v2). */
+  productCategoryId?: string;
   groupId?: string;
   groupName?: string;
   itemModifierGroups?: {
@@ -491,7 +493,103 @@ export type IikoExternalMenuItem = {
 export type IikoExternalMenuData = {
   categories?: { id: string; name: string }[];
   products?: IikoExternalMenuItem[];
+  /** Группы из API v1 — как категории для сопоставления по groupId. */
+  groups?: { id: string; name: string }[];
 };
+
+/** Разворачивает itemCategories с вложенными items (типичный ответ POST /api/2/menu/by_id). */
+function _flattenItemCategoriesNested(
+  raw: Record<string, unknown>
+): IikoExternalMenuData {
+  const ic = (raw.itemCategories ?? raw.ItemCategories) as unknown[] | undefined;
+  if (!Array.isArray(ic) || ic.length === 0) {
+    return {};
+  }
+  const categories: { id: string; name: string }[] = [];
+  const products: IikoExternalMenuItem[] = [];
+  for (const entry of ic) {
+    if (!entry || typeof entry !== "object") {
+      continue;
+    }
+    const e = entry as Record<string, unknown>;
+    const itemsArr = (e.items ?? e.Items) as unknown[] | undefined;
+    const cid = String(e.id ?? "");
+    const cname = String(e.name ?? "");
+    if (cid) {
+      categories.push({ id: cid, name: cname || cid });
+    }
+    if (!Array.isArray(itemsArr)) {
+      continue;
+    }
+    for (const it of itemsArr) {
+      if (!it || typeof it !== "object") {
+        continue;
+      }
+      const p = it as Record<string, unknown>;
+      const id = String(p.id ?? p.itemId ?? "");
+      if (!id) {
+        continue;
+      }
+      let price = 0;
+      if (typeof p.price === "number") {
+        price = p.price;
+      } else if (p.price && typeof p.price === "object") {
+        const cur = (p.price as { currentPrice?: number }).currentPrice;
+        if (typeof cur === "number") {
+          price = cur > 1000 ? cur / 100 : cur;
+        }
+      }
+      products.push({
+        id,
+        name: String(p.name ?? ""),
+        price,
+        productCategoryId: cid || undefined,
+        groupId: cid || undefined,
+        imageLinks: Array.isArray(p.imageLinks) ? (p.imageLinks as string[]) : undefined,
+        itemModifierGroups: p.itemModifierGroups as IikoExternalMenuItem["itemModifierGroups"],
+      });
+    }
+  }
+  return {
+    categories: categories.length > 0 ? categories : undefined,
+    products: products.length > 0 ? products : undefined,
+  };
+}
+
+function _mergeExternalMenuParts(
+  a: IikoExternalMenuData,
+  b: IikoExternalMenuData
+): IikoExternalMenuData {
+  const catIds = new Set<string>();
+  const mergedCats: { id: string; name: string }[] = [];
+  for (const c of [...(a.categories ?? []), ...(b.categories ?? [])]) {
+    if (!catIds.has(c.id)) {
+      catIds.add(c.id);
+      mergedCats.push(c);
+    }
+  }
+  const prodIds = new Set<string>();
+  const mergedProds: IikoExternalMenuItem[] = [];
+  for (const p of [...(a.products ?? []), ...(b.products ?? [])]) {
+    if (!prodIds.has(p.id)) {
+      prodIds.add(p.id);
+      mergedProds.push(p);
+    }
+  }
+  const groupIds = new Set<string>();
+  const mergedGroups: { id: string; name: string }[] = [];
+  for (const g of [...(a.groups ?? []), ...(b.groups ?? [])]) {
+    if (!groupIds.has(g.id)) {
+      groupIds.add(g.id);
+      mergedGroups.push(g);
+    }
+  }
+  return {
+    categories: mergedCats.length > 0 ? mergedCats : undefined,
+    products: mergedProds.length > 0 ? mergedProds : undefined,
+    groups: mergedGroups.length > 0 ? mergedGroups : undefined,
+  };
+}
 
 /** Приводит ответ iiko (camelCase / PascalCase) к одному виду для синхронизации. */
 function _normalizeExternalMenuPayload(raw: unknown): IikoExternalMenuData {
@@ -502,17 +600,19 @@ function _normalizeExternalMenuPayload(raw: unknown): IikoExternalMenuData {
   const categories = (o.categories ??
     o.Categories ??
     o.productCategories ??
-    o.ProductCategories ??
-    o.itemCategories ??
-    o.ItemCategories) as { id: string; name: string }[] | undefined;
+    o.ProductCategories) as { id: string; name: string }[] | undefined;
   const products = (o.products ??
     o.Products ??
     o.items ??
     o.Items) as IikoExternalMenuItem[] | undefined;
-  return {
+  const groups = (o.groups ?? o.Groups) as { id: string; name: string }[] | undefined;
+  const nested = _flattenItemCategoriesNested(o);
+  const base: IikoExternalMenuData = {
     categories: Array.isArray(categories) ? categories : undefined,
     products: Array.isArray(products) ? products : undefined,
+    groups: Array.isArray(groups) ? groups : undefined,
   };
+  return _mergeExternalMenuParts(base, nested);
 }
 
 /** Внешнее меню по ID. */

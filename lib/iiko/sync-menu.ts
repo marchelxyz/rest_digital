@@ -15,6 +15,7 @@ import {
   type IikoExternalMenuInfo,
 } from "@/lib/iiko/client";
 import { getCachedAccessToken } from "@/lib/iiko/token-cache";
+import { getExternalMenuCatalogV1 } from "@/lib/iiko/external-menu-v1-catalog";
 
 export type SyncMenuResult = {
   ok: boolean;
@@ -29,9 +30,10 @@ export type SyncMenuResult = {
 /**
  * Синхронизирует меню из iiko для указанного tenant.
  *
- * Достаточно API-ключа Cloud API и организации. Сначала пробуем внешнее меню (если iiko
- * отдаёт список в POST /api/2/menu или задан id меню в настройках), иначе — номенклатура
- * (/api/1/nomenclature). Пустое или заведомо некорректное значение в поле id меню игнорируется.
+ * Достаточно API-ключа Cloud API и организации. Порядок как в mariko_vld: сначала
+ * POST /api/1/external_menus и /api/1/external_menu (v1), затем POST /api/2/menu/by_id (v2),
+ * затем номенклатура (/api/1/nomenclature). Пустое или заведомо некорректное значение в поле
+ * id меню игнорируется.
  */
 export async function syncIikoMenuForTenant(
   tenantId: string
@@ -62,6 +64,27 @@ export async function syncIikoMenuForTenant(
     ? ""
     : _pickFirstExternalMenuIdFromList(menus, orgId) ?? "";
   const externalMenuId = explicitResolved || autoResolved;
+
+  /**
+   * Как в mariko_vld: сначала POST /api/1/external_menus и /api/1/external_menu (v1),
+   * затем уже api/2/menu/by_id и номенклатура. На части стендов v2/by_id и nomenclature пустые,
+   * а v1 отдаёт состав меню для сайта iiko.
+   */
+  try {
+    const v1 = await getExternalMenuCatalogV1(token, orgId, externalMenuId || undefined);
+    if (v1 && _externalMenuHasContent(v1)) {
+      const extResult = await _syncFromExternalMenu(tenantId, v1, stopProductIds);
+      return {
+        ...extResult,
+        hint: _mergeHintStrings(
+          organizationHint,
+          "Меню загружено через Cloud API v1 (POST /api/1/external_menus, при необходимости /api/1/external_menu), как в mariko_vld."
+        ),
+      };
+    }
+  } catch {
+    // переходим к v2 и номенклатуре
+  }
 
   /** Если внешнее меню пустое/ошибка — всегда пробуем номенклатуру (как fallback в mariko_vld getMenuCatalog). */
   let externalMenuPrefixHint: string | undefined;
@@ -614,6 +637,7 @@ async function _syncFromExternalMenu(
     productCategories?: { id: string; name: string }[];
     categories?: { id: string; name: string }[];
     itemCategories?: { id: string; name: string }[];
+    groups?: { id: string; name: string }[];
     products?: {
       id: string;
       name: string;
@@ -633,8 +657,16 @@ async function _syncFromExternalMenu(
       itemModifierGroups?: unknown[];
     }[];
   };
-  const cats =
+  const catsBase =
     raw.productCategories ?? raw.categories ?? raw.itemCategories ?? [];
+  const seenCatId = new Set(catsBase.map((c) => c.id));
+  const cats = [...catsBase];
+  for (const g of raw.groups ?? []) {
+    if (!seenCatId.has(g.id)) {
+      seenCatId.add(g.id);
+      cats.push({ id: g.id, name: g.name });
+    }
+  }
   const prods = raw.products ?? raw.items ?? [];
 
   const categoryByIikoId = new Map<string, string>();
