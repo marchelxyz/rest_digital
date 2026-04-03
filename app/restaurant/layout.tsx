@@ -1,6 +1,7 @@
 import { getEmployee } from "@/lib/auth";
 import { LogoutButton } from "@/components/LogoutButton";
 import { AdminSidebar } from "@/components/restaurant/AdminSidebar";
+import { neuAdminMono } from "@/lib/fonts/neumorphism-admin-fonts";
 
 export default async function RestaurantLayout({
   children,
@@ -11,7 +12,7 @@ export default async function RestaurantLayout({
 
   return (
     <div
-      className="flex min-h-screen bg-neutral-50"
+      className={`${neuAdminMono.variable} neu-admin-root flex min-h-screen font-[family-name:var(--font-neu-mono)] antialiased`}
       style={
         {
           "--admin-yellow": "#facc15",
@@ -27,19 +28,19 @@ export default async function RestaurantLayout({
 
       <div className="flex flex-1 flex-col min-w-0">
         {emp && emp.type === "employee" && (
-          <header className="flex items-center justify-end bg-white border-b border-neutral-200 px-6 py-3">
+          <header className="neu-partner-topbar flex items-center justify-end px-6 py-3">
             <div className="flex items-center gap-3">
-              <span className="text-sm text-neutral-500">{emp.email}</span>
+              <span className="text-sm text-[var(--neu-text-muted)]">{emp.email}</span>
               <LogoutButton type="restaurant" />
             </div>
           </header>
         )}
         <main
-          className="flex-1 bg-white"
+          className="flex-1 neu-admin-main"
           style={
             {
-              "--primary": "var(--admin-yellow)",
-              "--primary-foreground": "var(--admin-black)",
+              "--primary": "var(--neu-primary)",
+              "--primary-foreground": "#fff",
             } as React.CSSProperties
           }
         >

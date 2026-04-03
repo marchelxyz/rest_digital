@@ -91,7 +91,7 @@ export function SuperadminStatsClient() {
   const tenantList = stats?.tenants?.length ? stats.tenants : tenants;
 
   return (
-    <div className="container max-w-4xl py-8 px-4">
+    <div className="container max-w-4xl py-8 px-4 text-[var(--neu-text)]">
       <div className="flex flex-wrap items-end gap-4 mb-6">
         <div>
           <Label>С</Label>
@@ -129,7 +129,7 @@ export function SuperadminStatsClient() {
         <button
           type="button"
           onClick={loadStats}
-          className="px-4 py-2 rounded-lg bg-[var(--admin-yellow)] text-[var(--admin-black)] font-medium hover:opacity-90"
+          className="neu-focus px-4 py-2 rounded-xl bg-[var(--admin-yellow)] text-[var(--admin-black)] font-medium shadow-[var(--neu-outset-sm)] hover:opacity-95 border border-white/40"
         >
           Обновить
         </button>
@@ -140,7 +140,7 @@ export function SuperadminStatsClient() {
       {stats && (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <Card>
+            <Card className="neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0">
               <CardHeader className="flex flex-row items-center gap-2">
                 <ShoppingCart size={20} />
                 <CardTitle className="text-base">Заказы</CardTitle>
@@ -150,7 +150,7 @@ export function SuperadminStatsClient() {
                 <div className="text-sm text-muted-foreground">{stats.summary.ordersAmount.toLocaleString("ru")} ₽</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0">
               <CardHeader className="flex flex-row items-center gap-2">
                 <Users size={20} />
                 <CardTitle className="text-base">База контактов</CardTitle>
@@ -160,7 +160,7 @@ export function SuperadminStatsClient() {
                 <div className="text-sm text-muted-foreground">новых за период</div>
               </CardContent>
             </Card>
-            <Card>
+            <Card className="neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0">
               <CardHeader className="flex flex-row items-center gap-2">
                 <BarChart3 size={20} />
                 <CardTitle className="text-base">Период</CardTitle>
@@ -172,7 +172,7 @@ export function SuperadminStatsClient() {
           </div>
 
           {Object.entries(stats.byTenant).map(([tenantId, data]) => (
-            <Card key={tenantId}>
+            <Card key={tenantId} className="neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0">
               <CardHeader>
                 <CardTitle>{data.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">/{data.slug}</p>
