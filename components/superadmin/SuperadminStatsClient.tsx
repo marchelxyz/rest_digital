@@ -140,7 +140,7 @@ export function SuperadminStatsClient() {
       {stats && (
         <div className="space-y-6">
           <div className="grid gap-4 md:grid-cols-3">
-            <Card className="neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0">
+            <Card className="neu-card border-0 ring-0 rounded-3xl bg-[var(--neu-surface-raised)]">
               <CardHeader className="flex flex-row items-center gap-2">
                 <ShoppingCart size={20} />
                 <CardTitle className="text-base">Заказы</CardTitle>
@@ -150,7 +150,7 @@ export function SuperadminStatsClient() {
                 <div className="text-sm text-muted-foreground">{stats.summary.ordersAmount.toLocaleString("ru")} ₽</div>
               </CardContent>
             </Card>
-            <Card className="neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0">
+            <Card className="neu-card border-0 ring-0 rounded-3xl bg-[var(--neu-surface-raised)]">
               <CardHeader className="flex flex-row items-center gap-2">
                 <Users size={20} />
                 <CardTitle className="text-base">База контактов</CardTitle>
@@ -172,7 +172,7 @@ export function SuperadminStatsClient() {
           </div>
 
           {Object.entries(stats.byTenant).map(([tenantId, data]) => (
-            <Card key={tenantId} className="neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0">
+            <Card key={tenantId} className="neu-card border-0 ring-0 rounded-3xl bg-[var(--neu-surface-raised)]">
               <CardHeader>
                 <CardTitle>{data.name}</CardTitle>
                 <p className="text-sm text-muted-foreground">/{data.slug}</p>

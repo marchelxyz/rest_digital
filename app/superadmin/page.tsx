@@ -74,17 +74,17 @@ export default async function SuperadminPage() {
               </Link>
               <CreateLoginDialog tenantId={t.id} tenantName={t.name} />
               <Link href={`/superadmin/tenants/${t.id}/builder`}>
-                <Button variant="outline" size="sm" className="neu-focus bg-[var(--neu-surface-raised)] shadow-[var(--neu-inset-sm)] border-neutral-200">
+                <Button variant="outline" size="sm" className="neu-focus border-transparent bg-[var(--neu-surface)] text-[var(--neu-text)] shadow-[var(--neu-inset-sm)] hover:bg-[var(--neu-surface)]">
                   Конструктор
                 </Button>
               </Link>
               <Link href={`/superadmin/tenants/${t.id}`}>
-                <Button variant="outline" size="sm" className="neu-focus bg-[var(--neu-surface-raised)] shadow-[var(--neu-inset-sm)] border-neutral-200">
+                <Button variant="outline" size="sm" className="neu-focus border-transparent bg-[var(--neu-surface)] text-[var(--neu-text)] shadow-[var(--neu-inset-sm)] hover:bg-[var(--neu-surface)]">
                   Настройки
                 </Button>
               </Link>
               <Link href={`/c/${t.slug}`} target="_blank">
-                <Button variant="outline" size="sm" className="neu-focus bg-[var(--neu-surface-raised)] shadow-[var(--neu-inset-sm)] border-neutral-200">
+                <Button variant="outline" size="sm" className="neu-focus border-transparent bg-[var(--neu-surface)] text-[var(--neu-text)] shadow-[var(--neu-inset-sm)] hover:bg-[var(--neu-surface)]">
                   Приложение
                 </Button>
               </Link>
