@@ -5,6 +5,7 @@
 import { prisma } from "@/lib/db";
 import {
   getNomenclature,
+  getOrganizations,
   getStopLists,
   getExternalMenusForTenant,
   getExternalMenuById,
@@ -42,8 +43,12 @@ export async function syncIikoMenuForTenant(
     throw new Error("iikoApiLogin и iikoOrganizationId должны быть заданы");
   }
 
-  const orgId = settings.iikoOrganizationId.trim();
   const token = await getCachedAccessToken(settings.iikoApiLogin.trim());
+  const orgConfigured = settings.iikoOrganizationId.trim();
+  const { orgId, organizationHint } = await _resolveEffectiveOrganizationId(
+    token,
+    orgConfigured
+  );
   const stopProductIds = await getStopLists(token, [orgId]);
 
   const menus = await getExternalMenusForTenant(token, orgId).catch(() => []);
@@ -71,7 +76,11 @@ export async function syncIikoMenuForTenant(
         menus
       );
       if (ext && _externalMenuHasContent(ext)) {
-        return _syncFromExternalMenu(tenantId, ext, stopProductIds);
+        const extResult = await _syncFromExternalMenu(tenantId, ext, stopProductIds);
+        return {
+          ...extResult,
+          hint: _mergeHintStrings(organizationHint, extResult.hint),
+        };
       }
       externalMenuPrefixHint =
         "Внешнее меню (POST /api/2/menu/by_id) без позиций — при источнике цен «базовый прайс-лист» в iikoWeb API часто не отдаёт priceCategoryIds; ниже пробуем номенклатуру Cloud API. ";
@@ -83,8 +92,41 @@ export async function syncIikoMenuForTenant(
 
   const nom = await getNomenclature(token, orgId);
   return _syncFromNomenclature(tenantId, nom, stopProductIds, {
-    externalMenuPrefixHint,
+    externalMenuPrefixHint: _mergeHintStrings(
+      organizationHint,
+      externalMenuPrefixHint
+    ),
   });
+}
+
+/**
+ * Подставляет organizationId, доступный текущему API-ключу. Иначе stop_lists и by_id
+ * падают со старым UUID из БД после смены ключа/ресторана.
+ */
+async function _resolveEffectiveOrganizationId(
+  token: string,
+  configuredOrgId: string
+): Promise<{ orgId: string; organizationHint?: string }> {
+  const orgs = await getOrganizations(token);
+  if (orgs.length === 0) {
+    throw new Error(
+      "По API-ключу не найдено ни одной организации — проверьте ключ в iiko."
+    );
+  }
+  const allowed = new Set(orgs.map((o) => o.id));
+  if (allowed.has(configuredOrgId)) {
+    return { orgId: configuredOrgId };
+  }
+  if (orgs.length === 1) {
+    const only = orgs[0];
+    return {
+      orgId: only.id,
+      organizationHint: `В настройках указан другой organizationId (${configuredOrgId}); по API-ключу используется «${only.name ?? "организация"}» (${only.id}). Сохраните настройки через «Загрузить из iiko».`,
+    };
+  }
+  throw new Error(
+    `organizationId в настройках (${configuredOrgId}) не входит в список организаций этого API-ключа. Нажмите «Загрузить из iiko» и выберите организацию заново.`
+  );
 }
 
 /** Непустой id внешнего меню (UUID или числовая строка из Cloud API / iiko). */
@@ -94,8 +136,9 @@ function _isValidExternalMenuId(value: string): boolean {
 }
 
 /**
- * Приводит id из настроек к тому виду, что в каталоге POST /api/2/menu (например `76108` → `76108#2`).
- * Иначе by_id отвечает: External menu id does not belong to your ApiLogin.
+ * Приводит id из настроек к актуальному из POST /api/2/menu (например `76108` → `76108#2`).
+ * Если в каталоге только `76108`, а в БД сохранён устаревший `76108#2`, берём базовый id —
+ * иначе by_id: External menu id does not belong to your ApiLogin.
  */
 function _resolveCanonicalExternalMenuId(
   menus: IikoExternalMenuInfo[],
@@ -114,6 +157,13 @@ function _resolveCanonicalExternalMenuId(
   });
   if (composite.length === 1) {
     return composite[0].id;
+  }
+  const hashIdx = t.indexOf("#");
+  if (hashIdx > 0) {
+    const base = t.slice(0, hashIdx).trim();
+    if (base && menus.some((m) => m.id === base)) {
+      return base;
+    }
   }
   return t;
 }
