@@ -1,0 +1,107 @@
+/**
+ * Neumorphism shell для админки и партнёрского кабинета (skill: neumorphism).
+ * Токены: surface #E7E5E4, text #1E2938, primary skill #006666; акцент админки — жёлтый.
+ */
+
+@layer components {
+  .neu-admin-root {
+    --neu-surface: #e7e5e4;
+    --neu-surface-raised: #efedeb;
+    --neu-surface-sunk: #dddad7;
+    --neu-text: #1e2938;
+    --neu-text-muted: #475569;
+    --neu-primary: #006666;
+    --neu-accent: #facc15;
+    --neu-accent-ink: #171717;
+    --neu-shadow-d: rgba(30, 41, 56, 0.14);
+    --neu-shadow-l: rgba(255, 255, 255, 0.85);
+    --neu-outset: 10px 10px 22px var(--neu-shadow-d), -6px -6px 16px var(--neu-shadow-l);
+    --neu-outset-sm: 5px 5px 12px var(--neu-shadow-d), -3px -3px 8px var(--neu-shadow-l);
+    --neu-inset: inset 4px 4px 10px var(--neu-shadow-d), inset -3px -3px 8px var(--neu-shadow-l);
+    --neu-inset-sm: inset 2px 2px 6px var(--neu-shadow-d), inset -1px -1px 4px var(--neu-shadow-l);
+    background: var(--neu-surface);
+    color: var(--neu-text);
+    font-feature-settings: "tnum" 1;
+  }
+
+  .neu-admin-main {
+    background: linear-gradient(160deg, var(--neu-surface) 0%, #e0ddd9 100%);
+    min-height: calc(100vh - 4.25rem);
+  }
+
+  .neu-card {
+    background: var(--neu-surface-raised);
+    border-radius: 1rem;
+    box-shadow: var(--neu-outset);
+    border: 1px solid rgba(255, 255, 255, 0.55);
+    color: var(--neu-text);
+  }
+
+  .neu-card-header {
+    padding: 1rem 1.25rem;
+    border-bottom: 1px solid rgba(30, 41, 56, 0.06);
+  }
+
+  .neu-card-body {
+    padding: 1rem 1.25rem 1.25rem;
+  }
+
+  .neu-icon-bump {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.5rem;
+    border-radius: 0.75rem;
+    background: var(--neu-surface);
+    box-shadow: var(--neu-outset-sm);
+    color: var(--neu-primary);
+    border: 1px solid rgba(255, 255, 255, 0.4);
+  }
+
+  /* Тёмная панель (superadmin header / partner sidebar) */
+  .neu-dark-shell {
+    --neu-dark-bg: #161616;
+    --neu-dark-raised: #1e1e1e;
+    --neu-dark-sunk: #0f0f0f;
+    background: linear-gradient(165deg, #1a1a1a 0%, #121212 100%);
+    color: #f5f5f5;
+    box-shadow: 6px 0 24px rgba(0, 0, 0, 0.35);
+    border-color: rgba(255, 255, 255, 0.06);
+  }
+
+  .neu-dark-header {
+    background: linear-gradient(180deg, #1c1c1c 0%, #141414 100%);
+    box-shadow: var(--neu-outset-sm);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  }
+
+  .neu-dark-nav-link {
+    border-radius: 0.65rem;
+    transition: box-shadow 0.2s ease, color 0.2s ease, background 0.2s ease;
+  }
+
+  .neu-dark-nav-link:hover:not(.neu-dark-nav-link--active) {
+    box-shadow: var(--neu-inset-sm);
+    background: rgba(255, 255, 255, 0.04);
+    color: #fff;
+  }
+
+  .neu-dark-nav-link--active {
+    color: var(--neu-accent-ink);
+    font-weight: 600;
+    background: linear-gradient(145deg, #fde047 0%, #facc15 50%, #eab308 100%);
+    box-shadow: 4px 4px 10px rgba(0, 0, 0, 0.35), -2px -2px 6px rgba(255, 255, 255, 0.12);
+  }
+
+  .neu-partner-topbar {
+    background: var(--neu-surface-raised);
+    box-shadow: var(--neu-outset-sm);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+    color: var(--neu-text);
+  }
+
+  .neu-focus:focus-visible {
+    outline: 2px solid var(--neu-primary);
+    outline-offset: 2px;
+  }
+}

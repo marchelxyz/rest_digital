@@ -59,8 +59,8 @@ export default function RestaurantLoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
-      <Card className="w-full max-w-md">
+    <div className="min-h-screen flex items-center justify-center p-4 text-[var(--neu-text)]">
+      <Card className="w-full max-w-md neu-card border-0 shadow-none bg-[var(--neu-surface-raised)] ring-0 py-6">
         <CardHeader>
           <CardTitle>Вход в кабинет ресторана</CardTitle>
         </CardHeader>

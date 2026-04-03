@@ -37,8 +37,7 @@ const NAV_ITEMS: NavItem[] = [
 ];
 
 /**
- * Сворачиваемая боковая панель навигации для партнёрского кабинета.
- * В развёрнутом виде показывает иконки и текст, в свёрнутом — только иконки.
+ * Сворачиваемая боковая панель (neumorphism / тёмный soft UI).
  */
 export function AdminSidebar({ userEmail }: { userEmail?: string }) {
   const [collapsed, setCollapsed] = useState(false);
@@ -46,22 +45,23 @@ export function AdminSidebar({ userEmail }: { userEmail?: string }) {
 
   return (
     <aside
-      className={`flex flex-col bg-[var(--admin-black)] text-white border-r border-neutral-800 transition-all duration-300 ${
-        collapsed ? "w-[68px]" : "w-[240px]"
+      className={`neu-dark-shell flex flex-col border-r border-white/[0.06] transition-all duration-300 ${
+        collapsed ? "w-[72px]" : "w-[248px]"
       }`}
     >
-      <div className="flex items-center justify-between px-3 py-4 border-b border-neutral-800">
+      <div className="flex items-center justify-between px-3 py-4 border-b border-white/[0.07]">
         {!collapsed && (
           <Link
             href="/restaurant"
-            className="font-bold text-lg truncate hover:text-[var(--admin-yellow)] transition-colors"
+            className="neu-focus font-bold text-lg truncate text-neutral-100 hover:text-[var(--admin-yellow)] transition-colors"
           >
             Rest Digital
           </Link>
         )}
         <button
+          type="button"
           onClick={() => setCollapsed((prev) => !prev)}
-          className={`p-2 rounded-lg hover:bg-white/10 transition-colors text-neutral-400 hover:text-white ${
+          className={`neu-focus neu-dark-nav-link p-2 text-neutral-400 hover:text-white ${
             collapsed ? "mx-auto" : ""
           }`}
           title={collapsed ? "Развернуть меню" : "Свернуть меню"}
@@ -70,7 +70,10 @@ export function AdminSidebar({ userEmail }: { userEmail?: string }) {
         </button>
       </div>
 
-      <nav className="flex-1 flex flex-col gap-1 px-2 py-3 overflow-y-auto">
+      <nav
+        className="flex-1 flex flex-col gap-1.5 px-2 py-3 overflow-y-auto"
+        aria-label="Разделы кабинета"
+      >
         {NAV_ITEMS.map((item) => (
           <SidebarLink
             key={item.href}
@@ -82,8 +85,8 @@ export function AdminSidebar({ userEmail }: { userEmail?: string }) {
       </nav>
 
       {userEmail && !collapsed && (
-        <div className="px-3 py-3 border-t border-neutral-800">
-          <p className="text-xs text-neutral-400 truncate">{userEmail}</p>
+        <div className="px-3 py-3 border-t border-white/[0.07] text-xs text-neutral-500 truncate">
+          {userEmail}
         </div>
       )}
     </aside>
@@ -110,18 +113,11 @@ function SidebarLink({
     <Link
       href={item.href}
       title={collapsed ? item.label : undefined}
-      className={`relative flex items-center gap-3 text-sm rounded-lg transition-colors ${
+      className={`neu-focus neu-dark-nav-link relative flex items-center gap-3 text-sm ${
         collapsed ? "justify-center px-2 py-2.5" : "px-3 py-2.5"
-      } ${
-        isActive
-          ? "text-[var(--admin-black)] font-medium"
-          : "text-neutral-300 hover:text-white hover:bg-white/5"
-      }`}
+      } ${isActive ? "neu-dark-nav-link--active" : "text-neutral-300"}`}
     >
-      {isActive && (
-        <span className="absolute inset-0 rounded-lg bg-[var(--admin-yellow)]/30" />
-      )}
-      <Icon size={20} className="relative z-10 shrink-0" />
+      <Icon size={20} className="relative z-10 shrink-0" aria-hidden />
       {!collapsed && <span className="relative z-10 truncate">{item.label}</span>}
     </Link>
   );
