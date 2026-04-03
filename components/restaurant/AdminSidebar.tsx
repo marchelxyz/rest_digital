@@ -71,7 +71,7 @@ export function AdminSidebar({ userEmail }: { userEmail?: string }) {
       </div>
 
       <nav
-        className="flex-1 flex flex-col gap-1.5 px-2 py-3 overflow-y-auto"
+        className="custom-scrollbar flex-1 flex flex-col gap-1.5 px-2 py-3 overflow-y-auto"
         aria-label="Разделы кабинета"
       >
         {NAV_ITEMS.map((item) => (
