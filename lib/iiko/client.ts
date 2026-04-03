@@ -3,6 +3,8 @@
  * Официальная документация: https://ru.iiko.help, https://api-ru.iiko.services
  * API: https://api-ru.iiko.services
  */
+import { extractExternalMenuProductFields } from "@/lib/iiko/external-menu-extract";
+
 const BASE_URL = "https://api-ru.iiko.services";
 const DEFAULT_TIMEOUT_MS = 15000;
 
@@ -477,6 +479,15 @@ export type IikoExternalMenuItem = {
   description?: string;
   price?: number;
   imageLinks?: string[];
+  allergens?: string | null;
+  composition?: string | null;
+  calories?: number | null;
+  protein?: number | null;
+  fat?: number | null;
+  carbohydrates?: number | null;
+  cookingTime?: number | null;
+  weight?: string | null;
+  volume?: string | null;
   /** Категория блюда (внешнее меню / v2). */
   productCategoryId?: string;
   groupId?: string;
@@ -496,6 +507,28 @@ export type IikoExternalMenuData = {
   /** Группы из API v1 — как категории для сопоставления по groupId. */
   groups?: { id: string; name: string }[];
 };
+
+/**
+ * Достаёт цены из itemSizes и метаданные из сырого объекта iiko (в т.ч. для плоского массива products).
+ */
+function _enrichExternalMenuProductRow(item: IikoExternalMenuItem): IikoExternalMenuItem {
+  const raw = item as unknown as Record<string, unknown>;
+  const fields = extractExternalMenuProductFields(raw);
+  return {
+    ...item,
+    price: fields.priceRub > 0 ? fields.priceRub : (item.price ?? 0),
+    description: fields.description ?? item.description,
+    allergens: fields.allergens ?? item.allergens,
+    composition: fields.composition ?? item.composition,
+    calories: fields.calories ?? item.calories,
+    protein: fields.protein ?? item.protein,
+    fat: fields.fat ?? item.fat,
+    carbohydrates: fields.carbohydrates ?? item.carbohydrates,
+    cookingTime: fields.cookingTime ?? item.cookingTime,
+    weight: fields.weight ?? item.weight,
+    volume: fields.volume ?? item.volume,
+  };
+}
 
 /** Разворачивает itemCategories с вложенными items (типичный ответ POST /api/2/menu/by_id). */
 function _flattenItemCategoriesNested(
@@ -530,19 +563,21 @@ function _flattenItemCategoriesNested(
       if (!id) {
         continue;
       }
-      let price = 0;
-      if (typeof p.price === "number") {
-        price = p.price;
-      } else if (p.price && typeof p.price === "object") {
-        const cur = (p.price as { currentPrice?: number }).currentPrice;
-        if (typeof cur === "number") {
-          price = cur > 1000 ? cur / 100 : cur;
-        }
-      }
+      const fields = extractExternalMenuProductFields(p);
       products.push({
         id,
         name: String(p.name ?? ""),
-        price,
+        price: fields.priceRub,
+        description: fields.description ?? undefined,
+        allergens: fields.allergens,
+        composition: fields.composition,
+        calories: fields.calories,
+        protein: fields.protein,
+        fat: fields.fat,
+        carbohydrates: fields.carbohydrates,
+        cookingTime: fields.cookingTime,
+        weight: fields.weight,
+        volume: fields.volume,
         productCategoryId: cid || undefined,
         groupId: cid || undefined,
         imageLinks: Array.isArray(p.imageLinks) ? (p.imageLinks as string[]) : undefined,
@@ -609,10 +644,13 @@ function _normalizeExternalMenuPayload(raw: unknown): IikoExternalMenuData {
   const nested = _flattenItemCategoriesNested(o);
   const base: IikoExternalMenuData = {
     categories: Array.isArray(categories) ? categories : undefined,
-    products: Array.isArray(products) ? products : undefined,
+    products: Array.isArray(products)
+      ? (products as IikoExternalMenuItem[]).map(_enrichExternalMenuProductRow)
+      : undefined,
     groups: Array.isArray(groups) ? groups : undefined,
   };
-  return _mergeExternalMenuParts(base, nested);
+  /** Сначала вложенные itemCategories (полные карточки), иначе дубли по id из верхнего уровня перетирают цены из itemSizes. */
+  return _mergeExternalMenuParts(nested, base);
 }
 
 /** Внешнее меню по ID. */
