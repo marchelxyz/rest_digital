@@ -711,7 +711,7 @@ async function _syncFromExternalMenu(
     const row = p as Record<string, unknown>;
     const fields = extractExternalMenuProductFields(row);
     const price = fields.priceRub;
-    const isOnStopList = stopProductIds.has(String(row.id ?? p.id));
+    const isOnStopList = stopProductIds.has(p.id);
 
     const existing = await prisma.product.findFirst({
       where: { tenantId, iikoProductId: p.id },
