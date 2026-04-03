@@ -1,17 +1,17 @@
 /**
- * Neumorphism / Soft UI (как превью скилла): фон и карточки одного цвета,
- * объём только за счёт теней (выпуклость / вдавливание).
+ * Neumorphism / Soft UI — совместимо с классами превью скилла (Neumorphic SaaS Dashboard):
+ * neu-flat, neu-flat-sm, neu-pressed, neu-pressed-sm, neu-btn, custom-scrollbar.
+ * Фон и карточки одного цвета; объём только тенями (#b8b9be / #fff).
  */
 
 @layer components {
   .neu-admin-root {
-    /* Прохладный серый фон — как в референсе #E0E5EC / #F0F2F5 */
-    --neu-surface: #e0e5ec;
-    /* Карточки того же цвета, что и фон — «вылеплены» из поверхности */
-    --neu-surface-raised: #e0e5ec;
-    --neu-surface-sunk: #e0e5ec;
-    --neu-text: #1a1c1e;
-    --neu-text-muted: #5c6370;
+    /* Как в HTML превью: body bg-[#F0F2F5] text-[#2D3748] */
+    --neu-surface: #f0f2f5;
+    --neu-surface-raised: #f0f2f5;
+    --neu-surface-sunk: #f0f2f5;
+    --neu-text: #2d3748;
+    --neu-text-muted: #718096;
     --neu-primary: #eab308;
     --neu-primary-hover: #ca8a04;
     --neu-primary-foreground: #171717;
@@ -111,5 +111,60 @@
   .neu-focus:focus-visible {
     outline: 2px solid var(--neu-primary);
     outline-offset: 2px;
+  }
+}
+
+/**
+ * Утилиты 1:1 с превью скилла — использовать вместе с rounded-xl / rounded-2xl и bg того же тона.
+ * Пример: className="neu-flat rounded-2xl p-5", поиск: "neu-pressed rounded-xl px-4 py-2".
+ */
+@layer utilities {
+  .neu-flat {
+    background-color: var(--neu-surface);
+    box-shadow: var(--neu-outset);
+  }
+
+  .neu-flat-sm {
+    background-color: var(--neu-surface);
+    box-shadow: var(--neu-outset-sm);
+  }
+
+  .neu-pressed {
+    background-color: var(--neu-surface);
+    box-shadow: var(--neu-inset);
+  }
+
+  .neu-pressed-sm {
+    background-color: var(--neu-surface);
+    box-shadow: var(--neu-inset-sm);
+  }
+
+  /** Иконки-кнопки в шапке / моб. меню: мягкий «грибок» без заливки акцентом */
+  .neu-btn {
+    background-color: var(--neu-surface);
+    box-shadow: var(--neu-outset-sm);
+  }
+
+  .neu-btn:hover {
+    box-shadow: var(--neu-outset-xs);
+  }
+
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(45, 55, 72, 0.25) transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: rgba(45, 55, 72, 0.22);
+    border-radius: 999px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
   }
 }
