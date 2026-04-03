@@ -308,7 +308,12 @@ function _priceFromUnknown(value: unknown): number | null {
 }
 
 /**
- * Как в номенклатуре: крупные целые значения — копейки; мелкие дробные — уже рубли.
+ * Внешнее меню iiko отдаёт цену по-разному: часто `currentPrice` в копейках (как номенклатура),
+ * но для целых рублей без копеек встречается **1000** как «1000 ₽» (например цена за кг), а не 100000 коп.
+ * Раньше любое целое ≥1000 делилось на 100 → 1000 превращалось в 10 ₽.
+ *
+ * Правило: явно копейки — значения ≥100000 (1000+ ₽ в минорных единицах) и диапазоны 1000–99999
+ * кроме **ровно 1000**, которое трактуем как 1000 ₽ (типичный кейс «1000 за кг» из Cloud API).
  */
 function _normalizeKopecksToRubles(n: number): number {
   if (n <= 0) {
@@ -317,13 +322,16 @@ function _normalizeKopecksToRubles(n: number): number {
   if (!Number.isInteger(n)) {
     return n;
   }
-  if (n >= 10_000) {
+  if (n >= 100_000) {
     return n / 100;
   }
-  if (n >= 1000) {
+  if (n === 1000) {
+    return 1000;
+  }
+  if (n > 1000) {
     return n / 100;
   }
-  return n;
+  return n / 100;
 }
 
 function _round2(n: number): number {
