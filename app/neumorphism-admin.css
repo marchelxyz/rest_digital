@@ -1,47 +1,53 @@
 /**
- * Neumorphism shell для админки и партнёрского кабинета (skill: neumorphism).
- * Токены: surface #E7E5E4, text #1E2938; акцент — янтарь (как в бренде), не бирюзовый skill.
+ * Neumorphism / Soft UI (как превью скилла): фон и карточки одного цвета,
+ * объём только за счёт теней (выпуклость / вдавливание).
  */
 
 @layer components {
   .neu-admin-root {
-    --neu-surface: #e7e5e4;
-    --neu-surface-raised: #efedeb;
-    --neu-surface-sunk: #dddad7;
-    --neu-text: #1e2938;
-    --neu-text-muted: #475569;
+    /* Прохладный серый фон — как в референсе #E0E5EC / #F0F2F5 */
+    --neu-surface: #e0e5ec;
+    /* Карточки того же цвета, что и фон — «вылеплены» из поверхности */
+    --neu-surface-raised: #e0e5ec;
+    --neu-surface-sunk: #e0e5ec;
+    --neu-text: #1a1c1e;
+    --neu-text-muted: #5c6370;
     --neu-primary: #eab308;
     --neu-primary-hover: #ca8a04;
     --neu-primary-foreground: #171717;
     --neu-accent: #facc15;
     --neu-accent-ink: #171717;
-    --neu-shadow-d: rgba(30, 41, 56, 0.14);
-    --neu-shadow-l: rgba(255, 255, 255, 0.85);
-    --neu-outset: 10px 10px 22px var(--neu-shadow-d), -6px -6px 16px var(--neu-shadow-l);
-    --neu-outset-sm: 5px 5px 12px var(--neu-shadow-d), -3px -3px 8px var(--neu-shadow-l);
-    --neu-inset: inset 4px 4px 10px var(--neu-shadow-d), inset -3px -3px 8px var(--neu-shadow-l);
-    --neu-inset-sm: inset 2px 2px 6px var(--neu-shadow-d), inset -1px -1px 4px var(--neu-shadow-l);
+    /* Классические soft UI тени: тёмная вниз-вправо, светлая вверх-влево */
+    --neu-shadow-dark: #b8b9be;
+    --neu-shadow-light: #ffffff;
+    --neu-outset: 8px 8px 16px var(--neu-shadow-dark), -8px -8px 16px var(--neu-shadow-light);
+    --neu-outset-sm: 6px 6px 12px var(--neu-shadow-dark), -6px -6px 12px var(--neu-shadow-light);
+    --neu-outset-xs: 4px 4px 8px var(--neu-shadow-dark), -4px -4px 8px var(--neu-shadow-light);
+    --neu-inset: inset 4px 4px 10px var(--neu-shadow-dark),
+      inset -4px -4px 10px var(--neu-shadow-light);
+    --neu-inset-sm: inset 2px 2px 5px var(--neu-shadow-dark),
+      inset -3px -3px 7px var(--neu-shadow-light);
     background: var(--neu-surface);
     color: var(--neu-text);
     font-feature-settings: "tnum" 1;
   }
 
   .neu-admin-main {
-    background: linear-gradient(160deg, var(--neu-surface) 0%, #e0ddd9 100%);
+    background: var(--neu-surface);
     min-height: calc(100vh - 4.25rem);
   }
 
   .neu-card {
     background: var(--neu-surface-raised);
-    border-radius: 1rem;
+    border-radius: 1.5rem;
     box-shadow: var(--neu-outset);
-    border: 1px solid rgba(255, 255, 255, 0.55);
+    border: none;
     color: var(--neu-text);
   }
 
   .neu-card-header {
     padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(30, 41, 56, 0.06);
+    border-bottom: 1px solid rgba(26, 28, 30, 0.06);
   }
 
   .neu-card-body {
@@ -53,11 +59,11 @@
     align-items: center;
     justify-content: center;
     padding: 0.5rem;
-    border-radius: 0.75rem;
+    border-radius: 0.875rem;
     background: var(--neu-surface);
     box-shadow: var(--neu-outset-sm);
     color: var(--neu-primary);
-    border: 1px solid rgba(255, 255, 255, 0.4);
+    border: none;
   }
 
   /* Тёмная панель (superadmin header / partner sidebar) */
@@ -96,9 +102,9 @@
   }
 
   .neu-partner-topbar {
-    background: var(--neu-surface-raised);
+    background: var(--neu-surface);
     box-shadow: var(--neu-outset-sm);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.45);
+    border-bottom: none;
     color: var(--neu-text);
   }
 
